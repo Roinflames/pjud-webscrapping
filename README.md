@@ -2,9 +2,15 @@
 Necesitamos implementar un proceso RPA que realice los siguientes pasos:
 
 ## 1 - Ingresar al PJUD: 
-https://www.pjud.cl/
+https://oficinajudicialvirtual.pjud.cl/home/index.php
 
 ## 2 - Consultar causas
+https://oficinajudicialvirtual.pjud.cl/indexN.php
+
+| Competencia | Corte             | Tribunal                       | Libro/Tipo | Rol  | Año  |
+|--------------|------------------|----------------------------------|-------------|------|------|
+| Civil        | C.A. de Santiago | 18° Juzgado Civil de Santiago   | C           | 7606 | 2022 |
+
 ![alt text](<assets/img/Imagen de WhatsApp 2025-10-20 a las 16.04.07_eed0e425.jpg>)
 
 ## 3 - Búsqueda por RIT

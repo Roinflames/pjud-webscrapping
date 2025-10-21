@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 # playwright
 playwright_profile
 playwright-report
+
+# PDF
+**.pdf

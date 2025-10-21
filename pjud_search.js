@@ -1,5 +1,6 @@
 // pjud_search.js
 const { chromium } = require('playwright');
+const fs = require('fs');
 
 (async () => {
   const CONFIG = {
@@ -15,10 +16,11 @@ const { chromium } = require('playwright');
   const page = await context.newPage();
 
   try {
-    // Paso 1
+    // Paso 1: Ingreso
     console.log("🌐 Ingresando al PJUD...");
     await page.goto('https://oficinajudicialvirtual.pjud.cl/home/index.php', { waitUntil: 'domcontentloaded' });
-    // Paso 2
+
+    // Paso 2: Consulta causas
     console.log("🖱️ Entrando a 'Consulta causas'...");
     await page.click('text=Consulta causas');
     await page.waitForSelector('#competencia');
@@ -35,7 +37,8 @@ const { chromium } = require('playwright');
 
     console.log("🔍 Buscando...");
     await page.click('input[value="Buscar"], button:has-text("Buscar")');
-    // Paso 3
+
+    // Paso 3: Abrir detalle
     await page.waitForSelector('a[title="Detalle de la causa"]');
     console.log("🖱️ Abriendo detalle...");
     await page.click('a[title="Detalle de la causa"]');
@@ -43,26 +46,35 @@ const { chromium } = require('playwright');
     await page.waitForSelector('#modalDetalleCivil', { state: 'visible' });
     console.log("✅ Detalle cargado correctamente.");
 
+    // Paso 4: Descargar eBook
     console.log("📘 Buscando el enlace de descarga de Ebook...");
-
-    // Paso 4
-    // Esperar a que aparezca el formulario
     await page.waitForSelector('form[action*="newebookcivil.php"]', { timeout: 5000 });
 
-    // Detectar y manejar el evento de descarga
-    const [download] = await Promise.all([
-      page.waitForEvent('download'), // Espera el inicio de la descarga
-      page.click('form[action*="newebookcivil.php"] a[title="Descargar Ebook"]') // Simula el clic
+    // Interceptar la nueva pestaña (target="_blank")
+    const [newPage] = await Promise.all([
+      context.waitForEvent('page'), // Espera a que se abra la nueva pestaña
+      page.click('form[action*="newebookcivil.php"] a[title="Descargar Ebook"]')
     ]);
 
+    // Esperar que cargue completamente
+    await newPage.waitForLoadState('networkidle');
+
+    // Obtener la URL real del PDF
+    const pdfUrl = newPage.url();
+    console.log(`📄 URL del eBook detectada: ${pdfUrl}`);
+
+    // Descargar el PDF usando el mismo contexto
+    const response = await newPage.request.get(pdfUrl);
+    const buffer = await response.body();
+
     // Guardar el archivo localmente
-    const downloadPath = await download.path();
-    const savePath = `./ebook_${Date.now()}.pdf`;
-    await download.saveAs(savePath);
+    const savePath = `./ebook_${CONFIG.rit.replace('-', '_')}_${Date.now()}.pdf`;
+    fs.writeFileSync(savePath, buffer);
 
-    console.log(`✅ Ebook descargado en: ${savePath}`);
+    console.log(`✅ Ebook descargado correctamente en: ${savePath}`);
 
-    // Siguientes pasos
+    // Cerrar la pestaña del PDF
+    await newPage.close();
 
   } catch (err) {
     console.error("❌ Error durante la ejecución:", err);

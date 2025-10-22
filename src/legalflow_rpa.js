@@ -1,3 +1,7 @@
+// ¿Qué realiza este script?
+// Login a legalflow
+// Llenar formulario
+// Crear caso
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');

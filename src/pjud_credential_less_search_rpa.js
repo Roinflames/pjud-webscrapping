@@ -1,3 +1,5 @@
+// ¿Qué realiza este script?
+// Búsqueda sin credenciales de una causa en el PJUD
 require('dotenv').config();
 const { chromium } = require('playwright');
 

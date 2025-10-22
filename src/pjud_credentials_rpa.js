@@ -1,4 +1,5 @@
-// main.js
+// ¿Qué realiza este script?
+// Login al PJUD con credenciales de persona natural
 const { chromium } = require('playwright');
 require('dotenv').config();
 
@@ -16,7 +17,7 @@ require('dotenv').config();
 
   try {
     console.log("🌐 Abriendo Oficina Judicial Virtual...");
-    await page.goto('https://ojv.pjud.cl', { waitUntil: 'domcontentloaded' });
+    await page.goto(process.env.OJV, { waitUntil: 'domcontentloaded' });
 
     // --- Paso 1: clic en botón Clave Única ---
     console.log("🔍 Esperando botón Clave Única...");

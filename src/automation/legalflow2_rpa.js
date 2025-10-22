@@ -1,11 +1,16 @@
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
+const path = require('path');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
+  const now = Date.now();
+  const logDir = path.resolve(__dirname, '../logs'); // <-- ajusta según dónde está tu script
+  const ssPath = path.join(logDir, `error_${now}.png`);
+  const htmlPath = path.join(logDir, `error_${now}.html`);
 
   try {
     console.log('🚀 Iniciando proceso de creación de caso...');
@@ -171,12 +176,20 @@ const fs = require('fs');
 
   } catch (err) {
     console.error('💥 Error principal:', err);
+
     const now = Date.now();
-    const ss = `error_${now}.png`;
-    const html = `error_${now}.html`;
-    try { await page.screenshot({ path: ss, fullPage: true }); } catch {}
-    try { fs.writeFileSync(html, await page.content()); } catch {}
-    console.error(`Screenshot: ${ss}  HTML: ${html}`);
+    const ssPath = path.join(logDir, `error_${now}.png`);
+    const htmlPath = path.join(logDir, `error_${now}.html`);
+
+    try {
+      await page.screenshot({ path: ssPath, fullPage: true });
+      fs.writeFileSync(htmlPath, await page.content());
+      console.error(`📸 Screenshot: ${ssPath}`);
+      console.error(`📝 HTML: ${htmlPath}`);
+    } catch (sErr) {
+      console.error('⚠️ Error al guardar logs:', sErr);
+    }
+
     await browser.close();
     process.exit(1);
   }

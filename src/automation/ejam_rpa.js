@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
+const path = require('path');
 
 (async () => {
   // const browser = await chromium.launch({ headless: false });
@@ -105,7 +106,7 @@ const fs = require('fs');
     };
 
     // === GUARDAR JSON ===
-    const savePath = '../config/pjud_config.json';
+    const savePath = path.join(__dirname, '../config/pjud_config.json');
     fs.writeFileSync(savePath, JSON.stringify(pjConfig, null, 2));
     console.log(`✅ Archivo generado correctamente: ${savePath}`);
 

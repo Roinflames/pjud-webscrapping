@@ -33,13 +33,13 @@ async function runScript(scriptPath) {
 
   try {
     // Paso 1:
-    await runScript('./ejam_rpa.js');
+    await runScript('./automation/ejam_rpa.js');
 
     // Paso 2: Buscar y descargar ebook en PJUD
-    await runScript('./pjud_search.js');
+    await runScript('./automation/pjud_search.js');
 
     // Paso 3: Crear nuevo caso en LegalFlow
-    await runScript('./legalflow2_rpa.js');
+    await runScript('./automation/legalflow2_rpa.js');
 
     log('🎯 Flujo completo ejecutado exitosamente.');
   } catch (error) {

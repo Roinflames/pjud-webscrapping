@@ -1,5 +1,4 @@
-Tengo el script legalflow_rpa.js
-Tengo que rellenar los siguientes campos y hacer un envío del formulario en continuar:
+Tengo el script legalflow_rpa.js, quiero iterarlo ya que debo rellenar los siguientes campos y hacer un envío del formulario en continuar:
 
 <form action="https://demo1.legalflow.cl/casos" id="createUsersForm" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="_token" value="bosoztaQNzeC9uMSZ0hQ8cbRfT3FT65yrxPRSuJr" autocomplete="off">                        <ul class="nav nav-tabs custom-tabs custom-tab mb-5" id="myTab" role="tablist">

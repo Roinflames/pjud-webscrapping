@@ -105,7 +105,7 @@ const fs = require('fs');
     };
 
     // === GUARDAR JSON ===
-    const savePath = './pjud_config.json';
+    const savePath = '../config/pjud_config.json';
     fs.writeFileSync(savePath, JSON.stringify(pjConfig, null, 2));
     console.log(`✅ Archivo generado correctamente: ${savePath}`);
 

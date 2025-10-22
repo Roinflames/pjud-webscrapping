@@ -4,7 +4,7 @@ const fs = require('fs');
 
 (async () => {
   // === LEER JSON ===
-  const jsonPath = './pjud_config.json';
+  const jsonPath = '../config/pjud_config.json';
   if (!fs.existsSync(jsonPath)) {
     console.error(`[ERROR] ❌ No se encontró el archivo ${jsonPath}`);
     process.exit(1);

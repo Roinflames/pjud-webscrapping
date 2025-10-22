@@ -29,7 +29,7 @@ const fs = require('fs');
     console.log('✅ Formulario de Nuevo Caso abierto');
 
     // LEER DATOS DEL JSON
-    const requestData = JSON.parse(fs.readFileSync('./pjud_config.json', 'utf-8'));
+    const requestData = JSON.parse(fs.readFileSync('../config/pjud_config.json', 'utf-8'));
 
     // CAMPOS BÁSICOS
     await page.fill('#referencia_caso', requestData.cliente || '');

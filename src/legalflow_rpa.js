@@ -1,151 +1,190 @@
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
-
-// Selector del contenedor select2 y nombre de la opción
-async function select2Select(page, containerSelector, optionText) {
-  // Abrir dropdown
-  await page.click(containerSelector);
-
-  // Esperar input de búsqueda
-  const searchInput = '.select2-search__field';
-  await page.waitForSelector(searchInput);
-
-  // Escribir opción y presionar Enter
-  await page.fill(searchInput, optionText);
-  await page.keyboard.press('Enter');
-
-  // Pequeño delay para que se registre la selección
-  await page.waitForTimeout(500);
-}
-
-/**
- * Selecciona una o varias opciones en un select2 múltiple
- * @param page Playwright page
- * @param containerSelector Selector del contenedor visible del select2
- * @param options Array de strings con las opciones a seleccionar
- */
-async function select2MultiSelect(page, containerSelector, options) {
-  for (const optionText of options) {
-    // Abrir dropdown
-    await page.click(containerSelector);
-
-    // Esperar input de búsqueda
-    const searchInput = '.select2-search__field';
-    await page.waitForSelector(searchInput);
-
-    // Escribir la opción y presionar Enter
-    await page.fill(searchInput, optionText);
-    await page.keyboard.press('Enter');
-
-    // Pequeño delay para que se registre la selección
-    await page.waitForTimeout(300);
-  }
-}
-
-/**
- * Abre un select2 sin seleccionar ninguna opción.
- * Útil para campos obligatorios que todavía no tienen datos.
- */
-async function select2OpenOnly(page, containerSelector) {
-  await page.click(containerSelector);
-  // Esperar input de búsqueda
-  await page.waitForSelector('.select2-search__field', { timeout: 2000 }).catch(() => {});
-  // Mantener abierto por 0.3s
-  await page.waitForTimeout(300);
-}
+const path = require('path');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  // LOGIN
-  await page.goto(process.env.LEGALFLOW_URL);
-  await page.fill('#email', process.env.LEGALFLOW_USER);
-  await page.fill('#password', process.env.LEGALFLOW_PASS);
-  await page.click('.btn-login');
-  await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#side-menu', { timeout: 10000 });
-  console.log('✅ Login exitoso');
+  try {
+    // LOGIN
+    await page.goto(process.env.LEGALFLOW_URL);
+    await page.fill('#email', process.env.LEGALFLOW_USER);
+    await page.fill('#password', process.env.LEGALFLOW_PASS);
+    await page.click('.btn-login');
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#side-menu', { timeout: 10000 });
+    console.log('✅ Login exitoso');
 
-  // NAVEGAR A CASOS
-  await page.click('a[href*="/casos"]');
-  await page.waitForLoadState('networkidle');
+    // NAVEGAR A CASOS
+    await page.click('a[href*="/casos"]');
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('a[href*="/casos/create"]', { timeout: 15000 });
+    console.log('✅ Sección Casos abierta');
 
-  console.log("URL actual después del clic:", page.url());
-  await page.screenshot({ path: 'casos_debug.png' });
+    // ABRIR NUEVO CASO
+    await page.locator('a[href*="/casos/create"]').click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('#referencia_caso', { timeout: 30000 });
+    console.log('✅ Formulario de Nuevo Caso abierto');
 
-  // Esperar botón "Nuevo Caso"
-  await page.waitForSelector('a[href*="/casos/create"]', { timeout: 15000 });
-  console.log('✅ Sección Casos abierta');
+    // LEER DATOS DEL JSON
+    const requestData = JSON.parse(fs.readFileSync('./pjud_config.json', 'utf-8'));
 
-  // ABRIR NUEVO CASO
-  await page.locator('a[href*="/casos/create"]').click();
-  await page.waitForLoadState('networkidle');
-  await page.waitForSelector('#referencia_caso', { timeout: 30000 });
-  console.log('✅ Formulario de Nuevo Caso abierto');
+    // LLENAR FORMULARIO (campos simples)
+    await page.fill('#referencia_caso', requestData.cliente || '');
+    await page.fill('#descripcion_caso', `Caso relacionado con folio ${requestData.folio || ''}`);
+    await page.fill('#asunto_caso', requestData.caratulado || '');
+    await page.fill('#referencia_demandante', requestData.cliente || '');
 
-  // LEER DATOS DEL JSON
-  const requestData = JSON.parse(fs.readFileSync('../assets/request.json', 'utf-8'));
+    // Fechas (usar fill si es input tipo date)
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      await page.fill('#fechai', today);
+      await page.fill('#fechait', today);
+    } catch (e) {
+      // Fallback a evaluate si el input necesita eventos
+      await page.evaluate(({ sel, val }) => {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.value = val;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }, { sel: '#fechai', val: today });
+      await page.evaluate(({ sel, val }) => {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.value = val;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }, { sel: '#fechait', val: today });
+    }
 
-  // LLENAR FORMULARIO
-  await page.fill('#referencia_caso', requestData.ReferenciaCliente);
-  await page.fill('#descripcion_caso', requestData.NaveDescripcionCaso);
-  await page.fill('#asunto_caso', requestData.AsuntoCaratula);
-  await page.fill('#referencia_demandante', requestData.ReferenciaDemandante);
-  await page.fill('#fechai', requestData.FechaInicio);
-  
-  // SELECT2: Abogado Principal
-  await select2Select(page, '#select2-abogado_principal-container', requestData.AbogadoPrincipal);
+    console.log('⚠️ Saltando Abogado Principal y Abogados Colaboradores');
 
-  if (requestData.TipoCobro.CobroFijo) await page.check('#cobrofijo');
-  if (requestData.TipoCobro.CobroPorcentaje) await page.check('#cobroporciento');
-  
-  if (requestData.FechaIngresoTribunal) {
-    await page.evaluate(({ selector, value }) => {
-      const input = document.querySelector(selector);
-      if (input) input.value = value;
-    }, { selector: '#fechait', value: requestData.FechaIngresoTribunal });
+    // Otros campos
+    if (requestData.TipoCobro?.CobroFijo) await page.check('#cobrofijo').catch(() => {});
+    if (requestData.TipoCobro?.CobroPorcentaje) await page.check('#cobroporciento').catch(() => {});
+    await page.fill('#bill_input', requestData.folio || '').catch(() => {});
+    await page.fill('#cuantia', requestData.Cuantia?.toString() || '').catch(() => {});
 
-    await page.waitForTimeout(200); // para que el framework registre el cambio
+    // ----- Observaciones (textarea) -----
+    const observacionesText = requestData.Observaciones || '';
+
+    async function safeFillTextarea(selector, text, attempts = 3) {
+      for (let i = 0; i < attempts; i++) {
+        try {
+          console.log(`🔁 Intento ${i+1} de rellenar ${selector}`);
+          // esperar visible
+          await page.waitForSelector(selector, { state: 'visible', timeout: 8000 });
+
+          // asegurar que esté en viewport
+          await page.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (el) {
+              el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'auto' });
+            }
+          }, selector);
+
+          // Quitar readonly/disabled si existiera (con precaución)
+          await page.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return;
+            if (el.hasAttribute('readonly')) el.removeAttribute('readonly');
+            if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
+          }, selector);
+
+          // click para asegurar foco
+          await page.click(selector, { timeout: 3000 });
+
+          // intentar fill (rápido)
+          await page.fill(selector, text, { timeout: 5000 });
+          // confirmar eventos
+          await page.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (el) {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }, selector);
+
+          // chequeo simple: leer valor desde página
+          const current = await page.$eval(selector, el => el.value);
+          if ((current || '').trim() === (text || '').trim()) {
+            console.log('✅ Observaciones rellenado con fill correctamente');
+            return;
+          } else {
+            // si fill no dejó el texto completo, intentar type
+            await page.click(selector);
+            await page.fill(selector, ''); // limpiar
+            await page.type(selector, text, { delay: 20 });
+            const afterType = await page.$eval(selector, el => el.value);
+            if ((afterType || '').trim() === (text || '').trim()) {
+              console.log('✅ Observaciones rellenado con type correctamente');
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Intento fallido:', err.message?.slice(0,200));
+          // esperar un poco antes de reintentar
+          await page.waitForTimeout(800);
+        }
+      }
+
+      // Si después de los intentos no funcionó: guardar screenshot para diagnóstico y lanzar error
+      const screenshotPath = path.join(process.cwd(), `error_observaciones_${Date.now()}.png`);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      throw new Error(`No se pudo rellenar ${selector}. Screenshot guardado en ${screenshotPath}`);
+    }
+
+    // Ejecutar safeFillTextarea
+    await safeFillTextarea('#observaciones', observacionesText);
+
+    // ----- Fin Observaciones -----
+
+    // Datos PJUD
+    await page.selectOption('#competencia', { value: requestData.competencia }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.selectOption('#corte', { value: requestData.corte }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.selectOption('#tribunal_id', { value: requestData.tribunal }).catch(() => {});
+
+    if (requestData.rit) {
+      const [rol, anio] = requestData.rit.split('-');
+      await page.fill('#rol_pjud', rol || '').catch(() => {});
+      await page.fill('#anio_pjud', anio || '').catch(() => {});
+    }
+
+    await page.selectOption('#etapa_procesal', { label: 'Etapa inicial' }).catch(() => {});
+    await page.selectOption('#estado_caso', { label: 'En trámite' }).catch(() => {});
+    await page.selectOption('#estado_casoi', { label: 'Tramitación' }).catch(() => {});
+    await page.selectOption('#tipo_caso', { label: 'Civil' }).catch(() => {});
+
+    // GUARDAR
+    await page.click('#btnguardar');
+    await page.waitForURL('**/edit/**', { timeout: 30000 });
+    console.log('✅ Formulario guardado y redirigido a la página de edición');
+
+    const caseUrl = page.url();
+    console.log('\n🧭 URL del nuevo caso creado:\n👉', caseUrl, '\n');
+
+    console.log('🔓 Navegador permanecerá abierto para inspección manual.');
+    await page.waitForTimeout(99999999);
+    await browser.close();
+  } catch (err) {
+    console.error('💥 Error principal:', err);
+    // por seguridad: guardar screenshot y html para diagnosticar
+    const now = Date.now();
+    const ss = `error_${now}.png`;
+    const html = `error_${now}.html`;
+    try { await page.screenshot({ path: ss, fullPage: true }); } catch(e) {}
+    try { fs.writeFileSync(html, await page.content()); } catch(e) {}
+    console.error(`Screenshot: ${ss}  HTML: ${html}`);
+    await browser.close();
+    process.exit(1);
   }
-
-  // Abrir select2 múltiple sin seleccionar nada
-  await select2OpenOnly(page, '#select2-abogados-container');
-
-  await page.fill('#bill_input', requestData.BillOfLading);
-  await page.fill('#cuantia', requestData.Cuantia.toString());
-  await page.fill('#observaciones', requestData.Observaciones || '');
-
-  // Datos PJUD
-  await page.selectOption('#competencia', { label: requestData.DatosPJUD.Competencia });
-  await page.waitForTimeout(1000);
-  await page.selectOption('#corte', { label: requestData.DatosPJUD.Corte });
-  await page.waitForTimeout(1000);
-  await page.selectOption('#tribunal_id', { label: requestData.DatosPJUD.Tribunal });
-  await page.fill('#rol_pjud', requestData.DatosPJUD.Rol);
-  await page.fill('#anio_pjud', requestData.DatosPJUD.Ano.toString());
-
-  await page.selectOption('#etapa_procesal', { label: requestData.EtapaProcesal });
-  await page.selectOption('#estado_caso', { label: requestData.EstadoCaso });
-  await page.selectOption('#estado_casoi', { label: 'Tramitación' });
-  await page.selectOption('#tipo_caso', { label: requestData.TipoCaso });
-
-  // GUARDAR
-  await page.click('#btnguardar');
-  await page.waitForURL('**/edit/**', { timeout: 30000 });
-  console.log('✅ Formulario guardado y redirigido a la página de edición');
-
-  // CAPTURAR Y MOSTRAR LA URL DEL NUEVO CASO
-  const caseUrl = page.url();
-  console.log('\n🧭 URL del nuevo caso creado:\n👉', caseUrl, '\n');
-
-  // Mantener abierto el navegador
-  console.log('🔓 Navegador permanecerá abierto para inspección manual.');
-  console.log('Presiona CTRL + C para detener el script cuando termines.\n');
-
-  // Mantener la sesión viva
-  await page.waitForTimeout(99999999);
-
 })();

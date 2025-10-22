@@ -111,6 +111,7 @@ const fs = require('fs');
     console.error('[ERROR] ❌ Error durante la ejecución:', error);
   } finally {
     console.log('[INFO] 🔓 Manteniendo navegador abierto para inspección manual');
-    await page.waitForTimeout(9999999);
+    // await page.waitForTimeout(9999999);
+    await browser.close();
   }
 })();

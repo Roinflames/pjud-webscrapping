@@ -19,7 +19,7 @@ function log(message, type = 'INFO') {
   try {
     log('🚀 Iniciando RPA de login a EJAM');
 
-    // Abrir página de login
+    // Parte 1: Abrir página de login
     const loginUrl = process.env.EJAM_URL + '/login';
     await page.goto(loginUrl, { waitUntil: 'networkidle' });
     log('Página de login cargada ✅');
@@ -49,7 +49,7 @@ function log(message, type = 'INFO') {
     log('Login exitoso ✅');
     log(`URL actual: ${page.url()}`);
 
-    // Captura de pantalla post-login
+    // Parte 2: Captura de pantalla post-login
     await page.screenshot({ path: 'ejam_login_success.png' });
     log('Captura de pantalla guardada: ejam_login_success.png');
 
@@ -62,6 +62,20 @@ function log(message, type = 'INFO') {
     // Captura de pantalla de contratos
     await page.screenshot({ path: 'ejam_contratos.png' });
     log('Captura de pantalla guardada: ejam_contratos.png');
+
+    // Parte 3: Suponiendo que ya tienes page inicializada
+
+    // 1️⃣ Llenar el input bFolio
+    const numeroFolio = '24810'; // reemplaza con el número que quieras
+    await page.fill('input[name="bFolio"]', numeroFolio);
+    console.log(`[INFO] Input bFolio completado con: ${numeroFolio}`);
+
+    // 2️⃣ Click en el botón de buscar cliente
+    await page.click('button.btn.btn-primary:has(i.fas.fa-search)');
+    console.log('[INFO] Botón de buscar cliente presionado');
+
+    // 3️⃣ Esperar que cargue resultado (opcional)
+    await page.waitForTimeout(1000); // o espera un selector que aparezca con el resultado
 
   } catch (error) {
     log(`Ocurrió un error en el RPA: ${error}`, 'ERROR');

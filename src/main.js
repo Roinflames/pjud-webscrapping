@@ -39,7 +39,7 @@ async function runScript(scriptPath) {
     await runScript('./pjud_search.js');
 
     // Paso 3: Crear nuevo caso en LegalFlow
-    await runScript('./legalflow_rpa.js');
+    await runScript('./legalflow2_rpa.js');
 
     log('🎯 Flujo completo ejecutado exitosamente.');
   } catch (error) {

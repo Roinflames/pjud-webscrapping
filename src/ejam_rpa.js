@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 
 (async () => {
+  // const browser = await chromium.launch({ headless: false });
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -83,16 +84,17 @@ const fs = require('fs');
 
     // === MAPEO DE JUZGADO → CONFIG PJUD ===
     const juzgadoMap = {
-      "18 Juzgado Civil de Santiago": { competencia: "3", corte: "90", tribunal: "276" },
-      "9 Juzgado Civil de Santiago": { competencia: "3", corte: "90", tribunal: "267" },
+      "18 Juzgado Civil de Santiago": { competencia: "3", corte: "90", tribunal: "38" },
+      "9 Juzgado Civil de Santiago": { competencia: "3", corte: "90", tribunal: "28" },
       // Agrega más según necesidad
     };
+    const tribunalName = data.caratulado?.trim(); // "18 Juzgado Civil de Santiago"
 
     const pjConfig = {
       rit: `${data.rol}-${data.año}`,
-      competencia: juzgadoMap[data.juzgado]?.competencia || "3",
-      corte: juzgadoMap[data.juzgado]?.corte || "90",
-      tribunal: juzgadoMap[data.juzgado]?.tribunal || "276",
+      competencia: juzgadoMap[tribunalName]?.competencia || "3",
+      corte: juzgadoMap[tribunalName]?.corte || "90",
+      tribunal: juzgadoMap[tribunalName]?.tribunal || "276",
       tipoCausa: data.tipoCausa,
       cliente: data.nombreCliente,
       rut: data.rut,

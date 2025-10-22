@@ -1,0 +1,30 @@
+[2025-10-22T15:08:02.088Z] [INFO] 🚀 Iniciando RPA de login a EJAM
+[2025-10-22T15:08:03.437Z] [INFO] Página de login cargada ✅
+[2025-10-22T15:08:03.486Z] [INFO] Credenciales completadas
+[2025-10-22T15:08:14.427Z] [ERROR] Ocurrió un error en el RPA: TimeoutError: page.waitForNavigation: Timeout 10000ms exceeded.
+=========================== logs ===========================
+waiting for navigation until "networkidle"
+============================================================
+[2025-10-22T15:08:14.429Z] [INFO] 🔓 Manteniendo el navegador abierto para inspección manual
+[2025-10-22T15:10:09.701Z] [INFO] 🚀 Iniciando RPA de login a EJAM
+[2025-10-22T15:10:11.065Z] [INFO] Página de login cargada ✅
+[2025-10-22T15:10:11.118Z] [INFO] Credenciales completadas
+[2025-10-22T15:10:12.337Z] [INFO] Login exitoso, redirigido a /dashboard ✅
+[2025-10-22T15:10:12.363Z] [INFO] Login exitoso ✅
+[2025-10-22T15:10:12.363Z] [INFO] URL actual: http://ejamtest.codifica.cl/dashboard
+[2025-10-22T15:10:12.424Z] [INFO] Captura de pantalla guardada: ejam_login_success.png
+[2025-10-22T15:10:14.640Z] [INFO] Navegado a Contratos ✅
+[2025-10-22T15:10:14.641Z] [INFO] URL actual: http://ejamtest.codifica.cl/contrato/
+[2025-10-22T15:10:14.710Z] [INFO] Captura de pantalla guardada: ejam_contratos.png
+[2025-10-22T15:10:14.711Z] [INFO] 🔓 Manteniendo el navegador abierto para inspección manual
+[2025-10-22T15:13:27.055Z] [INFO] 🚀 Iniciando RPA de login a EJAM
+[2025-10-22T15:13:28.355Z] [INFO] Página de login cargada ✅
+[2025-10-22T15:13:28.406Z] [INFO] Credenciales completadas
+[2025-10-22T15:13:29.493Z] [INFO] Login exitoso, redirigido a /dashboard ✅
+[2025-10-22T15:13:29.522Z] [INFO] Login exitoso ✅
+[2025-10-22T15:13:29.522Z] [INFO] URL actual: http://ejamtest.codifica.cl/dashboard
+[2025-10-22T15:13:29.586Z] [INFO] Captura de pantalla guardada: ejam_login_success.png
+[2025-10-22T15:13:31.528Z] [INFO] Navegado a Contratos ✅
+[2025-10-22T15:13:31.529Z] [INFO] URL actual: http://ejamtest.codifica.cl/contrato/
+[2025-10-22T15:13:31.599Z] [INFO] Captura de pantalla guardada: ejam_contratos.png
+[2025-10-22T15:13:31.599Z] [INFO] 🔓 Manteniendo el navegador abierto para inspección manual

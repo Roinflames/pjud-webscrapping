@@ -1,10 +1,59 @@
-// ¿Qué realiza este script?
-// Login a legalflow
-// Llenar formulario
-// Crear caso
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
+
+// Selector del contenedor select2 y nombre de la opción
+async function select2Select(page, containerSelector, optionText) {
+  // Abrir dropdown
+  await page.click(containerSelector);
+
+  // Esperar input de búsqueda
+  const searchInput = '.select2-search__field';
+  await page.waitForSelector(searchInput);
+
+  // Escribir opción y presionar Enter
+  await page.fill(searchInput, optionText);
+  await page.keyboard.press('Enter');
+
+  // Pequeño delay para que se registre la selección
+  await page.waitForTimeout(500);
+}
+
+/**
+ * Selecciona una o varias opciones en un select2 múltiple
+ * @param page Playwright page
+ * @param containerSelector Selector del contenedor visible del select2
+ * @param options Array de strings con las opciones a seleccionar
+ */
+async function select2MultiSelect(page, containerSelector, options) {
+  for (const optionText of options) {
+    // Abrir dropdown
+    await page.click(containerSelector);
+
+    // Esperar input de búsqueda
+    const searchInput = '.select2-search__field';
+    await page.waitForSelector(searchInput);
+
+    // Escribir la opción y presionar Enter
+    await page.fill(searchInput, optionText);
+    await page.keyboard.press('Enter');
+
+    // Pequeño delay para que se registre la selección
+    await page.waitForTimeout(300);
+  }
+}
+
+/**
+ * Abre un select2 sin seleccionar ninguna opción.
+ * Útil para campos obligatorios que todavía no tienen datos.
+ */
+async function select2OpenOnly(page, containerSelector) {
+  await page.click(containerSelector);
+  // Esperar input de búsqueda
+  await page.waitForSelector('.select2-search__field', { timeout: 2000 }).catch(() => {});
+  // Mantener abierto por 0.3s
+  await page.waitForTimeout(300);
+}
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -38,7 +87,7 @@ const fs = require('fs');
   console.log('✅ Formulario de Nuevo Caso abierto');
 
   // LEER DATOS DEL JSON
-  const requestData = JSON.parse(fs.readFileSync('assets/request.json', 'utf-8'));
+  const requestData = JSON.parse(fs.readFileSync('../assets/request.json', 'utf-8'));
 
   // LLENAR FORMULARIO
   await page.fill('#referencia_caso', requestData.ReferenciaCliente);
@@ -46,12 +95,25 @@ const fs = require('fs');
   await page.fill('#asunto_caso', requestData.AsuntoCaratula);
   await page.fill('#referencia_demandante', requestData.ReferenciaDemandante);
   await page.fill('#fechai', requestData.FechaInicio);
-  await page.selectOption('#abogado_principal', { label: requestData.AbogadoPrincipal });
+  
+  // SELECT2: Abogado Principal
+  await select2Select(page, '#select2-abogado_principal-container', requestData.AbogadoPrincipal);
 
   if (requestData.TipoCobro.CobroFijo) await page.check('#cobrofijo');
   if (requestData.TipoCobro.CobroPorcentaje) await page.check('#cobroporciento');
+  
+  if (requestData.FechaIngresoTribunal) {
+    await page.evaluate(({ selector, value }) => {
+      const input = document.querySelector(selector);
+      if (input) input.value = value;
+    }, { selector: '#fechait', value: requestData.FechaIngresoTribunal });
 
-  await page.fill('#fechait', requestData.FechaIngresoTribunal || '');
+    await page.waitForTimeout(200); // para que el framework registre el cambio
+  }
+
+  // Abrir select2 múltiple sin seleccionar nada
+  await select2OpenOnly(page, '#select2-abogados-container');
+
   await page.fill('#bill_input', requestData.BillOfLading);
   await page.fill('#cuantia', requestData.Cuantia.toString());
   await page.fill('#observaciones', requestData.Observaciones || '');

@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 (async () => {
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
+  console.log('LEGALFLOW_URL:', process.env.LEGALFLOW_URL);
 
   // Login
   await page.goto(process.env.LEGALFLOW_URL);

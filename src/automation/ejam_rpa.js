@@ -9,9 +9,6 @@ const path = require('path');
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  console.log(process.env.EJAM_USER)
-  console.log(process.env.EJAM_PASS)
-
   try {
     console.log('[INFO] 🚀 Iniciando extracción de datos desde EJAM');
 

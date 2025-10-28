@@ -32,14 +32,15 @@ async function runScript(scriptPath) {
   log('=== 🚀 Inicio del flujo RPA ===');
 
   try {
-    // Paso 1:
+    // Paso 1: Buscar al usuario en el CRM por su folio: 24734 DOING
     await runScript('./automation/ejam_rpa.js');
 
-    // Paso 2: Buscar y descargar ebook en PJUD
+    // Paso 2: Buscar y descargar ebook en PJUD: A 34 B 37 DONE 
+    // Detectar actualizaciones en el PJUD PENDING
     await runScript('./automation/pjud_search.js');
 
-    // Paso 3: Crear nuevo caso en LegalFlow
-    await runScript('./automation/legalflow2_rpa.js');
+    // Paso 3: Crear nuevo o actualizar causa en CRM
+    // await runScript('./automation/legalflow2_rpa.js');
 
     log('🎯 Flujo completo ejecutado exitosamente.');
   } catch (error) {

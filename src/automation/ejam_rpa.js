@@ -22,12 +22,12 @@ const path = require('path');
     // === IR A CONTRATO ===
     await page.goto('http://ejamtest.codifica.cl/contrato/', { waitUntil: 'networkidle' });
 
-    const folio = process.env.EJAM_FOLIO || '24810';
+    const folio = process.env.EJAM_FOLIO;
     await page.fill('input.bFolio', folio);
     await page.click('button.btn.btn-primary i.fas.fa-search');
     console.log(`[INFO] 🔍 Buscando contrato con folio ${folio}`);
 
-    await page.waitForSelector(`a[href*="/contrato/${folio}/linea_tiempo"]`, { timeout: 15000 });
+    await page.waitForSelector(`a[href*="/contrato/${folio}/linea_tiempo"]`, { timeout: 5000 });
     await page.click(`a[href*="/contrato/${folio}/linea_tiempo"]`);
     await page.waitForLoadState('networkidle');
     console.log('[INFO] 📄 Página de detalle abierta');

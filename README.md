@@ -27,3 +27,23 @@ Ejemplos
 Este paso lo realizarán Hans/Jhon
 
 ## Paso - Notificación por EMAIL
+
+
+📁 Estructura recomendada del proyecto
+```pgsql 
+src/
+  automation/
+    pjud/
+      index.js ✅ 6. index.js — Archivo principal
+      browser.js ✅ 1. browser.js — Manejo del navegador
+      navigation.js ✅ 3. navigation.js — Toda la navegación del PJUD
+      extract.js ✅ 4. extract.js — Extracción de tabla de movimientos
+      ebook.js ✅ 5. ebook.js — Descarga del PDF eBook
+      utils.js ✅ 2. utils.js — Paths, logs y carga de JSON
+  config/
+    pjud_config.json
+  assets/
+    ebook/
+logs/
+.env
+```

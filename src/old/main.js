@@ -1,6 +1,6 @@
 // Orquestador del flujo
 require('dotenv').config();
-const { log } = require('./utils/logger');
+const { log } = require('../../utils/logger');
 
 async function runScript(scriptPath) {
   try {
@@ -33,14 +33,14 @@ async function runScript(scriptPath) {
 
   try {
     // Paso 1: Buscar al usuario en el CRM por su folio: 24734 DOING
-    // await runScript('./automation/ejam_rpa.js');
+    // await runScript('./ejam_rpa.js');
 
     // Paso 2: Buscar y descargar ebook en PJUD: A 34 B 37 DONE 
     // Detectar actualizaciones en el PJUD PENDING
-    await runScript('./automation/pjud_search.js');
+    await runScript('./pjud_search.js');
 
     // Paso 3: Crear nuevo o actualizar causa en CRM
-    // await runScript('./automation/legalflow2_rpa.js');
+    // await runScript('./legalflow2_rpa.js');
 
     log('🎯 Flujo completo ejecutado exitosamente.');
   } catch (error) {

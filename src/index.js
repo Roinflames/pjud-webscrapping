@@ -3,16 +3,16 @@ const fs = require('fs');
 const path = require('path');
 
 const { startBrowser } = require('./browser');
-const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
-const { fillForm, openDetalle } = require('./form');
-const { extractTable } = require('./table');
 const { downloadEbook } = require('./ebook');
+const { fillForm, openDetalle } = require('./form');
+const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
+const { extractTable } = require('./table');
 const { saveErrorEvidence } = require('./utils');
 
 (async () => {
-  const logDir = path.resolve(__dirname, '../../logs');
-  const ebookDir = path.resolve(__dirname, '../assets/ebook');
-  const jsonPath = path.resolve(__dirname, '../config/pjud_config.json');
+  const logDir = path.resolve(__dirname, 'logs');
+  const ebookDir = path.resolve(__dirname, 'assets/ebook');
+  const jsonPath = path.resolve(__dirname, 'config/pjud_config.json');
 
   [logDir, ebookDir].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -40,6 +40,15 @@ const { saveErrorEvidence } = require('./utils');
 
     const rows = await extractTable(page);
     console.log(rows);
+
+    // Exportar resultados
+    const outputDir = path.resolve(__dirname, 'outputs');
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    const { exportToJSON, exportToCSV } = require('./exporter');
+
+    exportToJSON(rows, outputDir, CONFIG.rit);
+    exportToCSV(rows, outputDir, CONFIG.rit);
 
     await downloadEbook(page, context, CONFIG, ebookDir);
 

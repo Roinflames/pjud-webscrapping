@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { startBrowser } = require('./browser');
+const { loadConfig } = require('./config');
 const { downloadEbook } = require('./ebook');
 const { fillForm, openDetalle } = require('./form');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
@@ -23,7 +24,7 @@ const { saveErrorEvidence } = require('./utils');
     process.exit(1);
   }
 
-  const CONFIG = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+  const CONFIG = loadConfig();
 
   const screenshotPath = path.join(logDir, `pjud_error_${Date.now()}.png`);
   const htmlPath = path.join(logDir, `pjud_error_${Date.now()}.html`);
@@ -50,12 +51,17 @@ const { saveErrorEvidence } = require('./utils');
     exportToJSON(rows, outputDir, CONFIG.rit);
     exportToCSV(rows, outputDir, CONFIG.rit);
 
-    await downloadEbook(page, context, CONFIG, ebookDir);
+    // DESCARGAR PDFs de la tabla
+    const { downloadPDFsFromTable } = require('./pdfDownloader');
+    await downloadPDFsFromTable(page, context, outputDir, CONFIG.rit);
 
+    // Descargar eBook
+    // await downloadEbook(page, context, CONFIG, ebookDir);
   } catch (err) {
     console.error('💥 Error:', err);
     await saveErrorEvidence(page, screenshotPath, htmlPath);
   } finally {
+    await page.pause();
     console.log('🧭 Proceso finalizado.');
     await browser.close();
   }

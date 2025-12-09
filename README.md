@@ -47,3 +47,9 @@ src/
 logs/
 .env
 ```
+
+# TODO
+✅ logging avanzado
+✅ retry automático si falla el PJUD
+✅ exportar los datos a JSON/CSV
+✅ procesar múltiples RIT desde una lista

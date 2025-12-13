@@ -144,3 +144,32 @@ playwright-report
 
 # PDF
 **.pdf
+
+# SQL files
+codi_ejamtest.sql
+
+# Screenshots de debug
+debug_*.png
+debug_*.jpg
+
+# Outputs del scraping
+src/outputs/*.json
+src/outputs/*.csv
+src/outputs/*.pdf
+
+# Logs
+src/logs/*.log
+src/logs/*.json
+
+# Archivos temporales
+*.backup
+*.bak
+causa_backup_*.csv
+
+# Archivos de configuración sensibles (ya está .env pero por si acaso)
+.env.local
+.env.production
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db

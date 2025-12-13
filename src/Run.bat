@@ -1,9 +1,4 @@
 @echo off
-
-cd "C:\Proyectos\REPORTES\Desarrollo"
-
-node Mailer.js
-
-
-
-
+cd /d "%~dp0"
+node index.js
+pause

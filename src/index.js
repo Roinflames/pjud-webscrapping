@@ -26,21 +26,50 @@ const { saveErrorEvidence } = require('./utils');
 
   const CONFIG = loadConfig();
 
+  // Verificar que existe OJV_URL
+  if (!process.env.OJV_URL) {
+    console.error('❌ ERROR: No se encontró OJV_URL en .env');
+    console.log('💡 Ejecuta: node setup-env.js');
+    console.log('   O crea manualmente un archivo .env con:');
+    console.log('   OJV_URL=https://oficinajudicialvirtual.pjud.cl/home/index.php');
+    process.exit(1);
+  }
+
   const screenshotPath = path.join(logDir, `pjud_error_${Date.now()}.png`);
   const htmlPath = path.join(logDir, `pjud_error_${Date.now()}.html`);
 
+  console.log('🌐 URL configurada:', process.env.OJV_URL);
   const { browser, context, page } = await startBrowser(process.env.OJV_URL);
 
   try {
     console.log('🌐 Página cargada:', page.url());
+    console.log('📄 Título:', await page.title());
+
+    // Verificar que la página no esté en blanco
+    const bodyContent = await page.evaluate(() => document.body.innerText);
+    if (!bodyContent || bodyContent.trim().length === 0) {
+      throw new Error('La página está en blanco. Verifica la URL y la conexión.');
+    }
+    console.log('✅ Página tiene contenido');
 
     await closeModalIfExists(page);
+    
+    // Esperar menos tiempo
+    await page.waitForTimeout(500);
+    
     await goToConsultaCausas(page);
     await fillForm(page, CONFIG);
     await openDetalle(page);
 
+    // Screenshot antes de extraer tabla
+    await page.screenshot({ path: 'debug_11_antes_extraer_tabla.png', fullPage: false });
+    console.log('📸 Screenshot: debug_11_antes_extraer_tabla.png');
+
     const rows = await extractTable(page);
-    console.log(rows);
+    console.log('📊 Datos extraídos:', rows.length, 'filas');
+    if (rows.length > 0) {
+      console.log('Primera fila:', rows[0]);
+    }
 
     // Exportar resultados
     const outputDir = path.resolve(__dirname, 'outputs');
@@ -57,11 +86,18 @@ const { saveErrorEvidence } = require('./utils');
 
     // Descargar eBook
     // await downloadEbook(page, context, CONFIG, ebookDir);
+    
+    console.log('✅ Scraping completado exitosamente!');
+    console.log('📊 Resultados guardados en:', outputDir);
+    
+    // Pausa opcional - Comentar esta línea si no quieres pausa
+    // console.log('⏸️ Pausando para revisión (presiona Enter para continuar)...');
+    // await page.pause();
   } catch (err) {
     console.error('💥 Error:', err);
     await saveErrorEvidence(page, screenshotPath, htmlPath);
+    // No hacer pause aquí para que se cierre el navegador
   } finally {
-    await page.pause();
     console.log('🧭 Proceso finalizado.');
     await browser.close();
   }

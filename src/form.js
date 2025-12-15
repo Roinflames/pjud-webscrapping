@@ -1,4 +1,5 @@
 const { goToConsultaCausas } = require('./navigation');
+const { detectCaptcha, checkIfBlocked } = require('./utils/captcha-detector');
 
 // Función para resetear el formulario (volver a estado inicial)
 async function resetForm(page) {
@@ -43,7 +44,7 @@ async function resetForm(page) {
     }
     
     // Esperar a que el formulario esté disponible
-    await page.waitForSelector('#competencia', { timeout: 20000 });
+    await page.waitForSelector('#competencia', { timeout: 30000 }); // Aumentado de 20s a 30s
     
     // Limpiar campos - solo hacer click para enfocar, no resetear valores
     // (reseteamos solo si es necesario, pero normalmente solo necesitamos que esté visible)
@@ -108,17 +109,17 @@ async function fillForm(page, CONFIG) {
       }
     }
     
-    // Screenshot antes de llenar formulario
-    await page.screenshot({ path: 'debug_06_antes_formulario.png', fullPage: false });
-    console.log('📸 Screenshot: debug_06_antes_formulario.png');
+    // Screenshot solo si no está en modo headless (deshabilitado en headless)
+    // await page.screenshot({ path: 'debug_06_antes_formulario.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_06_antes_formulario.png');
     
     // Esperar a que el formulario esté disponible
     console.log('⏳ Esperando formulario...');
-    await page.waitForSelector('#competencia', { timeout: 20000 });
+    await page.waitForSelector('#competencia', { timeout: 30000 }); // Aumentado de 20s a 30s
     console.log('✅ Formulario disponible');
     
-    // Delay humano antes de empezar a escribir (500-1200ms)
-    await page.waitForTimeout(500 + Math.random() * 700);
+    // Delay optimizado antes de empezar a escribir (200-500ms)
+    await page.waitForTimeout(200 + Math.random() * 300);
 
     // Llenar campos como humano (con delays variables)
     // El formulario tiene dependencias: competencia → corte → tribunal → tipoCausa
@@ -127,7 +128,7 @@ async function fillForm(page, CONFIG) {
     const competencia = CONFIG.competencia || '3'; // Default a Civil
     console.log(`📋 Competencia: ${competencia} (Civil - todas las causas con RIT son civiles)`);
     await page.selectOption('#competencia', competencia);
-    await page.waitForTimeout(500 + Math.random() * 500); // Esperar a que se carguen opciones
+    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado: reducido de 500-1000ms a 200-500ms
     
     // 2. Esperar a que se habilite Corte y seleccionarlo (opcional)
     const corte = CONFIG.corte || '90'; // Default
@@ -139,11 +140,11 @@ async function fillForm(page, CONFIG) {
           const corteSelect = document.querySelector('#conCorte');
           return corteSelect && !corteSelect.disabled && corteSelect.options.length > 1;
         },
-        { timeout: 15000 }
+        { timeout: 20000 } // Aumentado de 15s a 20s para evitar timeouts
       );
       console.log('✅ Campo Corte habilitado');
       
-      await page.waitForTimeout(1000 + Math.random() * 1000);
+      await page.waitForTimeout(300 + Math.random() * 400); // Optimizado: reducido de 1000-2000ms a 300-700ms
       
       // Verificar que la opción existe antes de seleccionar
       const corteExists = await page.evaluate((corteValue) => {
@@ -162,44 +163,12 @@ async function fillForm(page, CONFIG) {
     } catch (error) {
       console.warn('⚠️ No se pudo seleccionar corte, continuando sin corte...');
     }
-    await page.waitForTimeout(500 + Math.random() * 500);
+    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado
 
-    // 3. Esperar a que se habilite Tribunal y seleccionarlo (OPCIONAL - puede ser NULL)
-    if (CONFIG.tribunal && CONFIG.tribunal !== 'NULL' && CONFIG.tribunal.trim() !== '') {
-      console.log(`📋 Tribunal: ${CONFIG.tribunal}`);
-      try {
-        await page.waitForFunction(
-          () => {
-            const tribunal = document.querySelector('#conTribunal');
-            return tribunal && !tribunal.disabled && tribunal.options.length > 1;
-          },
-          { timeout: 15000 }
-        );
-        console.log('✅ Campo Tribunal habilitado');
-        
-        await page.waitForTimeout(1000 + Math.random() * 1000);
-        
-        // Verificar que la opción existe antes de seleccionar
-        const tribunalExists = await page.evaluate((tribunalValue) => {
-          const select = document.querySelector('#conTribunal');
-          if (!select) return false;
-          const options = Array.from(select.options);
-          return options.some(opt => opt.value === tribunalValue || opt.value === String(tribunalValue));
-        }, CONFIG.tribunal);
-        
-        if (tribunalExists) {
-          await page.selectOption('#conTribunal', CONFIG.tribunal);
-          console.log('✅ Tribunal seleccionado');
-        } else {
-          console.warn(`⚠️ Tribunal ${CONFIG.tribunal} no encontrado, continuando sin tribunal...`);
-        }
-      } catch (error) {
-        console.warn('⚠️ No se pudo seleccionar tribunal, continuando sin tribunal...');
-      }
-      await page.waitForTimeout(500 + Math.random() * 500);
-    } else {
-      console.log('📋 Tribunal: No especificado (opcional, continuando sin tribunal)');
-    }
+    // 3. Tribunal: SIEMPRE omitido para optimizar velocidad
+    // Todas las causas con RIT son civiles, tribunal es opcional y ralentiza el proceso
+    console.log('📋 Tribunal: Omitido (optimización: siempre buscar sin tribunal)');
+    // No esperamos ni seleccionamos tribunal - ahorra 1-3 segundos por causa
 
     // 4. Esperar a que se habilite Tipo Causa y seleccionarlo
     console.log(`📋 Tipo Causa: ${CONFIG.tipoCausa}`);
@@ -209,7 +178,7 @@ async function fillForm(page, CONFIG) {
           const tipoCausa = document.querySelector('#conTipoCausa');
           return tipoCausa && !tipoCausa.disabled && tipoCausa.options.length > 1;
         },
-        { timeout: 15000 }
+        { timeout: 20000 } // Aumentado de 15s a 20s para evitar timeouts
       );
       console.log('✅ Campo Tipo Causa habilitado');
     } catch (error) {
@@ -219,9 +188,9 @@ async function fillForm(page, CONFIG) {
         if (tipoCausa) tipoCausa.removeAttribute('disabled');
       });
     }
-    await page.waitForTimeout(500 + Math.random() * 500); // Esperar a que se carguen opciones
+    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado // Esperar a que se carguen opciones
     await page.selectOption('#conTipoCausa', CONFIG.tipoCausa);
-    await page.waitForTimeout(500 + Math.random() * 500);
+    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado
 
     // Extraer rol y año del RIT (formato: "C-13786-2018" o similar)
     let rol = '';
@@ -242,20 +211,20 @@ async function fillForm(page, CONFIG) {
     // Escribir como humano (con delay de escritura)
     if (rol) {
       await page.fill('#conRolCausa', rol);
-      await page.waitForTimeout(400 + Math.random() * 600); // 400-1000ms
+      await page.waitForTimeout(150 + Math.random() * 250); // Optimizado: reducido de 400-1000ms a 150-400ms
     }
     
-    if (año) {
+      if (año) {
       await page.fill('#conEraCausa', año);
-      await page.waitForTimeout(400 + Math.random() * 600);
+      await page.waitForTimeout(150 + Math.random() * 250); // Optimizado: reducido de 400-1000ms a 150-400ms
     }
 
-    // Screenshot después de llenar campos
-    await page.screenshot({ path: 'debug_07_formulario_llenado.png', fullPage: false });
-    console.log('📸 Screenshot: debug_07_formulario_llenado.png');
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_07_formulario_llenado.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_07_formulario_llenado.png');
 
-    console.log("🔍 Buscando...");
-    
+  console.log("🔍 Buscando...");
+
     // Buscar el botón de varias formas
     const buttonSelectors = [
       'input[value="Buscar"]',
@@ -267,7 +236,7 @@ async function fillForm(page, CONFIG) {
     let buttonClicked = false;
     for (const selector of buttonSelectors) {
       try {
-        await page.waitForSelector(selector, { timeout: 5000 });
+        await page.waitForSelector(selector, { timeout: 10000 }); // Aumentado de 5s a 10s
         await page.click(selector);
         buttonClicked = true;
         console.log(`✅ Botón encontrado y clickeado: ${selector}`);
@@ -282,15 +251,31 @@ async function fillForm(page, CONFIG) {
       throw new Error('No se pudo encontrar el botón "Buscar"');
     }
     
-    // Esperar resultado como humano (2-3 segundos)
-    await page.waitForLoadState('domcontentloaded', { timeout: 20000 }).catch(() => {
-      console.warn('⚠️ Timeout esperando resultado de búsqueda');
-    });
-    await page.waitForTimeout(2000 + Math.random() * 1000); // 2-3 segundos
+    // Verificar CAPTCHA antes de continuar
+    const captchaCheck = await detectCaptcha(page);
+    const blockCheck = await checkIfBlocked(page);
     
-    // Screenshot después de buscar
-    await page.screenshot({ path: 'debug_08_despues_buscar.png', fullPage: false });
-    console.log('📸 Screenshot: debug_08_despues_buscar.png');
+    if (captchaCheck.detected || blockCheck.blocked) {
+      throw new Error(`CAPTCHA/Bloqueo detectado: ${captchaCheck.detected ? captchaCheck.type : blockCheck.reason}`);
+    }
+    
+    // Esperar resultado (timeout aumentado para evitar fallos)
+    await page.waitForLoadState('domcontentloaded', { timeout: 20000 }).catch(() => {
+      console.warn('⚠️ Timeout esperando resultado de búsqueda, continuando...');
+    });
+    await page.waitForTimeout(800 + Math.random() * 700); // Aumentado a 0.8-1.5s para dar tiempo a cargar
+    
+    // Verificar CAPTCHA después de la búsqueda también
+    const captchaCheckAfter = await detectCaptcha(page);
+    const blockCheckAfter = await checkIfBlocked(page);
+    
+    if (captchaCheckAfter.detected || blockCheckAfter.blocked) {
+      throw new Error(`CAPTCHA/Bloqueo detectado después de búsqueda: ${captchaCheckAfter.detected ? captchaCheckAfter.type : blockCheckAfter.reason}`);
+    }
+    
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_08_despues_buscar.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_08_despues_buscar.png');
     
     console.log('✅ Formulario enviado');
     
@@ -305,30 +290,30 @@ async function openDetalle(page) {
   try {
     console.log("🔍 Buscando enlace 'Detalle de la causa'...");
     
-    // Screenshot antes de buscar el enlace
-    await page.screenshot({ path: 'debug_09_antes_detalle.png', fullPage: false });
-    console.log('📸 Screenshot: debug_09_antes_detalle.png');
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_09_antes_detalle.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_09_antes_detalle.png');
     
-    // Esperar a que aparezca el enlace
-    await page.waitForSelector('a[title="Detalle de la causa"]', { timeout: 20000 });
+    // Esperar a que aparezca el enlace (timeout aumentado)
+    await page.waitForSelector('a[title="Detalle de la causa"]', { timeout: 30000 }); // Aumentado de 20s a 30s
     console.log("✅ Enlace encontrado");
 
-    console.log("🖱️ Abriendo detalle...");
+  console.log("🖱️ Abriendo detalle...");
 
-    // Esperar a que el modal aparezca después del click
-    await Promise.all([
-      page.waitForSelector('#modalDetalleCivil, #modalDetalleLaboral', { timeout: 15000 }),
+    // Esperar a que el modal aparezca después del click (timeout aumentado)
+  await Promise.all([
+      page.waitForSelector('#modalDetalleCivil, #modalDetalleLaboral', { timeout: 20000 }), // Aumentado de 8s a 20s
       page.click('a[title="Detalle de la causa"]'),
     ]);
 
-    // Delay humano después de abrir modal (800-1500ms)
-    await page.waitForTimeout(800 + Math.random() * 700);
+    // Delay optimizado después de abrir modal (200-500ms)
+    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado: reducido de 800-1500ms a 200-500ms
     
-    // Screenshot después de abrir detalle
-    await page.screenshot({ path: 'debug_10_detalle_abierto.png', fullPage: false });
-    console.log('📸 Screenshot: debug_10_detalle_abierto.png');
-    
-    console.log("✅ Detalle cargado.");
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_10_detalle_abierto.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_10_detalle_abierto.png');
+
+  console.log("✅ Detalle cargado.");
   } catch (error) {
     console.error('❌ Error abriendo detalle:', error.message);
     await page.screenshot({ path: 'debug_error_detalle.png', fullPage: true });

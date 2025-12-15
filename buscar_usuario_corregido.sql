@@ -84,3 +84,4 @@ LEFT JOIN causa c ON a.id = c.agenda_id
 WHERE a.nombre_cliente LIKE '%Carlos%Domingo%Gutierrez%Ramos%'
    OR a.nombre_cliente LIKE '%Carlos%Gutierrez%';
 
+

@@ -160,3 +160,4 @@ WHERE c.id_causa IS NOT NULL;
 2. **`src/process-csv-causas.js`** - Procesa múltiples causas del CSV
 3. **`src/index.js`** - Procesa una sola causa (desde pjud_config.json)
 
+

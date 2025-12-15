@@ -15,13 +15,255 @@ const path = require('path');
   try {
     console.log('🚀 Iniciando proceso de creación de caso...');
 
+    // Función para mejorar estilos visuales
+    const injectCustomStyles = async (page) => {
+      // Inyectar CSS
+      await page.addStyleTag({
+        content: `
+          /* Mejorar fondos de productos y elementos */
+          .tab-content,
+          .tab-pane {
+            background-color: #ffffff !important;
+          }
+          
+          /* Fondos de pestañas */
+          .nav-tabs,
+          .nav-tabs .nav-link {
+            background-color: transparent !important;
+          }
+          
+          .nav-tabs .nav-link.active {
+            background-color: #ffffff !important;
+            border-bottom-color: #ffffff !important;
+          }
+          
+          /* Fondos de productos y contenedores */
+          .form-outline,
+          .form-control,
+          .select2-container,
+          .select2-selection,
+          .select2-dropdown {
+            background-color: #ffffff !important;
+          }
+          
+          /* Tablas */
+          .table,
+          .table tbody tr,
+          .table thead tr {
+            background-color: #ffffff !important;
+          }
+          
+          .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f8f9fa !important;
+          }
+          
+          /* Contenedores principales */
+          .row,
+          .col,
+          .col-12,
+          .col-md-4,
+          .col-lg-4,
+          .col-md-6,
+          .col-lg-6 {
+            background-color: transparent !important;
+          }
+          
+          /* Select2 dropdown */
+          .select2-results__option {
+            background-color: #ffffff !important;
+          }
+          
+          .select2-results__option--highlighted {
+            background-color: #007bff !important;
+            color: #ffffff !important;
+          }
+          
+          /* Badges y labels */
+          .badge,
+          .label {
+            background-color: transparent !important;
+          }
+          
+          /* Botones */
+          .btn {
+            background-color: #007bff !important;
+          }
+          
+          /* Modal backgrounds */
+          .modal-content {
+            background-color: #ffffff !important;
+          }
+          
+          /* Inputs y textareas */
+          input[type="text"],
+          input[type="email"],
+          input[type="number"],
+          input[type="date"],
+          textarea,
+          select {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+          }
+          
+          /* Overlay y backdrop */
+          .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+          }
+          
+          /* Cards y paneles */
+          .card,
+          .panel {
+            background-color: #ffffff !important;
+          }
+          
+          /* Asegurar que el body tenga fondo blanco */
+          body {
+            background-color: #f5f5f5 !important;
+          }
+          
+          /* Contenedor principal del formulario */
+          #createUsersForm,
+          form {
+            background-color: transparent !important;
+          }
+          
+          /* Secciones con divisores */
+          .section-divider {
+            background-color: transparent !important;
+          }
+          
+          /* Tag container */
+          #tag-container3,
+          .tag-container {
+            background-color: #ffffff !important;
+          }
+          
+          /* Tabla de actividades */
+          #tablaActividades tr {
+            background-color: #ffffff !important;
+          }
+          
+          #tablaActividades tr:nth-child(even) {
+            background-color: #f8f9fa !important;
+          }
+          
+          /* Productos y elementos específicos que pueden tener fondo negro */
+          [class*="product"],
+          [id*="product"],
+          [class*="item"],
+          [id*="item"],
+          .product-item,
+          .product-card,
+          .item-card,
+          .list-item {
+            background-color: #ffffff !important;
+          }
+          
+          /* Contenedores de productos */
+          .products-container,
+          .items-container,
+          .product-list,
+          .item-list {
+            background-color: transparent !important;
+          }
+          
+          /* Asegurar que todos los elementos dentro de pestañas tengan fondo adecuado */
+          .tab-pane * {
+            background-color: inherit !important;
+          }
+          
+          .tab-pane .form-control,
+          .tab-pane .form-outline,
+          .tab-pane input,
+          .tab-pane select,
+          .tab-pane textarea {
+            background-color: #ffffff !important;
+          }
+          
+          /* Elementos específicos de Select2 que pueden tener fondo negro */
+          .select2-search__field {
+            background-color: #ffffff !important;
+            color: #212529 !important;
+          }
+          
+          /* Contenedores de tags */
+          .tag-input {
+            background-color: #ffffff !important;
+          }
+          
+          /* Override cualquier fondo negro explícito */
+          [style*="background-color: black"],
+          [style*="background-color:#000"],
+          [style*="background-color:rgb(0,0,0)"],
+          [style*="background-color:rgba(0,0,0"] {
+            background-color: #ffffff !important;
+          }
+        `
+      });
+      
+      // Agregar listener para cambios de pestañas
+      await page.evaluate(() => {
+        // Función para aplicar estilos a elementos nuevos
+        const applyStylesToNewElements = () => {
+          const style = document.createElement('style');
+          style.id = 'custom-background-fix';
+          style.textContent = `
+            .tab-content, .tab-pane { background-color: #ffffff !important; }
+            .nav-tabs .nav-link.active { background-color: #ffffff !important; }
+            .form-outline, .form-control, .select2-container, .select2-selection { background-color: #ffffff !important; }
+            .table, .table tbody tr { background-color: #ffffff !important; }
+            input, textarea, select { background-color: #ffffff !important; color: #212529 !important; }
+            [class*="product"], [id*="product"], [class*="item"], [id*="item"] { background-color: #ffffff !important; }
+          `;
+          
+          // Remover estilo anterior si existe
+          const existingStyle = document.getElementById('custom-background-fix');
+          if (existingStyle) {
+            existingStyle.remove();
+          }
+          
+          document.head.appendChild(style);
+        };
+        
+        // Aplicar estilos inicialmente
+        applyStylesToNewElements();
+        
+        // Observer para detectar cambios en el DOM
+        const observer = new MutationObserver(() => {
+          applyStylesToNewElements();
+        });
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+        
+        // Listener para cambios de pestañas
+        const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabButtons.forEach(button => {
+          button.addEventListener('shown.bs.tab', () => {
+            setTimeout(applyStylesToNewElements, 100);
+          });
+        });
+      });
+      
+      console.log('✅ Estilos personalizados inyectados para mejorar fondos');
+    };
+
     // LOGIN
     await page.goto(process.env.LEGALFLOW_URL, { waitUntil: 'domcontentloaded' });
+    
+    // Inyectar estilos después de cargar la página
+    await injectCustomStyles(page);
+    
     await page.fill('#email', process.env.LEGALFLOW_USER);
     await page.fill('#password', process.env.LEGALFLOW_PASS);
     await page.click('.btn-login');
     await page.waitForSelector('#side-menu', { timeout: 10000 });
     console.log('✅ Login exitoso');
+    
+    // Re-inyectar estilos después del login por si hay cambios en el DOM
+    await injectCustomStyles(page);
 
     // NAVEGAR A CASOS
     await page.click('a[href*="/casos"]');
@@ -32,6 +274,9 @@ const path = require('path');
     await page.locator('a[href*="/casos/create"]').click();
     await page.waitForSelector('#referencia_caso', { timeout: 20000 });
     console.log('✅ Formulario de Nuevo Caso abierto');
+    
+    // Inyectar estilos nuevamente después de abrir el formulario
+    await injectCustomStyles(page);
 
     // LEER DATOS DEL JSON
     const requestData = JSON.parse(fs.readFileSync('../config/pjud_config.json', 'utf-8'));
@@ -166,6 +411,9 @@ const path = require('path');
     await page.click('#btnguardar');
     await page.waitForURL('**/edit/**', { timeout: 20000 });
     console.log('✅ Formulario guardado y redirigido a la página de edición');
+    
+    // Inyectar estilos en la página de edición también
+    await injectCustomStyles(page);
 
     const caseUrl = page.url();
     console.log('\n🧭 URL del nuevo caso creado:\n👉', caseUrl, '\n');

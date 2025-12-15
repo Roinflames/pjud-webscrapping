@@ -143,3 +143,4 @@ SELECT * FROM agenda WHERE nombre_cliente LIKE '%Carlos%Gutierrez%';
 3. Prueba búsquedas más amplias (sin filtros tan específicos)
 4. Verifica el formato exacto de los datos en la BD
 
+

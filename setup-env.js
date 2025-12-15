@@ -25,3 +25,4 @@ if (!fs.existsSync(envExamplePath)) {
 console.log('\n📋 Contenido del .env:');
 console.log(fs.readFileSync(envPath, 'utf8'));
 
+

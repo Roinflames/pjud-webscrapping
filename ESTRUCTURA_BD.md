@@ -192,3 +192,4 @@ node src/sync-csv-to-db.js sql
 mysql -u root -p codi_ejamtest < sync_causas.sql
 ```
 
+

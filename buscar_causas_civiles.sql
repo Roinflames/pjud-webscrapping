@@ -190,3 +190,4 @@ FROM causa c
 LEFT JOIN agenda a ON c.agenda_id = a.id
 WHERE c.materia_estrategia_id = 3;
 
+

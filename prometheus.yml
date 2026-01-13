@@ -1,0 +1,64 @@
+# Prometheus Configuration for PJUD Web Scraper
+
+global:
+  scrape_interval: 15s      # Scrape targets every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'pjud-scraper-monitor'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # PJUD Scraper metrics
+  - job_name: 'pjud-scraper'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+    static_configs:
+      - targets: ['host.docker.internal:9091']  # For Docker on Windows/Mac
+        # For Linux, use: ['172.17.0.1:9091']
+        # For local testing without Docker: ['localhost:9091']
+
+        labels:
+          service: 'pjud-scraper'
+          application: 'webscraping'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    scrape_interval: 30s
+
+    static_configs:
+      - targets: ['localhost:9090']
+
+        labels:
+          service: 'prometheus'
+
+  # Node Exporter (optional - for system metrics)
+  # Uncomment if you install node_exporter
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "http://victoriametrics:8428/api/v1/write"
+
+# Remote read configuration (optional)
+# remote_read:
+#   - url: "http://victoriametrics:8428/api/v1/read"

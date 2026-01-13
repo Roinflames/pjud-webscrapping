@@ -1,0 +1,131 @@
+# Prometheus Alert Rules for PJUD Web Scraper
+
+groups:
+  - name: pjud_scraper_alerts
+    interval: 30s
+    rules:
+      # High failure rate
+      - alert: HighScrapingFailureRate
+        expr: |
+          (
+            rate(pjud_causas_processed_total{status="failed"}[5m])
+            /
+            rate(pjud_causas_processed_total[5m])
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          service: pjud-scraper
+        annotations:
+          summary: "High scraping failure rate detected"
+          description: "More than 50% of causas are failing to be scraped (current rate: {{ $value | humanizePercentage }})"
+
+      # CAPTCHA detection spike
+      - alert: CaptchaDetectionSpike
+        expr: rate(pjud_captcha_detected_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "CAPTCHA detection spike"
+          description: "CAPTCHA is being detected frequently ({{ $value }} detections/sec). The scraper might be blocked."
+
+      # Circuit breaker opened
+      - alert: CircuitBreakerOpen
+        expr: pjud_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "Circuit breaker is OPEN"
+          description: "The circuit breaker has opened, blocking all scraping operations."
+
+      # Scraper not running
+      - alert: ScraperNotRunning
+        expr: up{job="pjud-scraper"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: pjud-scraper
+        annotations:
+          summary: "PJUD Scraper is down"
+          description: "The metrics endpoint is not responding. The scraper might be down."
+
+      # No activity for too long
+      - alert: NoScrapingActivity
+        expr: |
+          (time() - pjud_last_scraping_timestamp) > 600
+          and
+          pjud_last_scraping_timestamp > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "No scraping activity detected"
+          description: "No causas have been scraped in the last 10 minutes. The scraper might be stuck."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(pjud_errors_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors/sec over the last 5 minutes."
+
+      # Slow scraping operations
+      - alert: SlowScrapingOperations
+        expr: |
+          histogram_quantile(0.95,
+            rate(pjud_scraping_duration_seconds_bucket{operation="full_scrape"}[5m])
+          ) > 60
+        for: 10m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "Scraping operations are slow"
+          description: "95th percentile of scraping duration is {{ $value }}s, which is slower than expected."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{job="pjud-scraper"}
+            /
+            1024 / 1024 / 1024
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanize }}GB, which might indicate a memory leak."
+
+      # Blocked requests increasing
+      - alert: BlockedRequestsIncreasing
+        expr: rate(pjud_requests_blocked_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "Requests are being blocked"
+          description: "{{ $value }} requests/sec are being blocked. The scraper might be rate-limited."
+
+      # Too many retries
+      - alert: TooManyRetries
+        expr: rate(pjud_retries_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: pjud-scraper
+        annotations:
+          summary: "High retry rate"
+          description: "The scraper is retrying {{ $value }} operations/sec, indicating instability."

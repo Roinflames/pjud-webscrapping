@@ -228,14 +228,12 @@ async function buscarCausa() {
     const data = await res.json();
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';
-    // console.log("data");
-    console.log(data);
     
     if (!Array.isArray(data)) {
     
     if (data.error == 'Archivo de resultados no encontrado') {
+        await limpiarModalDetalleCivil();
         tbody.innerHTML = '';
-        limpiarModalDetalleCivil();
         alert('Causa no encontrada');
         return
     }

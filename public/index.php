@@ -18,6 +18,30 @@
 
 <div class="container mt-4">
 
+    <!-- <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            Archivos Disponibles en /public/outputs
+        </div>
+        <div class="list-group list-group-flush">
+            <?php
+            $outputDir = __DIR__ . '/outputs';
+            if (is_dir($outputDir)) {
+                $files = array_diff(scandir($outputDir), ['.', '..']);
+                if (empty($files)) {
+                    echo '<div class="list-group-item">No se encontraron archivos.</div>';
+                } else {
+                    foreach ($files as $file) {
+                        $filePath = 'outputs/' . htmlspecialchars($file);
+                        echo '<a href="' . $filePath . '" class="list-group-item list-group-item-action" download>' . htmlspecialchars($file) . '</a>';
+                    }
+                }
+            } else {
+                echo '<div class="list-group-item text-danger">Error: Directorio de salidas no encontrado.</div>';
+            }
+            ?>
+        </div>
+    </div> -->
+
     <h5 class="mb-3">
         <a href="#" class="text-success">Consulta de Causas</a> / Consulta Unificada
     </h5>
@@ -79,12 +103,12 @@
 
             <div class="col-md-2">
                 <label class="form-label">Rol</label>
-                <input id="rol" type="text" class="form-control" placeholder="Ej: 16707" value="16707">
+                <input id="rol" type="text" class="form-control" placeholder="Ej: 16707">
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Año</label>
-                <input id="anio" type="text" class="form-control" placeholder="2019" value="2019">
+                <input id="anio" type="text" class="form-control" placeholder="2019">
             </div>
         </div>
 
@@ -98,7 +122,7 @@
                 Buscar
             </button>
 
-            <button id="btnLimpiar" class="btn btn-warning">Limpiar</button>
+            <button id="btnLimpiar" class="btn btn-warning" onclick="limpiarFormulario()">Limpiar</button>
         </div>
 
         <!-- BLOQUE DE VALORES -->
@@ -219,25 +243,34 @@
 
 <script>
 async function buscarCausa() {
-    // 'C-16707-2019'
-    const libroInput = document.getElementById('libro').value;
-    const anioInput = document.getElementById('anio').value;
-    const rolInput = libroInput + "-" + document.getElementById('rol').value + "-" + anioInput;
 
-    const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rolInput)}`);
-    const data = await res.json();
-    const tbody = document.querySelector('#tablaHistoria tbody');
-    tbody.innerHTML = '';
-    
-    if (!Array.isArray(data)) {
-    
-    if (data.error == 'Archivo de resultados no encontrado') {
-        await limpiarModalDetalleCivil();
-        tbody.innerHTML = '';
-        alert('Causa no encontrada');
-        return
+    limpiarModalDetalleCivil();
+
+    const libro = document.getElementById('libro').value;
+    const rol   = document.getElementById('rol').value;
+    const anio  = document.getElementById('anio').value;
+
+    if (!rol || !anio) {
+        alert('Debe ingresar Rol y Año');
+        return;
     }
-        alert('Formato de datos inválido');
+
+    const rit = `${libro}-${rol}-${anio}`;
+
+    let res, data;
+
+    try {
+        res = await fetch(`api/causa.php?rol=${encodeURIComponent(rit)}`);
+        data = await res.json();
+    } catch (e) {
+        alert('Error de conexión');
+        return;
+    }
+
+    // ❌ No existe la causa
+    if (!Array.isArray(data) || data.length === 0) {
+        limpiarModalDetalleCivil();
+        alert('Causa no encontrada');
         return;
     }
 
@@ -246,57 +279,64 @@ async function buscarCausa() {
     ====================== */
     const cab = data[0];
 
-    document.getElementById('m_rol').textContent = cab[1];
-    document.getElementById('m_fing').textContent = cab[2];
-    document.getElementById('m_promotora').textContent = cab[3];
-    document.getElementById('m_tribunal').textContent = cab[4];
+    document.getElementById('m_rol').textContent        = cab[1] ?? '-';
+    document.getElementById('m_fing').textContent       = cab[2] ?? '-';
+    document.getElementById('m_promotora').textContent  = cab[3] ?? '-';
+    document.getElementById('m_tribunal').textContent   = cab[4] ?? '-';
 
-    document.getElementById('m_estadm').textContent = 'Archivada';
-    document.getElementById('m_proc').textContent = 'Ejecutivo Obligación de Dar';
-    document.getElementById('m_ubic').textContent = 'Archivada Digital';
-    document.getElementById('m_estproc').textContent = 'Concluido';
-    document.getElementById('m_etapa').textContent = 'Terminada';
+    document.getElementById('m_estadm').textContent     = cab[5] ?? '-';
+    document.getElementById('m_proc').textContent       = cab[6] ?? '-';
+    document.getElementById('m_ubic').textContent       = cab[7] ?? '-';
+    document.getElementById('m_estproc').textContent    = cab[8] ?? '-';
+    document.getElementById('m_etapa').textContent      = cab[9] ?? '-';
 
     /* ======================
        HISTORIA
     ====================== */
+    const tbody = document.querySelector('#tablaHistoria tbody');
+    tbody.innerHTML = '';
 
-    data.slice(2, 17).forEach(row => {
-        // console.log("row");
-        // console.log(row);
-        
-        const folio = row[0];
-        const tienePdf = row[1] === 'Descargar Documento';
-        const etapa = row[3];
-        const tramite = row[4];
-        const desc = row[5];
-        const fecha = row[6];
-        const foja = row[7];
+    for (let i = 2; i < data.length; i++) {
 
-        const pdfUrl = folio
-            ? `/outputs/${data[0][1]}_doc_${folio}.pdf`
+        const row = data[i];
+
+        // Corte al comenzar sección litigantes
+        if (['DDO.', 'AB.DTE', 'DTE.'].includes(row[0])) break;
+
+        const folio   = row[0] ?? '-';
+        const etapa   = row[3] ?? '-';
+        const tramite = row[4] ?? '-';
+        const desc    = row[5] ?? '-';
+        const fecha   = row[6] ?? '-';
+        const foja    = row[7] ?? '-';
+
+        const pdfUrl = folio !== '-'
+            ? `/outputs/${rit.replace(/-/g, '_')}_doc_${folio}.pdf`
             : null;
-        
-        tbody.innerHTML += `
+
+        tbody.insertAdjacentHTML('beforeend', `
             <tr>
-                <td>${folio || '-'}</td>
+                <td>${folio}</td>
                 <td>
-                    ${
-                      tienePdf && pdfUrl
-                      ? `<a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-outline-primary">Ver PDF</a>`
-                      : ''
-                    }
+                    ${pdfUrl ? `<a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-outline-primary">Ver PDF</a>` : ''}
                 </td>
-                <td>${folio || '-'}</td>
-                <td>${etapa || '-'}</td>
-                <td>${tramite || '-'}</td>
-                <td>${desc || '-'}</td>
-                <td>${fecha || '-'}</td>
-                <td>${foja || '-'}</td>
+                <td>${folio}</td>
+                <td>${etapa}</td>
+                <td>${tramite}</td>
+                <td>${desc}</td>
+                <td>${fecha}</td>
+                <td>${foja}</td>
                 <td></td>
             </tr>
-        `;
-    });
+        `);
+    }
+
+    /* ======================
+       ABRIR MODAL (solo aquí)
+    ====================== */
+    new bootstrap.Modal(
+        document.getElementById('modalDetalleCivil')
+    ).show();
 }
 </script>
 
@@ -335,6 +375,39 @@ function limpiarModalDetalleCivil() {
 
 }
 </script>
+
+<script>
+// --- INICIO: Funcionalidad para buscar con la tecla Enter ---
+function handleEnterKey(event) {
+    // Si la tecla presionada es 'Enter'
+    if (event.key === 'Enter') {
+        // Prevenir la acción por defecto (como recargar la página si estuviera en un formulario)
+        event.preventDefault();
+        // Simular un clic en el botón de búsqueda para reutilizar toda su funcionalidad
+        document.getElementById('btnBuscar').click();
+    }
+}
+
+// Asignar el detector de eventos a los campos de Rol y Año
+document.getElementById('rol').addEventListener('keydown', handleEnterKey);
+document.getElementById('anio').addEventListener('keydown', handleEnterKey);
+// --- FIN: Funcionalidad para buscar con la tecla Enter ---
+
+// --- INICIO: Funcionalidad para el botón Limpiar ---
+function limpiarFormulario() {
+    // Limpiar campos de texto
+    document.getElementById('rol').value = '';
+    document.getElementById('anio').value = '';
+
+    // Restablecer los menús desplegables a la primera opción
+    document.getElementById('competencia').selectedIndex = 0;
+    document.getElementById('corte').selectedIndex = 0;
+    document.getElementById('tribunal').selectedIndex = 0;
+    document.getElementById('libro').selectedIndex = 0;
+}
+// --- FIN: Funcionalidad para el botón Limpiar ---
+</script>
+
 
 </body>
 </html>

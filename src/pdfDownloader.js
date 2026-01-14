@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { log } = require('winston');
 
 async function downloadPDFsFromTable(page, context, outputDir, rit) {
   console.log("🔎 Buscando iconos PDF en la tabla...");
@@ -26,7 +27,9 @@ async function downloadPDFsFromTable(page, context, outputDir, rit) {
     const response = await newPage.request.get(pdfUrl);
     const buffer = await response.body();
 
-    const filename = `${rit.replace('-', '_')}_doc_${index}.pdf`;
+    const filename = `${rit.replaceAll('-', '_')}_doc_${index}.pdf`;
+    console.log(filename);
+    
     const savePath = path.join(outputDir, filename);
 
     fs.writeFileSync(savePath, buffer);

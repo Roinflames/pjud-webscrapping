@@ -2,6 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 
 $rol = $_GET['rol'] ?? null;
+$rol_limpio = preg_replace('/-/', '_', $rol, 1);
 
 if (!$rol) {
     http_response_code(400);
@@ -11,17 +12,18 @@ if (!$rol) {
 
 /*
   Convención de nombre:
-  C-16707-2019  -> resultado_16707_2019.json
-*/
-$rol_limpio = strtolower($rol);
-$rol_limpio = str_replace(['c-', 'C-'], '', $rol_limpio);
-$rol_limpio = str_replace('-', '_', $rol_limpio);
+  El ROL de entrada (ej: "C-16707-2019") se usa directamente para buscar el archivo
+  correspondiente, ej: "resultado_C-16707-2019.json".
 
+  $rol = C-3596-2024
+  $archivo = resultado_C_3596-2024
+*/
 $archivo = __DIR__ . "/../../public/outputs/resultado_{$rol_limpio}.json";
 
 if (!file_exists($archivo)) {
     http_response_code(404);
-    echo json_encode(['error' => 'Archivo de resultados no encontrado']);
+    // Corregido: Se elimina el espacio extra y se devuelve un objeto JSON válido.
+    echo json_encode(['error' => 'Archivo de resultados no encontrado', 'buscando' => $rol, 'rol_limpio' => $rol_limpio]);
     exit;
 }
 

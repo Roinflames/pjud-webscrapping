@@ -1,0 +1,2 @@
+run:
+    symfony server:start

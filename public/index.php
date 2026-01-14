@@ -79,12 +79,12 @@
 
             <div class="col-md-2">
                 <label class="form-label">Rol</label>
-                <input id="rol" type="text" class="form-control" placeholder="Ej: 16707">
+                <input id="rol" type="text" class="form-control" placeholder="Ej: 16707" value="16707">
             </div>
 
             <div class="col-md-2">
                 <label class="form-label">Año</label>
-                <input id="anio" type="text" class="form-control" placeholder="2019">
+                <input id="anio" type="text" class="form-control" placeholder="2019" value="2019">
             </div>
         </div>
 
@@ -228,12 +228,15 @@ async function buscarCausa() {
     const data = await res.json();
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';
+    // console.log("data");
     console.log(data);
-
+    
     if (!Array.isArray(data)) {
-
+    
     if (data.error == 'Archivo de resultados no encontrado') {
         tbody.innerHTML = '';
+        limpiarModalDetalleCivil();
+        alert('Causa no encontrada');
         return
     }
         alert('Formato de datos inválido');
@@ -261,6 +264,9 @@ async function buscarCausa() {
     ====================== */
 
     data.slice(2, 17).forEach(row => {
+        // console.log("row");
+        // console.log(row);
+        
         const folio = row[0];
         const tienePdf = row[1] === 'Descargar Documento';
         const etapa = row[3];
@@ -270,7 +276,7 @@ async function buscarCausa() {
         const foja = row[7];
 
         const pdfUrl = folio
-            ? `/outputs/C_16707-2019_doc_${folio}.pdf`
+            ? `/outputs/${data[0][1]}_doc_${folio}.pdf`
             : null;
         
         tbody.innerHTML += `
@@ -293,6 +299,42 @@ async function buscarCausa() {
             </tr>
         `;
     });
+}
+</script>
+
+<script>
+function limpiarModalDetalleCivil() {
+
+  // TEXTOS PRINCIPALES
+  const spans = [
+    'm_rol', 'm_fing', 'm_promotora',
+    'm_estadm', 'm_proc', 'm_ubic',
+    'm_estproc', 'm_etapa', 'm_tribunal'
+  ];
+
+  spans.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '-';
+  });
+
+  // LIMPIAR SELECT CUADERNO
+  const cuaderno = document.getElementById('m_cuaderno');
+  if (cuaderno) {
+    cuaderno.innerHTML = '<option value="">-</option>';
+  }
+
+  // LIMPIAR TABLA HISTORIA
+  const tbodyHistoria = document.querySelector('#tablaHistoria tbody');
+  if (tbodyHistoria) {
+    tbodyHistoria.innerHTML = '';
+  }
+
+  // LIMPIAR CONTENIDO DE LOS OTROS TABS
+  document.getElementById('tabLitigantes').innerHTML = '';
+  document.getElementById('tabNotif').innerHTML = '';
+  document.getElementById('tabEscritos').innerHTML = '';
+  document.getElementById('tabExhortos').innerHTML = '';
+
 }
 </script>
 

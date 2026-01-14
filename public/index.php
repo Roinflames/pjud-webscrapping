@@ -270,9 +270,8 @@ async function buscarCausa() {
         const foja = row[7];
 
         const pdfUrl = folio
-            ? `/outputs/16707_2019_doc_${folio}.pdf`
+            ? `/outputs/C_16707-2019_doc_${folio}.pdf`
             : null;
-        console.log(pdfUrl);
         
         tbody.innerHTML += `
             <tr>

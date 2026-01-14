@@ -17,7 +17,7 @@ $rol_limpio = strtolower($rol);
 $rol_limpio = str_replace(['c-', 'C-'], '', $rol_limpio);
 $rol_limpio = str_replace('-', '_', $rol_limpio);
 
-$archivo = __DIR__ . "/../../src/outputs/resultado_{$rol_limpio}.json";
+$archivo = __DIR__ . "/../../public/outputs/resultado_{$rol_limpio}.json";
 
 if (!file_exists($archivo)) {
     http_response_code(404);

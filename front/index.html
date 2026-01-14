@@ -234,14 +234,14 @@ function buscarCausa() {
     document.getElementById('m_tribunal').textContent = tribunal;
 
     // Rutas reales a tus PDFs
-    const PDF_PATH = "../src/outputs/";
+    const PDF_PATH = "../public/outputs/";
 
     // Datos de la historia
-    const rows = [
-        {folio:14, doc:'PDF', anexo:'16707_2019_doc_14', etapa:'Terminada', tramite:'Resolución', desc:'Poder acreditado/acompaña patrocinio', fec:'23/05/2019', foja:3, geo:''},
-        {folio:13, doc:'PDF', anexo:'16707_2019_doc_13', etapa:'Excepciones', tramite:'(CER)Certificación', desc:'Certifica que no se opuso excepciones', fec:'19/01/2022', foja:2, geo:''},
-        {folio:12, doc:'PDF', anexo:'16707_2019_doc_12', etapa:'Excepciones', tramite:'Resolución', desc:'Certifíquese', fec:'27/03/2020', foja:9, geo:''}
-    ];
+    // const rows = [
+    //     {folio:14, doc:'PDF', anexo:'16707_2019_doc_14', etapa:'Terminada', tramite:'Resolución', desc:'Poder acreditado/acompaña patrocinio', fec:'23/05/2019', foja:3, geo:''},
+    //     {folio:13, doc:'PDF', anexo:'16707_2019_doc_13', etapa:'Excepciones', tramite:'(CER)Certificación', desc:'Certifica que no se opuso excepciones', fec:'19/01/2022', foja:2, geo:''},
+    //     {folio:12, doc:'PDF', anexo:'16707_2019_doc_12', etapa:'Excepciones', tramite:'Resolución', desc:'Certifíquese', fec:'27/03/2020', foja:9, geo:''}
+    // ];
 
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';

@@ -72,7 +72,8 @@ const { saveErrorEvidence } = require('./utils');
     }
 
     // Exportar resultados
-    const outputDir = path.resolve(__dirname, 'outputs');
+    const outputDir = path.resolve(__dirname, '../public/outputs');
+
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const { exportToJSON, exportToCSV } = require('./exporter');

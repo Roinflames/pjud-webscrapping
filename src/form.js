@@ -223,17 +223,23 @@ async function fillForm(page, CONFIG) {
     await page.selectOption('#conTipoCausa', CONFIG.tipoCausa);
     await page.waitForTimeout(500 + Math.random() * 500);
 
-    // Extraer rol y año del RIT (formato: "C-13786-2018" o similar)
+    // Extraer rol y año del RIT
+    // Formatos posibles:
+    // - "C-13786-2018" → rol: "13786", año: "2018" (3 partes)
+    // - "16707-2019" → rol: "16707", año: "2019" (2 partes)
     let rol = '';
     let año = '';
     
     if (CONFIG.rit) {
       const parts = CONFIG.rit.split('-');
       if (parts.length >= 3) {
-        rol = parts[1]; // Segunda parte
-        año = parts[2]; // Tercera parte
+        // Formato: "C-13786-2018" (tipo-rol-año)
+        rol = parts[1]; // Segunda parte es el rol
+        año = parts[2]; // Tercera parte es el año
       } else if (parts.length === 2) {
-        rol = parts[1];
+        // Formato: "16707-2019" (rol-año)
+        rol = parts[0]; // Primera parte es el rol
+        año = parts[1]; // Segunda parte es el año
       }
     }
     

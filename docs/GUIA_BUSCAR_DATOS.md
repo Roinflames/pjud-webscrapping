@@ -20,7 +20,9 @@ Encontrar en la base de datos `codi_ejamtest` los datos que están en `pjud_conf
 
 ### Paso 1: Abrir phpMyAdmin
 1. Abre tu navegador
-2. Ve a: `http://localhost/phpmyadmin`
+2. Ve a: `http://localhost/phpmyadmin` (puerto 80 por defecto)
+   - Si Apache está en otro puerto (ej: 8080), usa: `http://localhost:8080/phpmyadmin`
+   - **Nota**: El puerto 3306 es para MySQL (base de datos), NO para URLs en el navegador
 3. Selecciona la base de datos: `codi_ejamtest`
 
 ### Paso 2: Ejecutar Consultas (en orden)

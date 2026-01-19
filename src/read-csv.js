@@ -2,8 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 
-function readCausaCSV() {
-  const csvPath = path.resolve(__dirname, '../causa.csv');
+function readCausaCSV(csvPath = null) {
+  if (!csvPath) {
+    csvPath = path.resolve(__dirname, '../causa.csv');
+  } else if (!path.isAbsolute(csvPath)) {
+    csvPath = path.resolve(__dirname, '..', csvPath);
+  }
   
   if (!fs.existsSync(csvPath)) {
     throw new Error(`No se encontró el archivo: ${csvPath}`);

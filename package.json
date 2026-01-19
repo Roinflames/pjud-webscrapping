@@ -4,7 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scrape": "node src/index.js",
+    "scrape:batch": "node src/process-csv-causas.js",
+    "backup:clean": "node src/backup_and_clean.js",
+    "importar:movimientos": "node src/importar_movimientos_sql.js",
+    "api:start": "node src/api/server.js",
+    "api:listener": "node src/api/listener.js",
+    "api:listener:causa": "node src/api/listener.js --table causa",
+    "api:listener:agenda": "node src/api/listener.js --table agenda",
+    "test:carga": "node scripts/test-carga.js",
+    "test:carga:completo": "node scripts/test-carga.js --scenarios 4 --duration 30",
+    "monitor": "bash scripts/monitor-recursos.sh",
+    "services:start": "bash scripts/control-servicios.sh start",
+    "services:stop": "bash scripts/control-servicios.sh stop",
+    "services:restart": "bash scripts/control-servicios.sh restart",
+    "services:status": "bash scripts/control-servicios.sh status",
+    "services:enable": "bash scripts/control-servicios.sh enable",
+    "services:disable": "bash scripts/control-servicios.sh disable"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +31,10 @@
     "playwright": "^1.56.0"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "mysql2": "^3.16.1",
     "winston": "^3.18.3"
   }
 }

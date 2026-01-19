@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tribunales PJUD - Exportar Datos</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 API Server - Tribunales PJUD</h1>
+            <p class="subtitle">Exporta y consulta datos de tribunales extraídos del PJUD</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Tribunales</h3>
+                <p id="total-tribunales">Cargando...</p>
+            </div>
+            <div class="stat-card">
+                <h3>Competencias</h3>
+                <p id="total-competencias">Cargando...</p>
+            </div>
+            <div class="stat-card">
+                <h3>Cortes</h3>
+                <p id="total-cortes">Cargando...</p>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <h2>📥 Exportar Datos</h2>
+            <div class="export-options">
+                <div class="export-card">
+                    <h3>Exportar JSON</h3>
+                    <p>Descarga todos los tribunales en formato JSON</p>
+                    <div class="filters">
+                        <select id="competencia-filter-json">
+                            <option value="">Todas las competencias</option>
+                        </select>
+                        <select id="corte-filter-json">
+                            <option value="">Todas las cortes</option>
+                        </select>
+                    </div>
+                    <button onclick="exportarJSON()" class="btn btn-primary">📥 Descargar JSON</button>
+                </div>
+
+                <div class="export-card">
+                    <h3>Exportar CSV</h3>
+                    <p>Descarga todos los tribunales en formato CSV (Excel compatible)</p>
+                    <div class="filters">
+                        <select id="competencia-filter-csv">
+                            <option value="">Todas las competencias</option>
+                        </select>
+                        <select id="corte-filter-csv">
+                            <option value="">Todas las cortes</option>
+                        </select>
+                    </div>
+                    <button onclick="exportarCSV()" class="btn btn-success">📊 Descargar CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="links-section">
+            <h2>🔗 Enlaces Útiles</h2>
+            <div class="links">
+                <a href="/api/health" target="_blank" class="link-card">
+                    <span class="icon">💚</span>
+                    <span>Health Check</span>
+                </a>
+                <a href="/api/tribunales" target="_blank" class="link-card">
+                    <span class="icon">📋</span>
+                    <span>Ver Tribunales (JSON)</span>
+                </a>
+                <a href="/api/competencias" target="_blank" class="link-card">
+                    <span class="icon">📚</span>
+                    <span>Competencias</span>
+                </a>
+                <a href="/api/cortes" target="_blank" class="link-card">
+                    <span class="icon">⚖️</span>
+                    <span>Cortes</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="endpoints-section">
+            <h2>📚 Endpoints de la API</h2>
+            <div class="endpoints-list">
+                <div class="endpoint-item">
+                    <code>GET /api/health</code>
+                    <span>Health check del servidor</span>
+                </div>
+                <div class="endpoint-item">
+                    <code>GET /api/competencias</code>
+                    <span>Listar todas las competencias</span>
+                </div>
+                <div class="endpoint-item">
+                    <code>GET /api/cortes</code>
+                    <span>Listar todas las cortes</span>
+                </div>
+                <div class="endpoint-item">
+                    <code>GET /api/tribunales</code>
+                    <span>Listar tribunales con filtros opcionales</span>
+                </div>
+                <div class="endpoint-item">
+                    <code>GET /api/exportar/json</code>
+                    <span>Exportar datos en formato JSON</span>
+                </div>
+                <div class="endpoint-item">
+                    <code>GET /api/exportar/csv</code>
+                    <span>Exportar datos en formato CSV</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 
 async function startBrowser(url) {
   const browser = await chromium.launch({ 
-    headless: false,
+    headless: true, // Sin vista - modo producción
     slowMo: 300 // Delay humano entre acciones (300ms)
   });
   

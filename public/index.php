@@ -115,12 +115,12 @@
         <!-- BOTONES -->
         <div class="d-flex gap-2 mb-3">
             <!-- onclick ejecuta JS y data-bs-... abre el modal (requiere bootstrap JS) -->
-            <button id="btnBuscar" class="btn btn-primary"
-                    onclick="buscarCausa()"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalDetalleCivil">
+            <button id="btnBuscar"
+                    class="btn btn-primary"
+                    onclick="buscarCausa()">
                 Buscar
             </button>
+
 
             <button id="btnLimpiar" class="btn btn-warning" onclick="limpiarFormulario()">Limpiar</button>
         </div>

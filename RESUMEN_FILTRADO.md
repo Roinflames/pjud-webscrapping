@@ -59,3 +59,4 @@ node src/process-csv-causas.js 100
 - Las causas inválidas están en `causa_invalidas.csv` por si necesitas revisarlas manualmente
 - Si necesitas restaurar el CSV original, usa el archivo de backup
 
+

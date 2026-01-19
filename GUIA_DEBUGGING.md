@@ -158,3 +158,4 @@ Revisa la consola para ver en qué paso se detiene.
 
 4. **Comparte los logs y screenshots** para análisis
 
+

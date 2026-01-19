@@ -117,3 +117,4 @@ WHERE c.materia_estrategia_id = 3
 ORDER BY c.id DESC
 LIMIT 20;
 
+

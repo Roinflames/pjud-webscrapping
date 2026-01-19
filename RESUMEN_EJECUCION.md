@@ -124,3 +124,4 @@ Después de ejecutar encontrarás en `src/outputs/`:
 4. Si hay errores, se guardan screenshots en `src/logs/`
 
 
+

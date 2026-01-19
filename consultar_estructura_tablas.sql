@@ -208,3 +208,4 @@ SELECT
     COUNT(CASE WHEN causa_nombre IS NOT NULL AND causa_nombre != '' THEN 1 END) AS con_caratulado
 FROM causa;
 
+

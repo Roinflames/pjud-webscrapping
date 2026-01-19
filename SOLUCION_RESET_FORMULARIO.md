@@ -92,3 +92,4 @@ Ahora debería:
 - ✅ No intentar navegar cuando ya está en el formulario
 - ✅ Procesar múltiples causas consecutivamente
 
+

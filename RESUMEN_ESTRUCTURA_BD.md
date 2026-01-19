@@ -180,3 +180,4 @@ LIMIT 100;
    SELECT COUNT(*) FROM causa WHERE id_causa IS NOT NULL;
    ```
 
+

@@ -157,3 +157,4 @@ WHERE c.id_causa IS NOT NULL
 ORDER BY c.id DESC
 LIMIT 50;
 
+

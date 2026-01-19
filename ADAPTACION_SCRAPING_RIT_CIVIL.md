@@ -70,3 +70,4 @@ El scraping ahora:
 - ✅ Continúa aunque falle corte o tribunal
 - ✅ Todas las causas con RIT son tratadas como civiles
 
+

@@ -57,9 +57,28 @@ function exportToCSV(rows, outputDir, rit) {
   console.log(`🟢 CSV estructurado exportado: ${filename}`);
 }
 
+// Exportar movimientos estructurados del PJUD
+function exportMovimientos(movimientos, outputDir, rit) {
+  const filename = `movimientos_${rit.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+  const filepath = path.join(outputDir, filename);
+
+  fs.writeFileSync(filepath, JSON.stringify(movimientos, null, 2), 'utf8');
+  console.log(`📋 Movimientos exportados en: ${filepath}`);
+}
+
+// Exportar movimientos estructurados del PJUD
+function exportMovimientos(movimientos, outputDir, rit) {
+  const filename = `movimientos_${rit.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+  const filepath = path.join(outputDir, filename);
+
+  fs.writeFileSync(filepath, JSON.stringify(movimientos, null, 2), 'utf8');
+  console.log(`📋 Movimientos exportados en: ${filepath}`);
+}
+
 module.exports = {
   exportToJSON,
   exportToCSV,
+  exportMovimientos,
   processTableData,
   prepareMovimientosForDB
 };

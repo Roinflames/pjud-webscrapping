@@ -226,3 +226,4 @@ console.log('💡 Para ejecutar:');
 console.log('   mysql -u root -p codi_ejamtest < buscar_usuario_bdd.sql');
 console.log('   O copia y pega las queries en phpMyAdmin\n');
 
+

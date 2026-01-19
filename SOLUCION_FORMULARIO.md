@@ -95,3 +95,4 @@ node src/process-csv-causas.js 10
 
 Ahora debería funcionar correctamente, esperando a que cada campo se habilite antes de intentar seleccionarlo.
 
+

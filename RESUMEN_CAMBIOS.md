@@ -147,3 +147,4 @@ node src/process-csv-causas.js 10
 
 Todos los delays son **aleatorios** para emular comportamiento humano real.
 
+

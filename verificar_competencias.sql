@@ -77,3 +77,4 @@ WHERE causa_nombre LIKE '%Civil%'
 GROUP BY materia_estrategia_id
 ORDER BY materia_estrategia_id;
 
+

@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-async function downloadPDFsFromTable(page, context, outputDir, rit) {
-  console.log("🔎 Buscando iconos PDF en la tabla...");
+// Extraer solo las URLs de los PDFs (sin descargarlos)
+async function extractPDFUrlsFromTable(page, context, outputDir, rit) {
+  console.log("🔎 Buscando URLs de PDFs en la tabla...");
 
   // Obtener los datos de la tabla que ya extrajimos para saber qué PDFs corresponden a qué fila
   const { extractTable } = require('./table');
@@ -69,4 +70,9 @@ async function downloadPDFsFromTable(page, context, outputDir, rit) {
   return pdfMapping;
 }
 
-module.exports = { downloadPDFsFromTable };
+// Función legacy para compatibilidad (ahora solo extrae URLs)
+async function downloadPDFsFromTable(page, context, outputDir, rit) {
+  return await extractPDFUrlsFromTable(page, context, outputDir, rit);
+}
+
+module.exports = { extractPDFUrlsFromTable, downloadPDFsFromTable };

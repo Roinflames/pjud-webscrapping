@@ -347,3 +347,4 @@ for (const rit of rits) {
 5. ✅ **Scheduler**: Ejecutar automáticamente cada X tiempo
 
 
+

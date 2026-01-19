@@ -1,3 +1,5 @@
+const { detectCaptcha, checkIfBlocked } = require('./utils/captcha-detector');
+
 async function closeModalIfExists(page) {
   try {
     console.log('🔍 Buscando modal para cerrar...');
@@ -5,29 +7,38 @@ async function closeModalIfExists(page) {
     await page.click('#close-modal');
     console.log('✅ Modal cerrado');
     await page.waitForTimeout(300);
-    await page.screenshot({ path: 'debug_02_modal_cerrado.png', fullPage: false });
-    console.log('📸 Screenshot: debug_02_modal_cerrado.png');
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_02_modal_cerrado.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_02_modal_cerrado.png');
   } catch (_) {
     console.log('ℹ️ No se encontró modal para cerrar');
-    await page.screenshot({ path: 'debug_02_sin_modal.png', fullPage: false });
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_02_sin_modal.png', fullPage: false });
   }
 }
 
 async function goToConsultaCausas(page) {
+  // Verificar CAPTCHA antes de navegar
+  const captchaCheck = await detectCaptcha(page);
+  const blockCheck = await checkIfBlocked(page);
+  
+  if (captchaCheck.detected || blockCheck.blocked) {
+    throw new Error(`CAPTCHA/Bloqueo detectado antes de navegar: ${captchaCheck.detected ? captchaCheck.type : blockCheck.reason}`);
+  }
   console.log("🖱️ Entrando a 'Consulta causas'...");
 
   try {
-    // Screenshot antes de buscar el enlace
-    await page.screenshot({ path: 'debug_03_antes_consulta_causas.png', fullPage: false });
-    console.log('📸 Screenshot: debug_03_antes_consulta_causas.png');
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_03_antes_consulta_causas.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_03_antes_consulta_causas.png');
     
     // Esperar menos tiempo
     await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {
       console.warn('⚠️ Timeout esperando domcontentloaded');
     });
     
-    // Delay humano aleatorio (500-1500ms)
-    await page.waitForTimeout(500 + Math.random() * 1000);
+    // Delay optimizado (200-600ms)
+    await page.waitForTimeout(200 + Math.random() * 400);
     
     // Buscar el enlace de varias formas posibles
     const selectors = [
@@ -44,16 +55,16 @@ async function goToConsultaCausas(page) {
         await page.waitForSelector(selector, { timeout: 5000 });
         console.log(`✅ Selector encontrado: ${selector}`);
         
-        // Screenshot antes del click
-        await page.screenshot({ path: 'debug_04_enlace_encontrado.png', fullPage: false });
-        console.log('📸 Screenshot: debug_04_enlace_encontrado.png');
+        // Screenshot deshabilitado en modo headless
+        // await page.screenshot({ path: 'debug_04_enlace_encontrado.png', fullPage: false });
+        // console.log('📸 Screenshot: debug_04_enlace_encontrado.png');
         
         // Esperar a que la navegación comience (más rápido)
         const navigationPromise = page.waitForNavigation({ 
           waitUntil: 'domcontentloaded', 
-          timeout: 20000 
+          timeout: 30000 // Aumentado de 20s a 30s para evitar timeouts
         }).catch(() => {
-          console.warn('⚠️ Timeout en navegación');
+          console.warn('⚠️ Timeout en navegación, continuando...');
         });
         
         await page.click(selector);
@@ -78,12 +89,12 @@ async function goToConsultaCausas(page) {
       console.warn('⚠️ Timeout esperando carga de nueva página');
     });
     
-    // Delay humano después de navegar (1-2 segundos)
-    await page.waitForTimeout(1000 + Math.random() * 1000);
+    // Delay optimizado después de navegar (300-700ms)
+    await page.waitForTimeout(300 + Math.random() * 400);
     
-    // Screenshot después de navegar
-    await page.screenshot({ path: 'debug_05_despues_navegacion.png', fullPage: false });
-    console.log('📸 Screenshot: debug_05_despues_navegacion.png');
+    // Screenshot deshabilitado en modo headless
+    // await page.screenshot({ path: 'debug_05_despues_navegacion.png', fullPage: false });
+    // console.log('📸 Screenshot: debug_05_despues_navegacion.png');
     
     console.log('✅ Navegación completada. URL actual:', page.url());
     

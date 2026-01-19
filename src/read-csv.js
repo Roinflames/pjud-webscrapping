@@ -146,3 +146,4 @@ if (require.main === module) {
 
 module.exports = { readCausaCSV, mapCsvToDB, analyzeCausaData };
 
+

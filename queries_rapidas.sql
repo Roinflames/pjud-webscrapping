@@ -19,3 +19,4 @@ SELECT * FROM agenda WHERE nombre_cliente IS NOT NULL AND nombre_cliente != '' A
 -- TABLA 5: causa
 SELECT * FROM causa WHERE id_causa IS NOT NULL AND id_causa != '' AND causa_nombre IS NOT NULL AND causa_nombre != '' LIMIT 1;
 
+

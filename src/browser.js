@@ -17,8 +17,8 @@ async function startBrowser(url, options = {}) {
   const { headless = true, slowMo = 100 } = options;
   
   const browser = await chromium.launch({ 
-    headless: headless, // Modo headless por defecto (sin vista)
-    slowMo: slowMo // Delay entre acciones (100ms en headless)
+    headless: headless, // Modo headless configurable
+    slowMo: slowMo // Delay entre acciones configurable
   });
   
   // Rotar user agent para evitar detección

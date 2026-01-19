@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Movimientos Procesales | Sistema de Gestión Legal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        :root {
+            --pjud-primary: #1e3a8a;
+            --pjud-secondary: #3b82f6;
+            --pjud-success: #10b981;
+            --pjud-warning: #f59e0b;
+            --pjud-danger: #ef4444;
+            --pjud-light: #f8fafc;
+            --pjud-border: #e2e8f0;
+            --pjud-text: #1e293b;
+            --pjud-text-muted: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--pjud-text);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .header-legal {
+            background: linear-gradient(135deg, var(--pjud-primary) 0%, #1e40af 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header-legal .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-legal h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rit-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--pjud-primary);
+        }
+
+        .info-card h3 {
+            color: var(--pjud-primary);
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--pjud-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: var(--pjud-text);
+            font-weight: 500;
+        }
+
+        .estado-causa {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .estado-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .estado-badge.en-tramite {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .movimientos-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            background: var(--pjud-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .table-filters {
+            padding: 15px 20px;
+            background: var(--pjud-light);
+            border-bottom: 1px solid var(--pjud-border);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid var(--pjud-border);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .movimientos-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .movimientos-table thead {
+            background: #f8fafc;
+            border-bottom: 2px solid var(--pjud-border);
+        }
+
+        .movimientos-table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--pjud-text);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--pjud-border);
+        }
+
+        .movimientos-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--pjud-border);
+            vertical-align: middle;
+        }
+
+        .movimientos-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .folio-badge {
+            display: inline-block;
+            background: var(--pjud-primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .documentos-cell {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .pdf-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 16px;
+        }
+
+        .pdf-btn.principal {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .pdf-btn.principal:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+
+        .pdf-btn.anexo {
+            background: #ef4444;
+            color: white;
+        }
+
+        .pdf-btn.anexo:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .descripcion-cell .truncate {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-pdf-container {
+            background: white;
+            border-radius: 8px;
+            width: 95%;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--pjud-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px 20px;
+            background: var(--pjud-light);
+            border-top: 1px solid var(--pjud-border);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--pjud-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--pjud-primary);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            color: var(--pjud-text-muted);
+            display: none;
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        .pagination-controls {
+            padding: 15px 20px;
+            background: var(--pjud-light);
+            border-top: 1px solid var(--pjud-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: var(--pjud-text-muted);
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 15px;
+            background: white;
+            border: 1px solid var(--pjud-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--pjud-primary);
+            color: white;
+            border-color: var(--pjud-primary);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .items-per-page {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .items-per-page select {
+            padding: 5px 10px;
+            border: 1px solid var(--pjud-border);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-legal">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <h1>
+                    <i class="fa fa-gavel"></i>
+                    Movimientos Procesales
+                    <span class="rit-badge" id="rit-badge">16707-2019</span>
+                </h1>
+                <button class="btn btn-light btn-sm" onclick="window.print()">
+                    <i class="fa fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="info-causa"></div>
+        <div id="estado-causa"></div>
+        <div id="tabla-movimientos"></div>
+    </div>
+
+    <div class="modal-overlay" id="modalPDF">
+        <div class="modal-pdf-container">
+            <div class="modal-header">
+                <h4 id="tituloPDF"></h4>
+                <button onclick="cerrarPDF()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">&times;</button>
+            </div>
+            <div style="flex:1;padding:0;overflow:hidden;">
+                <iframe id="pdfViewer" class="pdf-viewer"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Función para generar movimientos masivamente
+        function generarMovimientosMasivos(cantidad = 150) {
+            const tiposMovimientos = [
+                { etapa: "Ingreso", tramite: "Ingreso", descripcion: "Se ingresó la causa al tribunal" },
+                { etapa: "Providencia", tramite: "Providencia", descripcion: "Se ordenó el emplazamiento del demandado conforme al artículo 254 del Código de Procedimiento Civil" },
+                { etapa: "Notificación", tramite: "Notificación", descripcion: "Se notificó la demanda y su proveído al demandado conforme al artículo 44 del Código de Procedimiento Civil" },
+                { etapa: "Contestación", tramite: "Contestación", descripcion: "Se presentó contestación de la demanda por parte del demandado" },
+                { etapa: "Réplica", tramite: "Réplica", descripcion: "Se presentó réplica del demandante a la contestación de la demanda" },
+                { etapa: "Dúplica", tramite: "Dúplica", descripcion: "Se presentó dúplica del demandado a la réplica del demandante" },
+                { etapa: "Prueba", tramite: "Presentación de Pruebas", descripcion: "Se admitieron las pruebas ofrecidas por las partes" },
+                { etapa: "Audiencia", tramite: "Audiencia", descripcion: "Se citó a las partes a audiencia de conciliación y juicio" },
+                { etapa: "Declaración", tramite: "Declaración de Testigos", descripcion: "Se recibió la declaración de testigos conforme al artículo 410 del Código de Procedimiento Civil" },
+                { etapa: "Examen", tramite: "Examen de Documentos", descripcion: "Se procedió al examen de documentos presentados por las partes" },
+                { etapa: "Citación", tramite: "Citación", descripcion: "Se citó a las partes para absolver posiciones conforme al artículo 357 del Código de Procedimiento Civil" },
+                { etapa: "Informe", tramite: "Informe Pericial", descripcion: "Se presentó informe pericial por el perito designado" },
+                { etapa: "Traslado", tramite: "Traslado", descripcion: "Se ordenó traslado de la causa a las partes por el plazo legal" },
+                { etapa: "Alegatos", tramite: "Alegatos", descripcion: "Se recibieron los alegatos de conclusión de las partes" },
+                { etapa: "Sentencia", tramite: "Sentencia", descripcion: "Se dictó sentencia de primera instancia" },
+                { etapa: "Apelación", tramite: "Apelación", descripcion: "Se presentó apelación en contra de la sentencia dictada" },
+                { etapa: "Recepción", tramite: "Recepción de Causa", descripcion: "Se recibió la causa en alzada" },
+                { etapa: "Vista", tramite: "Vista de Causa", descripcion: "Se fijó vista de la causa para el día señalado" },
+                { etapa: "Fallar", tramite: "Fallar", descripcion: "La causa quedó en estado de ser fallada" },
+                { etapa: "Ejecución", tramite: "Ejecución", descripcion: "Se inició proceso de ejecución de la sentencia" },
+                { etapa: "Embargo", tramite: "Embargo", descripcion: "Se decretó embargo de bienes del ejecutado" },
+                { etapa: "Remate", tramite: "Remate", descripcion: "Se programó remate de bienes embargados" },
+                { etapa: "Tercería", tramite: "Tercería", descripcion: "Se presentó tercería de dominio" },
+                { etapa: "Incidente", tramite: "Incidente", descripcion: "Se promovió incidente sobre nulidad del proceso" },
+                { etapa: "Recurso", tramite: "Recurso de Casación", descripcion: "Se interpuso recurso de casación en la forma" }
+            ];
+
+            const movimientos = [];
+            const fechaBase = new Date(2024, 0, 15); // 15 de enero de 2024
+            let fojaActual = 1;
+            
+            for (let i = 0; i < cantidad; i++) {
+                const tipoMov = tiposMovimientos[Math.floor(Math.random() * tiposMovimientos.length)];
+                
+                // Generar fecha progresiva (cada movimiento entre 2-15 días después del anterior)
+                const diasSumar = Math.floor(Math.random() * 14) + 2;
+                fechaBase.setDate(fechaBase.getDate() + diasSumar);
+                
+                // Formatear fecha
+                const fechaStr = fechaBase.toLocaleDateString('es-CL', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                // Decidir si tiene PDF (70% de probabilidad)
+                const tienePdf = Math.random() > 0.3;
+                const tieneAnexo = tienePdf && Math.random() > 0.7; // 30% de los que tienen PDF también tienen anexo
+                
+                const movimiento = {
+                    indice: i + 1,
+                    folio: String(i + 1),
+                    fecha: fechaStr,
+                    etapa: tipoMov.etapa,
+                    tramite: tipoMov.tramite,
+                    tipo_movimiento: tipoMov.tramite,
+                    descripcion: tipoMov.descripcion + (Math.random() > 0.8 ? ` - Folio ${fojaActual}` : ''),
+                    foja: String(fojaActual),
+                    tiene_pdf: tienePdf,
+                    pdf_principal: tienePdf ? `16707_2019_mov_${i + 1}_azul.pdf` : null,
+                    pdf_anexo: tieneAnexo ? `16707_2019_mov_${i + 1}_rojo.pdf` : null
+                };
+                
+                movimientos.push(movimiento);
+                fojaActual += Math.floor(Math.random() * 3) + 1; // Incrementar foja entre 1-3
+            }
+            
+            return movimientos;
+        }
+
+        // Generar datos con muchos movimientos
+        const movimientosGenerados = generarMovimientosMasivos(200); // Generar 200 movimientos
+        
+        const resultado = {
+            rit: "16707-2019",
+            fecha_scraping: new Date().toISOString(),
+            cabecera: {
+                caratulado: "JUAN PÉREZ GONZÁLEZ con EMPRESA XYZ S.A.",
+                juzgado: "1° Juzgado Civil de Santiago",
+                fecha_ingreso: "15/01/2024"
+            },
+            estado_actual: {
+                estado: "EN_TRAMITE",
+                descripcion: "En trámite - " + movimientosGenerados[movimientosGenerados.length - 1].etapa,
+                etapa: movimientosGenerados[movimientosGenerados.length - 1].etapa,
+                ultimo_movimiento: {
+                    fecha: movimientosGenerados[movimientosGenerados.length - 1].fecha,
+                    tipo: movimientosGenerados[movimientosGenerados.length - 1].tramite,
+                    descripcion: movimientosGenerados[movimientosGenerados.length - 1].descripcion
+                }
+            },
+            movimientos: movimientosGenerados,
+            total_movimientos: movimientosGenerados.length,
+            total_pdfs: movimientosGenerados.filter(m => m.pdf_principal || m.pdf_anexo).length
+        };
+
+        // Renderizar información de la causa
+        function renderizarInfoCausa() {
+            const html = `
+                <div class="info-card">
+                    <h3><i class="fa fa-info-circle"></i> Información de la Causa</h3>
+                    <div class="info-grid">
+                        <div>
+                            <div class="info-label">RIT/Rol</div>
+                            <div class="info-value">${resultado.rit}</div>
+                        </div>
+                        <div>
+                            <div class="info-label">Caratulado</div>
+                            <div class="info-value">${resultado.cabecera.caratulado}</div>
+                        </div>
+                        <div>
+                            <div class="info-label">Juzgado/Tribunal</div>
+                            <div class="info-value">${resultado.cabecera.juzgado}</div>
+                        </div>
+                        <div>
+                            <div class="info-label">Fecha de Ingreso</div>
+                            <div class="info-value">${resultado.cabecera.fecha_ingreso}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('info-causa').innerHTML = html;
+        }
+
+        // Renderizar estado
+        function renderizarEstado() {
+            const estado = resultado.estado_actual.estado.toLowerCase().replace(/_/g, '-');
+            const html = `
+                <div class="estado-causa">
+                    <span class="estado-badge ${estado}">${resultado.estado_actual.descripcion}</span>
+                    ${resultado.estado_actual.ultimo_movimiento ? `
+                    <div style="margin-top: 10px; font-size: 13px; color: var(--pjud-text-muted);">
+                        Último movimiento: ${resultado.estado_actual.ultimo_movimiento.fecha}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('estado-causa').innerHTML = html;
+        }
+
+        // Variables de paginación
+        let itemsPerPage = 50;
+        let currentPage = 1;
+        let filteredMovimientos = [...resultado.movimientos];
+
+        // Renderizar fila de movimiento
+        function renderizarFilaMovimiento(mov) {
+            return `
+                <tr data-fecha="${mov.fecha}" data-descripcion="${(mov.descripcion || '').toLowerCase()}" data-etapa="${mov.etapa || ''}">
+                    <td><span class="folio-badge">${mov.folio || mov.indice || ''}</span></td>
+                    <td>
+                        <div class="documentos-cell">
+                            ${mov.pdf_principal ? `
+                            <button class="pdf-btn principal" title="Ver PDF Principal" onclick="mostrarMensajePDF('${mov.pdf_principal}')">
+                                <i class="fa fa-file-pdf-o"></i>
+                            </button>
+                            ` : ''}
+                            ${mov.pdf_anexo ? `
+                            <button class="pdf-btn anexo" title="Ver PDF Anexo" onclick="mostrarMensajePDF('${mov.pdf_anexo}')">
+                                <i class="fa fa-file-pdf-o"></i>
+                            </button>
+                            ` : ''}
+                            ${!mov.pdf_principal && !mov.pdf_anexo ? '<span style="color: #999; font-size: 12px;">Sin documentos</span>' : ''}
+                        </div>
+                    </td>
+                    <td class="fecha-cell">${mov.fecha || ''}</td>
+                    <td class="etapa-cell">${mov.etapa ? `<span class="etapa-badge" style="background:#e0e7ff;color:#4338ca;padding:3px 8px;border-radius:3px;font-size:11px;">${mov.etapa}</span>` : ''}</td>
+                    <td class="tramite-cell">${mov.tramite || mov.tipo_movimiento || ''}</td>
+                    <td class="descripcion-cell">
+                        <div class="truncate" title="${mov.descripcion || ''}">${mov.descripcion || ''}</div>
+                    </td>
+                    <td style="text-align: center; color: var(--pjud-text-muted);">${mov.foja || '-'}</td>
+                </tr>
+            `;
+        }
+
+        // Renderizar tabla con paginación
+        function renderizarTabla() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const movimientosPaginados = filteredMovimientos.slice(startIndex, endIndex);
+            
+            let rowsHTML = '';
+            movimientosPaginados.forEach(mov => {
+                rowsHTML += renderizarFilaMovimiento(mov);
+            });
+
+            const totalPages = Math.ceil(filteredMovimientos.length / itemsPerPage);
+            
+            const html = `
+                <div class="movimientos-container">
+                    <div class="table-header">
+                        <h3><i class="fa fa-list"></i> Historial de Movimientos Procesales</h3>
+                        <span style="font-size: 13px; opacity: 0.9;">${filteredMovimientos.length} de ${resultado.movimientos.length} movimiento(s)</span>
+                    </div>
+                    <div class="table-filters">
+                        <input type="text" class="filter-input" id="filterFecha" placeholder="🔍 Filtrar por fecha...">
+                        <input type="text" class="filter-input" id="filterDescripcion" placeholder="🔍 Filtrar por descripción...">
+                        <select class="filter-input" id="filterEtapa">
+                            <option value="">Todas las etapas</option>
+                            ${[...new Set(resultado.movimientos.map(m => m.etapa).filter(e => e))].map(e => `<option value="${e}">${e}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="loading-indicator" id="loadingIndicator">
+                        <i class="fa fa-spinner fa-spin"></i> Cargando movimientos...
+                    </div>
+                    <div class="table-wrapper" id="tableWrapper">
+                        <table class="movimientos-table" id="tablaMovimientos">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">Folio</th>
+                                    <th style="width: 100px;">Documentos</th>
+                                    <th style="width: 100px;">Fecha</th>
+                                    <th style="width: 120px;">Etapa</th>
+                                    <th style="width: 120px;">Trámite</th>
+                                    <th>Descripción del Trámite</th>
+                                    <th style="width: 70px;">Foja</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls">
+                        <div class="pagination-info">
+                            Mostrando ${startIndex + 1} - ${Math.min(endIndex, filteredMovimientos.length)} de ${filteredMovimientos.length} movimientos
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <div class="items-per-page">
+                                <label for="itemsPerPage">Por página:</label>
+                                <select id="itemsPerPage" onchange="cambiarItemsPorPagina(this.value)">
+                                    <option value="25" ${itemsPerPage === 25 ? 'selected' : ''}>25</option>
+                                    <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>
+                                    <option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>
+                                    <option value="200" ${itemsPerPage === 200 ? 'selected' : ''}>200</option>
+                                    <option value="0" ${itemsPerPage === 0 ? 'selected' : ''}>Todos</option>
+                                </select>
+                            </div>
+                            <div class="pagination-buttons">
+                                <button class="pagination-btn" onclick="irAPagina(1)" ${currentPage === 1 ? 'disabled' : ''}>
+                                    <i class="fa fa-angle-double-left"></i> Primera
+                                </button>
+                                <button class="pagination-btn" onclick="irAPagina(currentPage - 1)" ${currentPage === 1 ? 'disabled' : ''}>
+                                    <i class="fa fa-angle-left"></i> Anterior
+                                </button>
+                                <span style="padding: 8px 15px; font-size: 13px;">
+                                    Página ${currentPage} de ${totalPages || 1}
+                                </span>
+                                <button class="pagination-btn" onclick="irAPagina(currentPage + 1)" ${currentPage >= totalPages ? 'disabled' : ''}>
+                                    Siguiente <i class="fa fa-angle-right"></i>
+                                </button>
+                                <button class="pagination-btn" onclick="irAPagina(totalPages)" ${currentPage >= totalPages ? 'disabled' : ''}>
+                                    Última <i class="fa fa-angle-double-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-bar">
+                        <div>
+                            <div class="stat-label">Total Movimientos</div>
+                            <div class="stat-value">${resultado.movimientos.length}</div>
+                        </div>
+                        <div>
+                            <div class="stat-label">Con Documentos</div>
+                            <div class="stat-value">${resultado.movimientos.filter(m => m.pdf_principal || m.pdf_anexo).length}</div>
+                        </div>
+                        <div>
+                            <div class="stat-label">PDFs Disponibles</div>
+                            <div class="stat-value">${resultado.total_pdfs}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('tabla-movimientos').innerHTML = html;
+            
+            // Scroll al inicio de la tabla
+            document.getElementById('tableWrapper').scrollTop = 0;
+        }
+
+        // Funciones de paginación
+        function irAPagina(pagina) {
+            const totalPages = Math.ceil(filteredMovimientos.length / itemsPerPage);
+            if (pagina >= 1 && pagina <= totalPages) {
+                currentPage = pagina;
+                renderizarTabla();
+            }
+        }
+
+        function cambiarItemsPorPagina(cantidad) {
+            itemsPerPage = parseInt(cantidad) || filteredMovimientos.length;
+            currentPage = 1;
+            renderizarTabla();
+        }
+
+        // Renderizar tabla de movimientos (función principal)
+        function renderizarMovimientos() {
+            renderizarTabla();
+
+            // Agregar funcionalidad de filtros
+            $('#filterFecha, #filterDescripcion, #filterEtapa').on('input change', function() {
+                const fecha = $('#filterFecha').val().toLowerCase();
+                const descripcion = $('#filterDescripcion').val().toLowerCase();
+                const etapa = $('#filterEtapa').val();
+
+                // Filtrar movimientos
+                filteredMovimientos = resultado.movimientos.filter(mov => {
+                    const matchFecha = !fecha || (mov.fecha || '').toLowerCase().includes(fecha);
+                    const matchDesc = !descripcion || (mov.descripcion || '').toLowerCase().includes(descripcion);
+                    const matchEtapa = !etapa || mov.etapa === etapa;
+                    return matchFecha && matchDesc && matchEtapa;
+                });
+
+                currentPage = 1; // Volver a la primera página al filtrar
+                renderizarTabla();
+            });
+        }
+
+        function mostrarMensajePDF(nombreArchivo) {
+            if (!nombreArchivo) {
+                alert('No hay PDF disponible para este movimiento');
+                return;
+            }
+            
+            // Obtener el RIT del badge o de la URL
+            const rit = document.getElementById('rit-badge')?.textContent || '16707-2019';
+            
+            // Construir URL del PDF
+            // Formato: /api/scraping/pdf/{rit}/{nombreArchivo}
+            const pdfUrl = `/api/scraping/pdf/${rit}/${nombreArchivo}`;
+            
+            // Abrir PDF en el modal o en nueva pestaña
+            const modalPDF = document.getElementById('modalPDF');
+            const pdfViewer = document.getElementById('pdfViewer');
+            const tituloPDF = document.getElementById('tituloPDF');
+            
+            if (modalPDF && pdfViewer) {
+                // Mostrar en modal
+                tituloPDF.textContent = nombreArchivo;
+                pdfViewer.src = pdfUrl;
+                modalPDF.classList.add('active');
+            } else {
+                // Abrir en nueva pestaña como fallback
+                window.open(pdfUrl, '_blank');
+            }
+        }
+
+        function cerrarPDF() {
+            document.getElementById('modalPDF').classList.remove('active');
+        }
+
+        // Inicializar
+        $(document).ready(function() {
+            renderizarInfoCausa();
+            renderizarEstado();
+            renderizarMovimientos();
+        });
+    </script>
+</body>
+</html>

@@ -1,175 +1,146 @@
-// Script para procesar múltiples causas desde el CSV
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-
-const { readCausaCSV, mapCsvToDB } = require('./read-csv');
 const { startBrowser } = require('./browser');
-const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
-const { fillForm, openDetalle } = require('./form');
-const { extractTable, extractTableAsArray } = require('./table');
-const { exportToJSON, exportToCSV } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
+const { downloadEbook } = require('./ebook');
+const { fillForm, openDetalle, resetForm } = require('./form');
+const { extractTable } = require('./table');
+const { closeModalIfExists } = require('./navigation');
 const { saveErrorEvidence } = require('./utils');
-const { 
-  saveCheckpoint, 
-  loadCheckpoint, 
-  clearCheckpoint, 
-  isCausaProcessed,
-  backupCheckpoint 
-} = require('./utils/checkpoint');
+const { readCausaCSV } = require('./read-csv');
+const { processTableData } = require('./dataProcessor');
+const { importarAMovimientosIntermedia } = require('./importar_intermedia_sql');
 
-// Función para extraer tipoCausa del RIT
-function extractTipoCausa(rit) {
-  if (!rit || rit === 'NULL') return null;
-  // Formato: "C-13786-2018" -> "C"
-  const match = rit.match(/^([A-Za-z0-9]+)-/);
-  return match ? match[1] : null;
-}
+const PROGRESS_FILE = path.resolve(__dirname, 'progress.json');
+const DAILY_LIMIT_FILE = path.resolve(__dirname, 'daily_count.json');
+const DEFAULT_DAILY_LIMIT = 150;
 
-// Función para extraer rol y año del RIT
-function extractRolAnio(rit) {
-  if (!rit || rit === 'NULL') return { rol: null, año: null };
-  // Formato: "C-13786-2018" -> rol: "13786", año: "2018"
-  const parts = rit.split('-');
-  if (parts.length >= 3) {
-    return { rol: parts[1], año: parts[2] };
-  }
-  return { rol: null, año: null };
-}
-
-// Mapear datos del CSV a formato para scraping
-// IMPORTANTE: Todas las causas con RIT son civiles (competencia = 3)
+/**
+ * Mapear datos del CSV a formato para scraping
+ */
 function csvToScrapingConfig(csvCausa) {
-  const { rol, año } = extractRolAnio(csvCausa.rit);
-  const tipoCausa = extractTipoCausa(csvCausa.rit);
-  
   return {
-    rit: csvCausa.rit,
-    competencia: '3', // SIEMPRE Civil (todas las causas con RIT son civiles)
-    corte: '90', // Default
-    tribunal: csvCausa.tribunal || null, // Opcional, puede ser NULL
-    tipoCausa: tipoCausa || 'C', // Extraído del RIT
-    caratulado: csvCausa.caratulado,
-    cliente: csvCausa.cliente,
-    rut: csvCausa.rut,
-    abogado_id: csvCausa.abogado_id,
-    cuenta_id: csvCausa.cuenta_id,
-    // Datos originales
-    causa_id: csvCausa.causa_id,
-    agenda_id: csvCausa.agenda_id
+    rit: csvCausa.rit || `${csvCausa.rol}-${csvCausa.anio}`,
+    competencia: csvCausa.competencia_id || '3',
+    corte: csvCausa.corte_id || '90',
+    tribunal: csvCausa.tribunal_id || '',
+    tipoCausa: csvCausa.tipo_causa || 'C'
   };
 }
 
-// Procesar una causa individual
-async function processCausa(page, context, config, outputDir) {
+/**
+ * Validar si una causa es válida para scraping
+ */
+function isValidForScraping(csvCausa) {
+  const rit = csvCausa.rit || (csvCausa.rol && csvCausa.anio);
+  if (!rit) return false;
+  return true;
+}
+
+/**
+ * Guardar progreso del scraping
+ */
+function saveProgress(rit, causaId) {
+  const progress = {
+    lastRit: rit,
+    lastCausaId: causaId,
+    timestamp: new Date().toISOString()
+  };
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
+}
+
+/**
+ * Cargar progreso anterior
+ */
+function loadProgress() {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    try {
+      return JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Procesar una sola causa (versión actualizada)
+ */
+async function processCausaBatch(page, context, config, outputDir) {
   try {
-    console.log(`\n📋 Procesando causa: ${config.rit}`);
-    console.log(`   Caratulado: ${config.caratulado || 'N/A'}`);
-    
+    console.log(`📝 Llenando formulario para RIT: ${config.rit}...`);
     await fillForm(page, config);
     await openDetalle(page);
 
-    // Extraer movimientos estructurados del PJUD (rápido, sin esperas innecesarias)
-    // Extraer ambas versiones en paralelo para optimizar
-    const [movimientos, rowsArray] = await Promise.all([
-      extractTable(page),
-      extractTableAsArray(page)
-    ]);
-    console.log(`   ✅ Extraídas ${movimientos.length} movimientos`);
+    // 1. Extraer tabla con el nuevo formato (9 columnas + icons)
+    const rows = await extractTable(page);
+    if (!rows || rows.length === 0) {
+      throw new Error('No se pudieron extraer movimientos de la tabla');
+    }
 
-    // Exportar resultados (usar array para compatibilidad con formato actual)
+    // 2. Descargar PDFs (azul/rojo)
+    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, config.rit) || {};
+
+    // 3. Descargar eBook
+    await downloadEbook(page, context, config, outputDir);
+
+    // 4. Identificar y clonar PDF de demanda
     const ritClean = config.rit.replace(/[^a-zA-Z0-9]/g, '_');
-    exportToJSON(rowsArray, outputDir, ritClean);
-    exportToCSV(rowsArray, outputDir, ritClean);
-    
-    // Exportar movimientos estructurados en archivo separado
-    const movimientosPath = path.join(outputDir, `movimientos_${ritClean}.json`);
-    fs.writeFileSync(movimientosPath, JSON.stringify(movimientos, null, 2));
-    console.log(`   📋 Movimientos estructurados guardados en: ${movimientosPath}`);
-
-    // Extraer URLs de PDFs (sin descargarlos - optimización de recursos)
-    const pdfStats = await downloadPDFsFromTable(page, context, outputDir, ritClean);
-
-    // Cerrar modal/detalle y volver al formulario
-    try {
-      // Intentar cerrar modal si existe
-      const closeButtons = [
-        'button.close',
-        '.modal-header button',
-        '[data-dismiss="modal"]',
-        'button[aria-label="Close"]'
-      ];
-      
-      for (const selector of closeButtons) {
-        try {
-          const closeBtn = await page.$(selector);
-          if (closeBtn) {
-            await closeBtn.click();
-            await page.waitForTimeout(500);
-            break;
-          }
-        } catch (e) {
-          continue;
+    let demandaNombre = null;
+    const movDemanda = rows.find(r => 
+      r.texto && r.texto[5] && r.texto[5].toLowerCase().includes('demanda')
+    );
+    if (movDemanda) {
+      const indiceMov = parseInt(movDemanda.texto[0]) || null;
+      if (indiceMov && pdfMapping[indiceMov] && pdfMapping[indiceMov].azul) {
+        const pdfPrincipal = pdfMapping[indiceMov].azul;
+        const oldPath = path.join(outputDir, pdfPrincipal);
+        const newPath = path.join(outputDir, `${ritClean}_demanda.pdf`);
+        if (fs.existsSync(oldPath)) {
+          fs.copyFileSync(oldPath, newPath);
+          demandaNombre = `${ritClean}_demanda.pdf`;
+          console.log(`   ✅ PDF de demanda guardado: ${demandaNombre}`);
         }
       }
-      
-      // Presionar ESC para cerrar modal (optimizado)
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(200); // Reducido de 500ms a 200ms
-    } catch (error) {
-      console.warn('   ⚠️ No se pudo cerrar modal:', error.message);
     }
 
-    return { 
-      success: true, 
-      rows: rowsArray.length,
-      movimientos: movimientos.length,
-      pdfs_urls_extraidas: pdfStats.exitosas,
-      pdfs_urls_fallidas: pdfStats.fallidas,
-      pdfs_total: pdfStats.total
-    };
+    // 5. Verificar si existe el eBook
+    const ebookNombre = fs.existsSync(path.join(outputDir, `${ritClean}_ebook.pdf`)) 
+      ? `${ritClean}_ebook.pdf` 
+      : null;
+
+    // 6. Procesar datos para SQL
+    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
+    
+     // 7. Importar a la tabla intermedia SQL local (y guardar SQL en archivo)
+     // El parámetro 'true' indica que también se deben guardar los SQL en archivos
+     await importarAMovimientosIntermedia(config.rit, datosProcesados, config, pdfMapping, true, demandaNombre, ebookNombre);
+
+    return { success: true };
   } catch (error) {
-    console.error(`   ❌ Error procesando ${config.rit}:`, error.message);
-    
-    // Intentar cerrar modal/volver al formulario en caso de error (optimizado)
-    try {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(200); // Reducido de 500ms a 200ms
-    } catch (e) {
-      // Ignorar errores al cerrar
-    }
-    
+    console.error(`   ❌ Error en RIT ${config.rit}:`, error.message);
     return { success: false, error: error.message };
   }
 }
 
-// Validar si una causa es válida para scraping
-// IMPORTANTE: Todas las causas con RIT son civiles
-function isValidForScraping(csvCausa) {
-  // Debe tener RIT válido (formato: TIPO-ROL-AÑO)
-  if (!csvCausa.rit || csvCausa.rit === 'NULL' || csvCausa.rit.trim() === '') {
-    return false;
-  }
+/**
+ * Función principal para procesar N causas
+ */
+async function processMultipleCausas(limit = 5) {
+  console.log(`🚀 Iniciando prueba controlada de ${limit} causas...`);
   
-  // Validar formato RIT (debe tener al menos 2 guiones)
-  const parts = csvCausa.rit.split('-');
-  if (parts.length < 3) {
-    // RITs como "SIN ROL", "SOLEDAD SILV", "10187-2021" son inválidos
-    return false;
-  }
-  
-  // No necesitamos validar competencia porque todas las causas con RIT son civiles
-  // Tribunal es opcional - el scraping puede funcionar sin él
-  
-  return true;
-}
-
-// Procesar múltiples causas
-async function processMultipleCausas(limit = 10, requireTribunal = true) {
-  console.log('📂 Leyendo CSV de causas...');
   const causas = readCausaCSV();
+  const causasValidas = causas.filter(c => isValidForScraping(c));
   
+  // Tomar solo las primeras N para la prueba
+  const aProcesar = causasValidas.slice(0, limit);
+  console.log(`📊 Se procesarán ${aProcesar.length} causas del CSV.`);
+
+  const outputDir = path.resolve(__dirname, 'outputs');
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
   // Filtrar solo las válidas para scraping
   let causasValidas = causas.filter(c => isValidForScraping(c));
   
@@ -260,24 +231,49 @@ async function processMultipleCausas(limit = 10, requireTribunal = true) {
   const logDir = path.resolve(__dirname, 'logs');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
   
-  // Modo headless (sin vista) por defecto
-  const { browser, context, page } = await startBrowser(process.env.OJV_URL, { 
-    headless: true, 
-    slowMo: 50 // Más rápido en headless
-  });
+  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
   
   try {
-    // Verificar página inicial
-    const bodyContent = await page.evaluate(() => document.body.innerText);
-    if (!bodyContent || bodyContent.trim().length === 0) {
-      throw new Error('La página está en blanco');
-    }
-    
+    // Manejo inicial de sesión
     await closeModalIfExists(page);
-    await page.waitForTimeout(1000 + Math.random() * 1000);
+    const currentUrl = page.url();
     
-    // Navegar a consulta causas una sola vez
-    await goToConsultaCausas(page);
+    if (currentUrl.includes('home/index.php')) {
+      console.log('🔐 Estableciendo sesión de invitado...');
+      await page.evaluate(async () => {
+        const response = await fetch('../includes/sesion-invitado.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'nombreAcceso=CC'
+        });
+        localStorage.setItem('logged-in', 'true');
+        return response.ok;
+      });
+      await page.goto('https://oficinajudicialvirtual.pjud.cl/indexN.php', { waitUntil: 'domcontentloaded' });
+    }
+
+    for (let i = 0; i < aProcesar.length; i++) {
+      const csvCausa = aProcesar[i];
+      const config = csvToScrapingConfig(csvCausa);
+      
+      console.log(`\n📂 [${i + 1}/${aProcesar.length}] Procesando: ${config.rit}`);
+      
+      const resultado = await processCausaBatch(page, context, config, outputDir);
+      
+      if (resultado.success) {
+        saveProgress(config.rit, csvCausa.causa_id);
+      }
+
+      // Volver al formulario para la siguiente causa
+      if (i < aProcesar.length - 1) {
+        console.log('🔄 Volviendo al formulario...');
+        await resetForm(page);
+        await page.waitForTimeout(2000);
+      }
+    }
+
+  } catch (error) {
+    console.error('💥 Error general:', error);
     
     // Esperar a que el formulario esté completamente cargado
     await page.waitForSelector('#competencia', { timeout: 30000 }); // Aumentado de 20s a 30s
@@ -499,23 +495,13 @@ async function processMultipleCausas(limit = 10, requireTribunal = true) {
     );
   } finally {
     await browser.close();
+    console.log('\n🏁 Fin de la prueba de 5 causas.');
   }
 }
 
-// Ejecutar
 if (require.main === module) {
-  // Si no se pasa argumento o se pasa 0, procesar todas las causas
-  const limitArg = process.argv[2];
-  const limit = limitArg ? parseInt(limitArg) : 0;
-  
-  if (limit === 0) {
-    console.log(`🚀 Iniciando procesamiento de TODAS las causas (modo headless)...\n`);
-  } else {
-    console.log(`🚀 Iniciando procesamiento de ${limit} causas (modo headless)...\n`);
-  }
-  
-  processMultipleCausas(limit, false).catch(console.error); // requireTribunal = false para procesar todas
+  const limit = process.argv[2] ? parseInt(process.argv[2]) : 5;
+  processMultipleCausas(limit).catch(console.error);
 }
 
-module.exports = { processCausa, processMultipleCausas, csvToScrapingConfig };
-
+module.exports = { processMultipleCausas };

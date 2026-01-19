@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVP - Sistema de Scraping PJUD</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .stat-card.info { border-left-color: var(--info); }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-action {
+            margin: 5px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .badge-status {
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+
+        .filters-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1><i class="fa fa-gavel"></i> MVP - Sistema de Scraping PJUD</h1>
+            <p class="mb-0">Gestión completa de causas y scraping masivo</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Estadísticas -->
+        <div class="row" id="statsContainer">
+            <div class="col-md-3">
+                <div class="stat-card success">
+                    <div class="stat-label">Total Causas</div>
+                    <div class="stat-value" id="statTotal">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card info">
+                    <div class="stat-label">Causas Válidas</div>
+                    <div class="stat-value" id="statValidas">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card warning">
+                    <div class="stat-label">Resultados</div>
+                    <div class="stat-value" id="statResultados">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card danger">
+                    <div class="stat-label">Límite Diario</div>
+                    <div class="stat-value" id="statLimite">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Filtros -->
+        <div class="filters-panel">
+            <h4><i class="fa fa-filter"></i> Filtros</h4>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>
+                        <input type="checkbox" id="filtroValidas" checked onchange="aplicarFiltros()">
+                        Solo causas válidas (causa_validas.csv)
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <label>
+                        <input type="checkbox" id="filtroConMovimientos" onchange="aplicarFiltros()">
+                        Solo con movimientos procesados
+                    </label>
+                </div>
+                <div class="col-md-4">
+                    <label>
+                        <input type="checkbox" id="filtroPendientes" onchange="aplicarFiltros()">
+                        Mostrar pendientes
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Acciones -->
+        <div class="filters-panel">
+            <h4><i class="fa fa-cog"></i> Acciones</h4>
+            <div class="row">
+                <div class="col-md-12">
+                    <button class="btn btn-primary btn-action" onclick="cargarEstadisticas()">
+                        <i class="fa fa-refresh"></i> Actualizar Estadísticas
+                    </button>
+                    <button class="btn btn-success btn-action" onclick="mostrarInicializarCola()">
+                        <i class="fa fa-play"></i> Inicializar Cola
+                    </button>
+                    <button class="btn btn-info btn-action" onclick="procesarSiguiente()">
+                        <i class="fa fa-forward"></i> Procesar Siguiente
+                    </button>
+                    <button class="btn btn-warning btn-action" onclick="mostrarFiltros()">
+                        <i class="fa fa-filter"></i> Filtrar Causas
+                    </button>
+                    <a href="/demo" class="btn btn-secondary btn-action" target="_blank">
+                        <i class="fa fa-eye"></i> Ver Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado de Cola -->
+        <div class="table-container" id="colaContainer" style="display: none;">
+            <div class="table-header">
+                <h5 class="mb-0"><i class="fa fa-tasks"></i> Estado de la Cola</h5>
+            </div>
+            <div class="p-3" id="colaContent">
+                <div class="loading">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- Lista de Causas -->
+        <div class="table-container">
+            <div class="table-header">
+                <h5 class="mb-0"><i class="fa fa-list"></i> Causas</h5>
+                <div>
+                    <input type="text" id="buscarRIT" class="form-control form-control-sm" placeholder="🔍 Buscar por RIT (ej: C-13786-2018 o 13786)..." onkeyup="buscarCausas()" oninput="buscarCausas()" style="display: inline-block; width: 300px;">
+                    <button class="btn btn-sm btn-secondary ml-2" onclick="limpiarBusqueda()" title="Limpiar búsqueda">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-0">
+                <table class="table table-hover mb-0" id="tablaCausas">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>RIT</th>
+                            <th>Caratulado</th>
+                            <th>Competencia</th>
+                            <th>Tribunal</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCausasBody">
+                        <tr>
+                            <td colspan="7" class="text-center loading">Cargando causas...</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="p-3" id="paginacion"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Inicializar Cola -->
+    <div class="modal fade" id="modalCola" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Inicializar Cola de Scraping</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCola">
+                        <div class="form-group">
+                            <label>Límite de causas</label>
+                            <input type="number" class="form-control" name="limite" placeholder="Dejar vacío para todas">
+                        </div>
+                        <div class="form-group">
+                            <label>Competencia</label>
+                            <input type="text" class="form-control" name="competencia" placeholder="Filtrar por competencia">
+                        </div>
+                        <div class="form-group">
+                            <label>Tribunal</label>
+                            <input type="text" class="form-control" name="tribunal" placeholder="Filtrar por tribunal">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo Causa</label>
+                            <input type="text" class="form-control" name="tipoCausa" placeholder="C, L, etc.">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="inicializarCola()">Inicializar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Movimientos -->
+    <div class="modal fade" id="modalMovimientos" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fa fa-list"></i> Movimientos Procesales</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" id="modalMovimientosBody" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Contenido cargado dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api/mvp';
+        let token = null;
+
+        // Cargar token (en producción debería venir del login)
+        async function obtenerToken() {
+            try {
+                const response = await fetch('/api/scraping/listar', {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer dummy' }
+                });
+                // Si falla, intentar sin token primero
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Cargar estadísticas
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetch(`${API_BASE}/estadisticas`);
+                const data = await response.json();
+
+                document.getElementById('statTotal').textContent = data.causas?.total || 0;
+                document.getElementById('statValidas').textContent = data.causas?.validas || 0;
+                document.getElementById('statResultados').textContent = data.resultados_scraping?.total || 0;
+                document.getElementById('statLimite').textContent = 
+                    `${data.limite_diario?.actual || 0}/${data.limite_diario?.limite || 0}`;
+
+                // Mostrar estado de cola si existe
+                if (data.cola) {
+                    mostrarEstadoCola(data.cola);
+                }
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+                alert('Error al cargar estadísticas');
+            }
+        }
+
+        // Variables globales para causas
+        let todasLasCausas = [];
+        let causasFiltradas = [];
+
+        // Normalizar RIT para búsqueda (igual que PJUD)
+        function normalizarRIT(rit) {
+            if (!rit) return '';
+            // Convertir a mayúsculas y quitar espacios
+            let normalizado = rit.toUpperCase().trim();
+            // Quitar guiones y caracteres especiales para comparación flexible
+            return normalizado.replace(/[-_]/g, '');
+        }
+
+        // Aplicar filtro a las causas cargadas
+        function aplicarFiltro() {
+            const termino = document.getElementById('buscarRIT').value.trim();
+            const tbody = document.getElementById('tablaCausasBody');
+            
+            if (!termino) {
+                // Sin filtro, mostrar todas (limitado a 100 para rendimiento)
+                causasFiltradas = todasLasCausas.slice(0, 100);
+            } else {
+                // Normalizar término de búsqueda
+                const terminoNormalizado = normalizarRIT(termino);
+                
+                // Filtrar causas
+                causasFiltradas = todasLasCausas.filter(causa => {
+                    if (!causa.rit) return false;
+                    
+                    const ritNormalizado = normalizarRIT(causa.rit);
+                    
+                    // Búsqueda exacta o parcial en RIT normalizado
+                    if (ritNormalizado.includes(terminoNormalizado)) {
+                        return true;
+                    }
+                    
+                    // También buscar en el RIT original (con guiones)
+                    if (causa.rit.toUpperCase().includes(termino.toUpperCase())) {
+                        return true;
+                    }
+                    
+                    // Buscar solo el número si el término es numérico
+                    if (/^\d+$/.test(termino)) {
+                        const numerosRIT = ritNormalizado.replace(/[A-Z]/g, '');
+                        if (numerosRIT.includes(termino)) {
+                            return true;
+                        }
+                    }
+                    
+                    return false;
+                });
+            }
+
+            // Renderizar causas filtradas
+            renderizarCausas(causasFiltradas);
+        }
+
+        // Renderizar causas en la tabla
+        function renderizarCausas(causas) {
+            const tbody = document.getElementById('tablaCausasBody');
+            tbody.innerHTML = '';
+
+            if (causas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No se encontraron causas que coincidan con la búsqueda</td></tr>';
+                document.getElementById('paginacion').innerHTML = '';
+                return;
+            }
+
+            causas.forEach(causa => {
+                const row = document.createElement('tr');
+                
+                // Determinar estado y badge
+                let estadoBadge = '';
+                if (causa.tieneMovimientos) {
+                    estadoBadge = '<span class="badge-status badge-success">Procesada</span>';
+                } else if (causa.valida) {
+                    estadoBadge = '<span class="badge-status badge-warning">Pendiente</span>';
+                } else {
+                    estadoBadge = '<span class="badge-status badge-danger">Inválida</span>';
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${causa.rit}</strong></td>
+                    <td>${causa.caratulado || '-'}</td>
+                    <td>${causa.competencia || '-'}</td>
+                    <td>${causa.tribunal || '-'}</td>
+                    <td>${causa.tipoCausa || '-'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>
+                        ${causa.tieneMovimientos ? `
+                            <button class="btn btn-sm btn-success" onclick="verMovimientos('${causa.rit}')" title="Ver movimientos">
+                                <i class="fa fa-list"></i> Movimientos
+                            </button>
+                        ` : causa.valida ? `
+                            <button class="btn btn-sm btn-primary" onclick="ejecutarScraping('${causa.rit}')" title="Ejecutar scraping">
+                                <i class="fa fa-play"></i> Procesar
+                            </button>
+                        ` : `
+                            <span class="text-muted small">Datos incompletos</span>
+                        `}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Actualizar contador de resultados
+            const termino = document.getElementById('buscarRIT').value.trim();
+            const header = document.querySelector('.table-header h5');
+            const contadorHTML = termino ? 
+                ` <small class="text-muted">(${causas.length} resultado${causas.length !== 1 ? 's' : ''} de ${todasLasCausas.length} totales)</small>` :
+                ` <small class="text-muted">(${causas.length} de ${todasLasCausas.length} mostradas)</small>`;
+            
+            // Remover contador anterior si existe
+            const oldCounter = header.querySelector('small');
+            if (oldCounter) oldCounter.remove();
+            header.innerHTML += contadorHTML;
+        }
+
+        // Limpiar búsqueda
+        function limpiarBusqueda() {
+            document.getElementById('buscarRIT').value = '';
+            aplicarFiltro();
+        }
+
+        // Aplicar filtros desde el panel
+        function aplicarFiltros() {
+            const filtroValidas = document.getElementById('filtroValidas').checked;
+            const filtroConMovimientos = document.getElementById('filtroConMovimientos').checked;
+            const filtroPendientes = document.getElementById('filtroPendientes').checked;
+            
+            // Recargar causas con filtros
+            cargarCausas(0, 1000, true, filtroValidas, filtroConMovimientos, filtroPendientes);
+        }
+
+        // Cargar todas las causas (o un gran lote)
+        async function cargarCausas(offset = 0, limite = 1000, forzarRecarga = false, soloValidas = true, conMovimientos = false, mostrarPendientes = false) {
+            try {
+                // Si ya tenemos causas cargadas y no es recarga forzada, usar cache
+                if (!forzarRecarga && todasLasCausas.length > 0) {
+                    aplicarFiltro();
+                    return;
+                }
+
+                // Construir query params
+                const params = new URLSearchParams({
+                    limite: limite,
+                    offset: offset
+                });
+                
+                if (soloValidas) {
+                    params.append('valida', 'true');
+                }
+                
+                if (conMovimientos) {
+                    params.append('conMovimientos', 'true');
+                }
+
+                // Cargar causas desde el servidor
+                const response = await fetch(`${API_BASE}/causas?${params.toString()}`);
+                const data = await response.json();
+
+                todasLasCausas = data.causas;
+                
+                // Si se solicita mostrar pendientes, agregar también las que no tienen movimientos
+                if (mostrarPendientes && !conMovimientos) {
+                    // Ya vienen todas, solo filtrar en el frontend
+                }
+                
+                // Actualizar contador total
+                if (data.total) {
+                    const header = document.querySelector('.table-header h5');
+                    if (header) {
+                        header.innerHTML = `<i class="fa fa-list"></i> Causas (${data.total} total)`;
+                    }
+                }
+
+                // Aplicar filtro actual (si hay uno)
+                aplicarFiltro();
+
+            } catch (error) {
+                console.error('Error cargando causas:', error);
+                document.getElementById('tablaCausasBody').innerHTML = 
+                    '<tr><td colspan="7" class="text-center text-danger">Error al cargar causas</td></tr>';
+            }
+        }
+
+        // Ejecutar scraping individual (ahora sin token requerido para algunas acciones)
+        async function ejecutarScraping(rit) {
+            if (!confirm(`¿Ejecutar scraping para ${rit}?\n\nEsto puede tardar varios minutos.`)) return;
+
+            try {
+                // Para ejecutar scraping sí se necesita token, pero primero intentamos obtenerlo
+                const response = await fetch(`${API_BASE}/scraping/ejecutar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rit })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Scraping completado: ${data.resultado.movimientos || 0} movimientos, ${data.resultado.pdfs?.total_archivos || 0} PDFs`);
+                    cargarEstadisticas();
+                    // Recargar causas para actualizar estado
+                    setTimeout(() => cargarCausas(0, 50), 1000);
+                } else {
+                    alert(`❌ Error: ${data.error || data.mensaje || 'Error desconocido'}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}\n\nPuede que necesites ejecutar scraping desde la API directamente.`);
+            }
+        }
+
+        // Inicializar cola
+        function mostrarInicializarCola() {
+            $('#modalCola').modal('show');
+        }
+
+        async function inicializarCola() {
+            const form = document.getElementById('formCola');
+            const formData = new FormData(form);
+            const params = {};
+
+            if (formData.get('limite')) params.limite = parseInt(formData.get('limite'));
+            if (formData.get('competencia')) params.competencia = formData.get('competencia');
+            if (formData.get('tribunal')) params.tribunal = formData.get('tribunal');
+            if (formData.get('tipoCausa')) params.tipoCausa = formData.get('tipoCausa');
+
+            try {
+                const response = await fetch(`${API_BASE}/cola/inicializar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Cola inicializada con ${data.cola.total} causas`);
+                    $('#modalCola').modal('hide');
+                    cargarEstadisticas();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Procesar siguiente
+        async function procesarSiguiente() {
+            try {
+                const response = await fetch(`${API_BASE}/cola/procesar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+
+                const data = await response.json();
+                if (data.terminado) {
+                    alert('✅ Cola completada');
+                } else if (data.pausado) {
+                    alert(`⏸️ ${data.mensaje}`);
+                } else {
+                    alert(`✅ Procesado: ${data.item} - Estado: ${data.estado}`);
+                }
+                cargarEstadisticas();
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Mostrar estado de cola
+        function mostrarEstadoCola(cola) {
+            document.getElementById('colaContainer').style.display = 'block';
+            document.getElementById('colaContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-3"><strong>Pendientes:</strong> ${cola.pendientes || 0}</div>
+                    <div class="col-md-3"><strong>Procesando:</strong> ${cola.procesando || 0}</div>
+                    <div class="col-md-3"><strong>Completadas:</strong> ${cola.completadas || 0}</div>
+                    <div class="col-md-3"><strong>Fallidas:</strong> ${cola.fallidas || 0}</div>
+                </div>
+            `;
+        }
+
+        // Buscar causas (ya implementado en aplicarFiltro)
+        function buscarCausas() {
+            aplicarFiltro();
+        }
+
+        function verDetalle(rit) {
+            window.open(`/api/mvp/resultados/${rit}`, '_blank');
+        }
+
+        // Ver movimientos de una causa
+        async function verMovimientos(rit) {
+            try {
+                // Abrir modal de movimientos
+                $('#modalMovimientos').modal('show');
+                $('#modalMovimientos .modal-title').text(`Movimientos - ${rit}`);
+                $('#modalMovimientosBody').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Cargando movimientos...</div>');
+
+                // Obtener datos
+                const response = await fetch(`${API_BASE}/movimientos/${rit}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    $('#modalMovimientosBody').html(`
+                        <div class="alert alert-warning">
+                            <h5>${data.error}</h5>
+                            <p>${data.mensaje || 'Esta causa aún no tiene movimientos procesados.'}</p>
+                            ${data.error === 'Resultado no encontrado' ? `
+                                <button class="btn btn-primary" onclick="ejecutarScraping('${rit}'); $('#modalMovimientos').modal('hide');">
+                                    <i class="fa fa-play"></i> Ejecutar Scraping
+                                </button>
+                            ` : ''}
+                        </div>
+                    `);
+                    return;
+                }
+
+                // Renderizar movimientos
+                renderizarMovimientos(data);
+            } catch (error) {
+                console.error('Error cargando movimientos:', error);
+                $('#modalMovimientosBody').html(`
+                    <div class="alert alert-danger">
+                        <h5>Error</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `);
+            }
+        }
+
+        // Renderizar movimientos estilo PJUD
+        function renderizarMovimientos(data) {
+            // Debug: mostrar estructura de datos en consola
+            console.log('Datos recibidos:', {
+                rit: data.rit,
+                total_movimientos: data.movimientos ? data.movimientos.length : 0,
+                total_pdfs: data.pdfs ? Object.keys(data.pdfs).length : 0,
+                primer_movimiento: data.movimientos && data.movimientos.length > 0 ? data.movimientos[0] : null,
+                pdfs_keys: data.pdfs ? Object.keys(data.pdfs).slice(0, 5) : []
+            });
+            
+            const html = `
+                <div class="movimientos-container">
+                    ${data.cabecera ? `
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5><i class="fa fa-info-circle"></i> Información de la Causa</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>RIT:</strong> ${data.rit || data.cabecera.rit || '-'}<br>
+                                    <strong>Caratulado:</strong> ${data.cabecera.caratulado || '-'}<br>
+                                    <strong>Juzgado:</strong> ${data.cabecera.juzgado || '-'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Fecha Ingreso:</strong> ${data.cabecera.fecha_ingreso || '-'}<br>
+                                    <strong>Total Movimientos:</strong> ${data.total_movimientos || (data.movimientos ? data.movimientos.length : 0)}<br>
+                                    <strong>PDFs Disponibles:</strong> ${data.total_pdfs || (data.pdfs ? Object.keys(data.pdfs).length : 0)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${data.estado_actual ? `
+                    <div class="alert alert-info mb-3">
+                        <strong>Estado Actual:</strong> ${data.estado_actual.descripcion || data.estado_actual.estado || '-'}
+                        ${data.estado_actual.ultimo_movimiento ? `<br><small>Último movimiento: ${data.estado_actual.ultimo_movimiento.fecha || ''} - ${data.estado_actual.ultimo_movimiento.descripcion || ''}</small>` : ''}
+                    </div>
+                    ` : ''}
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-sm">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 60px;">Folio</th>
+                                    <th style="width: 100px;">Documentos</th>
+                                    <th style="width: 100px;">Fecha</th>
+                                    <th style="width: 120px;">Etapa</th>
+                                    <th style="width: 120px;">Trámite</th>
+                                    <th>Descripción</th>
+                                    <th style="width: 70px;">Foja</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.movimientos && data.movimientos.length > 0 ? data.movimientos.map(mov => {
+                                    // Obtener nombres de archivos PDF del movimiento
+                                    const pdfPrincipal = mov.pdf_principal_nombre || mov.pdf_path;
+                                    const pdfAnexo = mov.pdf_anexo_nombre;
+                                    
+                                    // Obtener base64 de los PDFs
+                                    const pdfPrincipalBase64 = pdfPrincipal && data.pdfs && data.pdfs[pdfPrincipal] ? data.pdfs[pdfPrincipal] : null;
+                                    const pdfAnexoBase64 = pdfAnexo && data.pdfs && data.pdfs[pdfAnexo] ? data.pdfs[pdfAnexo] : null;
+                                    
+                                    return `
+                                    <tr>
+                                        <td><span class="badge badge-primary">${mov.folio || mov.indice || '-'}</span></td>
+                                        <td>
+                                            ${pdfPrincipal && pdfPrincipalBase64 ? `
+                                                <button class="btn btn-sm btn-primary" onclick="verPDF('${pdfPrincipal}', '${pdfPrincipalBase64}')" title="PDF Principal (Azul)">
+                                                    <i class="fa fa-file-pdf-o"></i> Azul
+                                                </button>
+                                            ` : ''}
+                                            ${pdfAnexo && pdfAnexoBase64 ? `
+                                                <button class="btn btn-sm btn-danger" onclick="verPDF('${pdfAnexo}', '${pdfAnexoBase64}')" title="PDF Anexo (Rojo)">
+                                                    <i class="fa fa-file-pdf-o"></i> Rojo
+                                                </button>
+                                            ` : ''}
+                                            ${mov.tiene_pdf && !pdfPrincipalBase64 && !pdfAnexoBase64 ? `
+                                                <span class="text-muted small" title="PDF indicado pero no disponible">📄</span>
+                                            ` : ''}
+                                            ${!mov.tiene_pdf ? '<span class="text-muted small">-</span>' : ''}
+                                        </td>
+                                        <td>${mov.fecha || mov.fec_tramite || '-'}</td>
+                                        <td><span class="badge badge-secondary">${mov.etapa || mov.tipo_movimiento || '-'}</span></td>
+                                        <td>${mov.tramite || mov.subtipo_movimiento || mov.tipo_movimiento || '-'}</td>
+                                        <td><small>${mov.descripcion || mov.desc_tramite || '-'}</small></td>
+                                        <td class="text-center">${mov.foja || '-'}</td>
+                                    </tr>
+                                `;
+                                }).join('') : `
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">No hay movimientos disponibles</td>
+                                    </tr>
+                                `}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            $('#modalMovimientosBody').html(html);
+        }
+
+        // Ver PDF
+        function verPDF(nombreArchivo, base64Content) {
+            if (!nombreArchivo) {
+                alert('PDF no disponible en este momento');
+                return;
+            }
+
+            // Obtener el RIT del contexto actual
+            // Intentar obtenerlo de la causa seleccionada o de la URL
+            let rit = null;
+            const causaSeleccionada = window.causaSeleccionada;
+            if (causaSeleccionada && causaSeleccionada.rit) {
+                rit = causaSeleccionada.rit;
+            } else {
+                // Intentar extraer de la URL o usar un valor por defecto
+                const urlParams = new URLSearchParams(window.location.search);
+                rit = urlParams.get('rit') || '16707-2019';
+            }
+
+            // Construir URL del PDF usando el nuevo endpoint
+            // Formato: /api/scraping/pdf/{rit}/{nombreArchivo}
+            const pdfUrl = `/api/scraping/pdf/${rit}/${nombreArchivo}`;
+            
+            // Abrir PDF en nueva pestaña
+            window.open(pdfUrl, '_blank');
+        }
+
+        // Inicializar
+        $(document).ready(function() {
+            cargarEstadisticas();
+            cargarCausas(0, 1000, false, true, false, false); // Cargar causas válidas por defecto
+            
+            // Actualizar cada 30 segundos
+            setInterval(cargarEstadisticas, 30000);
+            
+            // Permitir búsqueda con Enter
+            $('#buscarRIT').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    buscarCausas();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

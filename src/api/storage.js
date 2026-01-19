@@ -1,0 +1,294 @@
+/**
+ * Sistema de Almacenamiento de Resultados de Scraping
+ * 
+ * Almacena los resultados del scraping en archivos JSON para consulta posterior
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const STORAGE_DIR = path.resolve(__dirname, '../storage');
+const RESULTS_FILE = path.join(STORAGE_DIR, 'resultados.json');
+
+// Asegurar que el directorio existe
+if (!fs.existsSync(STORAGE_DIR)) {
+  fs.mkdirSync(STORAGE_DIR, { recursive: true });
+}
+
+/**
+ * Cargar todos los resultados guardados
+ */
+function cargarResultados() {
+  try {
+    if (!fs.existsSync(RESULTS_FILE)) {
+      return {};
+    }
+    const data = fs.readFileSync(RESULTS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error cargando resultados:', error.message);
+    return {};
+  }
+}
+
+/**
+ * Guardar un resultado de scraping
+ * 
+ * @param {string} rit - RIT de la causa
+ * @param {Object} resultado - Resultado del scraping
+ */
+function guardarResultado(rit, resultado) {
+  try {
+    const resultados = cargarResultados();
+    resultados[rit] = {
+      ...resultado,
+      fecha_guardado: new Date().toISOString()
+    };
+    
+    fs.writeFileSync(RESULTS_FILE, JSON.stringify(resultados, null, 2), 'utf-8');
+    console.log(`✅ Resultado guardado para RIT: ${rit}`);
+    return true;
+  } catch (error) {
+    console.error('Error guardando resultado:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Normalizar RIT para buscar archivos
+ */
+function normalizarRITParaArchivo(rit) {
+  if (!rit) return '';
+  return rit.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+/**
+ * Buscar resultado en archivos JSON de outputs
+ */
+function buscarResultadoEnArchivos(rit) {
+  try {
+    const outputsDir = path.resolve(__dirname, '../outputs');
+    if (!fs.existsSync(outputsDir)) {
+      return null;
+    }
+
+    const ritNormalizado = normalizarRITParaArchivo(rit);
+    
+    // Buscar archivo movimientos_*.json (estructurado)
+    const archivoMovimientos = path.join(outputsDir, `movimientos_${ritNormalizado}.json`);
+    if (fs.existsSync(archivoMovimientos)) {
+      const datos = JSON.parse(fs.readFileSync(archivoMovimientos, 'utf-8'));
+      
+      // Leer PDFs desde archivos físicos y convertirlos a base64
+      const pdfsBase64 = {};
+      const pdfFiles = fs.readdirSync(outputsDir).filter(f => 
+        f.startsWith(ritNormalizado) && f.endsWith('.pdf')
+      );
+      
+      for (const pdfFile of pdfFiles) {
+        const pdfPath = path.join(outputsDir, pdfFile);
+        try {
+          const fileBuffer = fs.readFileSync(pdfPath);
+          pdfsBase64[pdfFile] = fileBuffer.toString('base64');
+        } catch (error) {
+          console.warn(`No se pudo leer PDF ${pdfFile}:`, error.message);
+        }
+      }
+      
+      // Estructurar resultado como lo espera el sistema
+      return {
+        rit: datos.causa?.rit || rit,
+        fecha_scraping: datos.metadata?.fecha_procesamiento || new Date().toISOString(),
+        movimientos: datos.movimientos || [],
+        cabecera: datos.causa || {},
+        estado_actual: datos.estado_actual || {},
+        pdfs: pdfsBase64,
+        total_movimientos: datos.metadata?.total_movimientos || (datos.movimientos ? datos.movimientos.length : 0),
+        total_pdfs: Object.keys(pdfsBase64).length,
+        estado: 'completado'
+      };
+    }
+    
+    // Si no hay movimientos, intentar con resultado_*.json (crudo)
+    const archivoResultado = path.join(outputsDir, `resultado_${ritNormalizado}.json`);
+    if (fs.existsSync(archivoResultado)) {
+      const contenido = JSON.parse(fs.readFileSync(archivoResultado, 'utf-8'));
+      
+      // Si son filas crudas (array de arrays), procesarlas
+      if (Array.isArray(contenido) && contenido.length > 0 && Array.isArray(contenido[0])) {
+        const { processTableData } = require('../dataProcessor');
+        
+        // Leer PDFs primero para mapeo
+        const pdfFiles = fs.readdirSync(outputsDir).filter(f => 
+          f.startsWith(ritNormalizado) && f.endsWith('.pdf')
+        );
+        
+        // Intentar reconstruir el mapeo de PDFs desde nombres de archivos
+        const pdfMapping = {};
+        pdfFiles.forEach(pdfFile => {
+          // Formato esperado: C_571_2019_mov_11_azul.pdf
+          const match = pdfFile.match(/mov_(\d+)_(azul|rojo)\.pdf$/);
+          if (match) {
+            const indice = parseInt(match[1]);
+            const tipo = match[2];
+            if (!pdfMapping[indice]) {
+              pdfMapping[indice] = { azul: null, rojo: null };
+            }
+            pdfMapping[indice][tipo] = pdfFile;
+          }
+        });
+        
+        try {
+          const datosProcesados = processTableData(contenido, rit, pdfMapping);
+          
+          // Leer PDFs y convertirlos a base64
+          const pdfsBase64 = {};
+          for (const pdfFile of pdfFiles) {
+            const pdfPath = path.join(outputsDir, pdfFile);
+            try {
+              const fileBuffer = fs.readFileSync(pdfPath);
+              pdfsBase64[pdfFile] = fileBuffer.toString('base64');
+            } catch (error) {
+              console.warn(`No se pudo leer PDF ${pdfFile}:`, error.message);
+            }
+          }
+          
+          return {
+            rit: rit,
+            fecha_scraping: new Date().toISOString(),
+            movimientos: datosProcesados.movimientos || [],
+            cabecera: datosProcesados.cabecera || {},
+            estado_actual: datosProcesados.estado_actual || {},
+            pdfs: pdfsBase64,
+            total_movimientos: datosProcesados.movimientos?.length || 0,
+            total_pdfs: Object.keys(pdfsBase64).length,
+            estado: 'completado'
+          };
+        } catch (error) {
+          console.error(`Error procesando resultado crudo para ${rit}:`, error.message);
+          return null;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error buscando resultado en archivos para ${rit}:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Obtener un resultado por RIT
+ * Busca primero en storage, luego en archivos JSON de outputs
+ * 
+ * @param {string} rit - RIT de la causa
+ */
+function obtenerResultado(rit) {
+  // Primero buscar en storage
+  const resultados = cargarResultados();
+  if (resultados[rit]) {
+    return resultados[rit];
+  }
+  
+  // Si no está en storage, buscar en archivos JSON
+  const resultadoArchivo = buscarResultadoEnArchivos(rit);
+  if (resultadoArchivo) {
+    return resultadoArchivo;
+  }
+  
+  // Intentar variaciones del RIT
+  const variaciones = [
+    rit.toUpperCase(),
+    rit.toLowerCase(),
+    rit.replace(/-/g, '_'),
+    rit.replace(/_/g, '-')
+  ];
+  
+  for (const variacion of variaciones) {
+    if (variacion !== rit) {
+      if (resultados[variacion]) {
+        return resultados[variacion];
+      }
+      const resultadoVar = buscarResultadoEnArchivos(variacion);
+      if (resultadoVar) {
+        return resultadoVar;
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Listar todos los RITs disponibles (de storage y archivos)
+ */
+function listarRITs() {
+  const resultados = cargarResultados();
+  const rits = new Set();
+  
+  // Agregar RITs de storage
+  Object.keys(resultados).forEach(rit => rits.add(rit));
+  
+  // Buscar RITs en archivos JSON de outputs
+  try {
+    const outputsDir = path.resolve(__dirname, '../outputs');
+    if (fs.existsSync(outputsDir)) {
+      const archivos = fs.readdirSync(outputsDir);
+      
+      // Buscar archivos movimientos_*.json y resultado_*.json
+      archivos.forEach(archivo => {
+        if (archivo.startsWith('movimientos_') && archivo.endsWith('.json')) {
+          // Extraer RIT del nombre: movimientos_C_571_2019.json -> C-571-2019
+          const ritDelArchivo = archivo.replace('movimientos_', '').replace('.json', '').replace(/_/g, '-');
+          rits.add(ritDelArchivo);
+        } else if (archivo.startsWith('resultado_') && archivo.endsWith('.json')) {
+          const ritDelArchivo = archivo.replace('resultado_', '').replace('.json', '').replace(/_/g, '-');
+          rits.add(ritDelArchivo);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error listando RITs desde archivos:', error.message);
+  }
+  
+  // Retornar lista con información
+  return Array.from(rits).map(rit => {
+    const resultado = obtenerResultado(rit);
+    return {
+      rit,
+      fecha_scraping: resultado?.fecha_scraping || null,
+      total_movimientos: resultado?.total_movimientos || resultado?.movimientos?.length || 0,
+      total_pdfs: resultado?.total_pdfs || (resultado?.pdfs ? Object.keys(resultado.pdfs).length : 0)
+    };
+  });
+}
+
+/**
+ * Eliminar un resultado
+ * 
+ * @param {string} rit - RIT de la causa
+ */
+function eliminarResultado(rit) {
+  try {
+    const resultados = cargarResultados();
+    if (resultados[rit]) {
+      delete resultados[rit];
+      fs.writeFileSync(RESULTS_FILE, JSON.stringify(resultados, null, 2), 'utf-8');
+      console.log(`✅ Resultado eliminado para RIT: ${rit}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error eliminando resultado:', error.message);
+    return false;
+  }
+}
+
+module.exports = {
+  guardarResultado,
+  obtenerResultado,
+  listarRITs,
+  eliminarResultado,
+  cargarResultados
+};

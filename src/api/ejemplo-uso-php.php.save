@@ -1,0 +1,129 @@
+<?php
+/**
+ * EJEMPLO DE USO - PHP/Symfony
+ * 
+ * Este archivo muestra cómo usar la API de scraping desde PHP/Symfony
+ * NO es parte de Symfony, es solo un ejemplo para entender el flujo
+ * 
+ * Para usarlo:
+ * 1. Asegúrate de que el servidor Node.js esté corriendo: npm run api:start
+ * 2. Ejecuta: php src/api/ejemplo-uso-php.php
+ */
+
+// ============================================
+// CONFIGURACIÓN
+// ============================================
+$API_URL = 'http://localhost:3000';
+$API_TOKEN = 'tu_token_aqui'; // Obtener de: cat src/storage/tokens.json
+
+// ============================================
+// EJEMPLO 1: Ejecutar Scraping
+// ============================================
+echo "=== EJEMPLO 1: Ejecutar Scraping ===\n\n";
+
+$dataScraping = [
+    'rit' => '16707-2019',
+    'competencia' => '3',
+    'corte' => '90',
+    'tribunal' => '276',
+    'tipoCausa' => 'C'
+];
+
+$ch = curl_init($API_URL . '/api/scraping/ejecutar');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dataScraping));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json'
+]);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode === 200) {
+    $resultado = json_decode($response, true);
+    echo "✅ Scraping ejecutado exitosamente\n";
+    echo "   - RIT: " . $resultado['resultado']['rit'] . "\n";
+    echo "   - Movimientos: " . $resultado['resultado']['total_movimientos'] . "\n";
+    echo "   - PDFs: " . $resultado['resultado']['total_pdfs'] . "\n\n";
+} else {
+    echo "❌ Error: " . $response . "\n\n";
+}
+
+// ============================================
+// EJEMPLO 2: Consultar Resultado (con Token)
+// ============================================
+echo "=== EJEMPLO 2: Consultar Resultado ===\n\n";
+
+$rit = '16707-2019';
+
+$ch = curl_init($API_URL . '/api/scraping/resultado/' . $rit);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Bearer ' . $API_TOKEN,
+    'Accept: application/json'
+]);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode === 200) {
+    $resultado = json_decode($response, true);
+    $datos = $resultado['resultado'];
+    
+    echo "✅ Datos obtenidos para RIT: " . $rit . "\n";
+    echo "   - Total movimientos: " . count($datos['movimientos']) . "\n";
+    echo "   - Primeros 3 movimientos:\n\n";
+    
+    foreach (array_slice($datos['movimientos'], 0, 3) as $mov) {
+        echo "   📋 Movimiento " . ($mov['indice'] ?? 'N/A') . ":\n";
+        echo "      - Fecha: " . ($mov['fecha'] ?? 'N/A') . "\n";
+        echo "      - Tipo: " . ($mov['tipo_movimiento'] ?? 'N/A') . "\n";
+        echo "      - Descripción: " . substr($mov['descripcion'] ?? 'N/A', 0, 50) . "...\n";
+        echo "      - Tiene PDF: " . ($mov['tiene_pdf'] ? 'Sí' : 'No') . "\n\n";
+    }
+    
+    // Mostrar cómo acceder a PDFs
+    if (!empty($datos['pdfs'])) {
+        echo "   📄 PDFs disponibles: " . count($datos['pdfs']) . "\n";
+        foreach (array_slice(array_keys($datos['pdfs']), 0, 3) as $nombrePDF) {
+            echo "      - " . $nombrePDF . "\n";
+        }
+    }
+} else {
+    echo "❌ Error: " . $response . "\n";
+    echo "   (Asegúrate de haber ejecutado el scraping primero)\n\n";
+}
+
+// ============================================
+// EJEMPLO 3: Listar Todos los RITs
+// ============================================
+echo "\n=== EJEMPLO 3: Listar RITs Procesados ===\n\n";
+
+$ch = curl_init($API_URL . '/api/scraping/listar');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Bearer ' . $API_TOKEN,
+    'Accept: application/json'
+]);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($httpCode === 200) {
+    $resultado = json_decode($response, true);
+    echo "✅ Total de RITs procesados: " . $resultado['total'] . "\n\n";
+    
+    foreach ($resultado['rits'] as $rit) {
+        echo "   - RIT: " . $rit['rit'] . "\n";
+        echo "     Movimientos: " . $rit['total_movimientos'] . "\n";
+        echo "     PDFs: " . $rit['total_pdfs'] . "\n\n";
+    }
+} else {
+    echo "❌ Error: " . $response . "\n";
+}
+
+echo "\n=== FIN DE EJEMPLOS ===\n";

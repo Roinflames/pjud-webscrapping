@@ -5,9 +5,10 @@ const path = require('path');
 async function extractPDFUrlsFromTable(page, context, outputDir, rit) {
   console.log("🔎 Buscando URLs de PDFs en la tabla...");
 
-  // Obtener los datos de la tabla que ya extrajimos para saber qué PDFs corresponden a qué fila
-  const { extractTable } = require('./table');
-  const rows = await extractTable(page);
+  // Obtener los datos de la tabla con información de PDFs (azul/rojo)
+  // Usar extractTableAsArray para obtener información completa de los PDFs
+  const { extractTableAsArray } = require('./table');
+  const rows = await extractTableAsArray(page);
   
   const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
   const pdfMapping = {};
@@ -21,6 +22,9 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit) {
       // También necesitamos el índice numérico del movimiento para el mapeo
       const indiceMov = parseInt(row.texto[0]) || null;
       if (!indiceMov) continue; // Saltar si no hay índice válido
+      
+      // Si no hay pdfs array, saltar (formato antiguo o sin PDFs)
+      if (!row.pdfs || row.pdfs.length === 0) continue;
       
       pdfMapping[indiceMov] = { azul: null, rojo: null };
 
@@ -46,13 +50,15 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit) {
 
           const download = await downloadPromise;
           if (download) {
-            // Nombre con abreviatura: _P (Principal) o _A (Anexo)
-            const filename = `${ritClean}_mov_${indiceMov}_${pdf.tipo}.pdf`;
+            // Nombre usando tipo_desc para claridad: _azul o _rojo
+            // Azul = PDFs subidos por abogados (Principal)
+            // Rojo = PDFs de la corte (Anexo/Escrito)
+            const filename = `${ritClean}_mov_${indiceMov}_${pdf.tipo_desc}.pdf`;
             const savePath = path.join(outputDir, filename);
             await download.saveAs(savePath);
             
             if (fs.existsSync(savePath) && fs.statSync(savePath).size > 0) {
-              console.log(`   ✅ Guardado: ${filename} (Tipo: ${pdf.tipo_desc})`);
+              console.log(`   ✅ Guardado: ${filename} (Tipo: ${pdf.tipo_desc} - ${pdf.tipo === 'P' ? 'Azul (Abogados)' : 'Rojo (Corte)'})`);
               pdfMapping[indiceMov][pdf.tipo_desc] = filename;
               downloadedCount++;
             }

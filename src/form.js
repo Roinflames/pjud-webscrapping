@@ -257,12 +257,38 @@ async function fillForm(page, CONFIG) {
       throw new Error('No se pudo encontrar el botón "Buscar"');
     }
     
-    // Verificar CAPTCHA antes de continuar
+    // Verificar CAPTCHA antes de continuar (solo si está realmente bloqueando)
     const captchaCheck = await detectCaptcha(page);
     const blockCheck = await checkIfBlocked(page);
     
     if (captchaCheck.detected || blockCheck.blocked) {
-      throw new Error(`CAPTCHA/Bloqueo detectado: ${captchaCheck.detected ? captchaCheck.type : blockCheck.reason}`);
+      // Si es CAPTCHA activo o bloqueo real, notificar y detener (NO reintentar)
+      if (captchaCheck.type === 'recaptcha-active' || blockCheck.blocked) {
+        const errorType = captchaCheck.detected ? captchaCheck.type : blockCheck.reason;
+        
+        console.error('\n🚨 ============================================');
+        console.error('🚨 BLOQUEO/CAPTCHA DETECTADO - DETENIENDO');
+        console.error('🚨 ============================================');
+        console.error(`\n❌ Tipo: ${errorType}`);
+        console.error(`📋 Razón: ${blockCheck.blocked ? blockCheck.reason : captchaCheck.type}`);
+        console.error('\n📝 ACCIÓN REQUERIDA:');
+        console.error('   1. Espera 30-60 minutos antes de reintentar');
+        console.error('   2. Considera usar una VPN o cambiar tu IP');
+        console.error('   3. Reduce la velocidad de scraping si continúas');
+        console.error('   4. Verifica manualmente en el navegador si el bloqueo persiste');
+        console.error('\n⏸️  El proceso se ha detenido para evitar empeorar el bloqueo.');
+        console.error('🚨 ============================================\n');
+        
+        // Guardar screenshot para diagnóstico
+        const screenshotPath = `src/logs/bloqueo_${Date.now()}.png`;
+        await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+        console.error(`📸 Screenshot guardado: ${screenshotPath}`);
+        
+        throw new Error(`CAPTCHA/Bloqueo detectado - Deteniendo ejecución: ${errorType}`);
+      } else {
+        // Solo advertencia si no está realmente activo (solo script presente)
+        console.warn(`⚠️ Script de reCAPTCHA detectado pero inactivo, continuando...`);
+      }
     }
     
     // Esperar resultado (timeout aumentado para evitar fallos)
@@ -271,12 +297,32 @@ async function fillForm(page, CONFIG) {
     });
     await page.waitForTimeout(800 + Math.random() * 700); // Aumentado a 0.8-1.5s para dar tiempo a cargar
     
-    // Verificar CAPTCHA después de la búsqueda también
+    // Verificar CAPTCHA después de la búsqueda - NOTIFICAR Y DETENER si hay bloqueo
     const captchaCheckAfter = await detectCaptcha(page);
     const blockCheckAfter = await checkIfBlocked(page);
     
-    if (captchaCheckAfter.detected || blockCheckAfter.blocked) {
-      throw new Error(`CAPTCHA/Bloqueo detectado después de búsqueda: ${captchaCheckAfter.detected ? captchaCheckAfter.type : blockCheckAfter.reason}`);
+    // Si hay bloqueo o CAPTCHA activo, notificar y detener (NO reintentar)
+    if (blockCheckAfter.blocked || (captchaCheckAfter.detected && captchaCheckAfter.type === 'recaptcha-active')) {
+      const errorType = blockCheckAfter.blocked ? blockCheckAfter.reason : captchaCheckAfter.type;
+      
+      console.error('\n🚨 ============================================');
+      console.error('🚨 BLOQUEO/CAPTCHA DETECTADO DESPUÉS DE BÚSQUEDA');
+      console.error('🚨 ============================================');
+      console.error(`\n❌ Tipo: ${errorType}`);
+      console.error(`📋 Ubicación: Después de buscar en el formulario`);
+      console.error('\n📝 ACCIÓN REQUERIDA:');
+      console.error('   1. Espera 30-60 minutos antes de reintentar');
+      console.error('   2. Considera usar una VPN o cambiar tu IP');
+      console.error('   3. Reduce la velocidad de scraping');
+      console.error('\n⏸️  El proceso se ha detenido para evitar empeorar el bloqueo.');
+      console.error('🚨 ============================================\n');
+      
+      // Guardar screenshot para diagnóstico
+      const screenshotPath = `src/logs/bloqueo_despues_busqueda_${Date.now()}.png`;
+      await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+      console.error(`📸 Screenshot guardado: ${screenshotPath}`);
+      
+      throw new Error(`Bloqueo/CAPTCHA detectado después de búsqueda - Deteniendo ejecución: ${errorType}`);
     }
     
     // Screenshot deshabilitado en modo headless

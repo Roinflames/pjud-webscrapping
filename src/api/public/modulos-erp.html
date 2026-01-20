@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulos ERP - PJUD Scraping</title>
+    <!-- Bootstrap 4.6 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .module-container {
+            margin-bottom: 30px;
+        }
+        .module-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="module-header">
+                    <h3><i class="fa fa-puzzle-piece"></i> Módulos ERP - Integración PJUD</h3>
+                    <p class="mb-0">Componentes modulares reutilizables para integrar en tu ERP</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Módulo 1: Visualización de Casos -->
+            <div class="col-12 module-container">
+                <div id="module-visualizacion-casos"></div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Módulo 2: Crear Evento de Scraping -->
+            <div class="col-12 module-container">
+                <div id="module-crear-evento"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Módulos -->
+    <script src="/modules/visualizacion-casos.js"></script>
+    <script src="/modules/crear-evento-scraping.js"></script>
+    
+    <script>
+        // Configuración de módulos
+        const API_BASE = '/api/mvp';
+        const ERP_API_BASE = '/api/erp';
+
+        // Inicializar módulo de visualización de casos
+        document.addEventListener('DOMContentLoaded', function() {
+            const visualizacionCasos = new VisualizacionCasos({
+                apiBase: API_BASE,
+                onMovimientosClick: function(rit) {
+                    // Handler personalizado para ver movimientos
+                    visualizacionCasos.defaultOnMovimientosClick(rit);
+                }
+            });
+
+            visualizacionCasos.render('#module-visualizacion-casos');
+
+            // Inicializar módulo de crear evento
+            const crearEvento = new CrearEventoScraping({
+                apiBase: ERP_API_BASE,
+                onEventoCreado: function(resultado) {
+                    console.log('Evento creado:', resultado);
+                    // Recargar visualización de casos
+                    visualizacionCasos.recargar();
+                }
+            });
+
+            crearEvento.render('#module-crear-evento');
+        });
+    </script>
+</body>
+</html>

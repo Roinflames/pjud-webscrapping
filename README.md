@@ -1,4 +1,11 @@
 # pjud-webscrapping
+
+## 🚀 ¿Primera vez configurando un servidor Cloud?
+
+👉 **¿Tu servidor viene SIN cPanel/Ferozo?** → [`docs/SERVIDOR_SIN_PANEL.md`](docs/SERVIDOR_SIN_PANEL.md) ⭐  
+👉 **Primeros pasos:** [`docs/PRIMEROS_PASOS_HOSTING.md`](docs/PRIMEROS_PASOS_HOSTING.md)  
+👉 **Cómo conectarse por SSH:** [`docs/GUIA_PRIMERA_VEZ_SSH.md`](docs/GUIA_PRIMERA_VEZ_SSH.md)  
+👉 **Configuración completa:** [`docs/GUIA_CONFIGURACION_CLOUD.md`](docs/GUIA_CONFIGURACION_CLOUD.md)
 Necesitamos implementar un proceso RPA que realice los siguientes pasos:
 
 ## Paso - Ingresar al CRM y buscar un cliente: [URL]()

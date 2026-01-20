@@ -18,12 +18,32 @@ async function closeModalIfExists(page) {
 }
 
 async function goToConsultaCausas(page) {
-  // Verificar CAPTCHA antes de navegar
+  // Verificar CAPTCHA antes de navegar - NOTIFICAR Y DETENER si hay bloqueo
   const captchaCheck = await detectCaptcha(page);
   const blockCheck = await checkIfBlocked(page);
   
   if (captchaCheck.detected || blockCheck.blocked) {
-    throw new Error(`CAPTCHA/Bloqueo detectado antes de navegar: ${captchaCheck.detected ? captchaCheck.type : blockCheck.reason}`);
+    const errorType = captchaCheck.detected ? captchaCheck.type : blockCheck.reason;
+    
+    // Solo notificar y detener si es un bloqueo real o CAPTCHA activo
+    if (captchaCheck.type === 'recaptcha-active' || blockCheck.blocked) {
+      console.error('\n🚨 ============================================');
+      console.error('🚨 BLOQUEO/CAPTCHA DETECTADO ANTES DE NAVEGAR');
+      console.error('🚨 ============================================');
+      console.error(`\n❌ Tipo: ${errorType}`);
+      console.error(`📋 Razón: ${blockCheck.blocked ? blockCheck.reason : captchaCheck.type}`);
+      console.error('\n📝 ACCIÓN REQUERIDA:');
+      console.error('   1. Espera 30-60 minutos antes de reintentar');
+      console.error('   2. Considera usar una VPN o cambiar tu IP');
+      console.error('   3. Reduce la velocidad de scraping');
+      console.error('\n⏸️  El proceso se ha detenido para evitar empeorar el bloqueo.');
+      console.error('🚨 ============================================\n');
+      
+      throw new Error(`CAPTCHA/Bloqueo detectado antes de navegar - Deteniendo ejecución: ${errorType}`);
+    } else {
+      // Solo advertencia si no está realmente activo
+      console.warn(`⚠️ Script de reCAPTCHA detectado pero inactivo, continuando...`);
+    }
   }
   console.log("🖱️ Entrando a 'Consulta causas'...");
 

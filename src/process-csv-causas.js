@@ -128,24 +128,19 @@ async function processCausaBatch(page, context, config, outputDir) {
  * Función principal para procesar N causas
  */
 async function processMultipleCausas(limit = 5) {
-  console.log(`🚀 Iniciando prueba controlada de ${limit} causas...`);
+  const logDir = path.resolve(__dirname, 'logs');
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+  const checkpointDir = path.join(logDir, 'checkpoints');
+  if (!fs.existsSync(checkpointDir)) fs.mkdirSync(checkpointDir, { recursive: true });
+
+  console.log(`🚀 Iniciando scraping masivo...`);
+  console.log(`📊 Límite: ${limit === 0 ? 'TODAS las causas' : limit} causas`);
   
   const causas = readCausaCSV();
-  const causasValidas = causas.filter(c => isValidForScraping(c));
-  
-  // Tomar solo las primeras N para la prueba
-  const aProcesar = causasValidas.slice(0, limit);
-  console.log(`📊 Se procesarán ${aProcesar.length} causas del CSV.`);
-
-  const outputDir = path.resolve(__dirname, 'outputs');
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-
-  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
-  // Filtrar solo las válidas para scraping
   let causasValidas = causas.filter(c => isValidForScraping(c));
   
-  // Opcional: filtrar también por tribunal
-  // NOTA: Tribunal es opcional, todas las causas con RIT son civiles
+  // Opcional: filtrar también por tribunal (comentado por defecto)
+  const requireTribunal = false; // Cambiar a true si quieres solo causas con tribunal
   if (requireTribunal) {
     const conTribunal = causasValidas.filter(c => 
       c.tribunal && c.tribunal !== 'NULL' && c.tribunal.trim() !== ''
@@ -162,6 +157,8 @@ async function processMultipleCausas(limit = 5) {
   
   // Si limit es 0 o negativo, procesar todas
   let causasAProcesar = limit > 0 ? causasValidas.slice(0, limit) : causasValidas;
+  
+  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
   
   // Intentar cargar checkpoint para reanudar desde donde se quedó
   const checkpoint = loadCheckpoint();
@@ -225,14 +222,6 @@ async function processMultipleCausas(limit = 5) {
     console.log(`\n`);
   }
   
-  const outputDir = path.resolve(__dirname, 'outputs');
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-  
-  const logDir = path.resolve(__dirname, 'logs');
-  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-  
-  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
-  
   try {
     // Manejo inicial de sesión
     await closeModalIfExists(page);
@@ -252,32 +241,9 @@ async function processMultipleCausas(limit = 5) {
       await page.goto('https://oficinajudicialvirtual.pjud.cl/indexN.php', { waitUntil: 'domcontentloaded' });
     }
 
-    for (let i = 0; i < aProcesar.length; i++) {
-      const csvCausa = aProcesar[i];
-      const config = csvToScrapingConfig(csvCausa);
-      
-      console.log(`\n📂 [${i + 1}/${aProcesar.length}] Procesando: ${config.rit}`);
-      
-      const resultado = await processCausaBatch(page, context, config, outputDir);
-      
-      if (resultado.success) {
-        saveProgress(config.rit, csvCausa.causa_id);
-      }
-
-      // Volver al formulario para la siguiente causa
-      if (i < aProcesar.length - 1) {
-        console.log('🔄 Volviendo al formulario...');
-        await resetForm(page);
-        await page.waitForTimeout(2000);
-      }
-    }
-
-  } catch (error) {
-    console.error('💥 Error general:', error);
-    
     // Esperar a que el formulario esté completamente cargado
-    await page.waitForSelector('#competencia', { timeout: 30000 }); // Aumentado de 20s a 30s
-    await page.waitForTimeout(500); // Reducido de 1000ms a 500ms
+    await page.waitForSelector('#competencia', { timeout: 30000 });
+    await page.waitForTimeout(500);
     
     // Procesar cada causa (startIndex ya está configurado si hay checkpoint)
     const totalCausas = causasAProcesar.length + startIndex;
@@ -303,7 +269,7 @@ async function processMultipleCausas(limit = 5) {
       }
       console.log(`📋 Procesando causa ID: ${csvCausa.causa_id} | RIT: ${config.rit}`);
       
-      const resultado = await processCausa(page, context, config, outputDir);
+      const resultado = await processCausaBatch(page, context, config, outputDir);
       const resultadoCompleto = {
         causa_id: csvCausa.causa_id,
         agenda_id: csvCausa.agenda_id,
@@ -343,17 +309,30 @@ async function processMultipleCausas(limit = 5) {
         console.log(`   ✅ Exitosas: ${exitosasParciales} | ❌ Fallidas: ${fallidasParciales}`);
       }
       
-      // Verificar CAPTCHA o bloqueo después de cada causa
-      const { detectCaptcha, checkIfBlocked, handleCaptchaOrBlock } = require('./utils/captcha-detector');
+      // Verificar CAPTCHA o bloqueo después de cada causa - NOTIFICAR Y DETENER (NO reintentar)
+      const { detectCaptcha, checkIfBlocked } = require('./utils/captcha-detector');
       const captchaCheck = await detectCaptcha(page);
       const blockCheck = await checkIfBlocked(page);
       
-      if (captchaCheck.detected || blockCheck.blocked) {
-        console.error(`\n❌ CAPTCHA/Bloqueo detectado después de procesar causa ${globalIndex + 1}`);
-        console.error(`   Tipo: ${captchaCheck.detected ? captchaCheck.type : 'bloqueo'}`);
-        console.error(`   Razón: ${blockCheck.blocked ? blockCheck.reason : captchaCheck.selector || captchaCheck.keyword || 'desconocido'}`);
+      // Solo detener si es CAPTCHA activo o bloqueo real (NO reintentar automáticamente)
+      if ((captchaCheck.detected && captchaCheck.type === 'recaptcha-active') || blockCheck.blocked) {
+        const errorType = captchaCheck.detected ? captchaCheck.type : blockCheck.reason;
         
-        // Guardar checkpoint antes de intentar recuperar
+        console.error('\n🚨 ============================================');
+        console.error('🚨 BLOQUEO/CAPTCHA DETECTADO - DETENIENDO');
+        console.error('🚨 ============================================');
+        console.error(`\n❌ Causa procesada: ${globalIndex + 1}/${totalCausas}`);
+        console.error(`❌ Tipo: ${errorType}`);
+        console.error(`📋 Razón: ${blockCheck.blocked ? blockCheck.reason : captchaCheck.type}`);
+        console.error('\n📝 ACCIÓN REQUERIDA:');
+        console.error('   1. Espera 30-60 minutos antes de reintentar');
+        console.error('   2. Considera usar una VPN o cambiar tu IP');
+        console.error('   3. Reduce la velocidad de scraping si continúas');
+        console.error('   4. Verifica manualmente en el navegador si el bloqueo persiste');
+        console.error('\n⏸️  El proceso se ha detenido para evitar empeorar el bloqueo.');
+        console.error('🚨 ============================================\n');
+        
+        // Guardar checkpoint antes de detener
         saveCheckpoint({
           lastProcessedIndex: globalIndex,
           totalCausas: totalCausas,
@@ -363,29 +342,32 @@ async function processMultipleCausas(limit = 5) {
           })),
           resultados: resultados,
           causasAProcesar: causasAProcesar,
-          startTime: startTime
+          startTime: startTime,
+          detenido_por_bloqueo: true
         });
         backupCheckpoint(); // Backup adicional
         
-        // Intentar manejar el bloqueo
-        const recovered = await handleCaptchaOrBlock(page, 'CAPTCHA/Bloqueo detectado');
-        
-        if (!recovered) {
-          console.error('\n💥 No se pudo recuperar del bloqueo. Deteniendo scraping.');
-          console.error('   Recomendación: Esperar 1-2 horas antes de continuar o usar VPN/proxy.');
-          console.error(`\n💾 Checkpoint guardado. Para reanudar más tarde, ejecuta:`);
-          console.error(`   node src/process-csv-causas.js ${limit || 0} --resume`);
-          
-          // Guardar causas pendientes
-          const causasPendientes = causasAProcesar.slice(i + 1);
-          if (causasPendientes.length > 0) {
-            const pendientesPath = path.join(logDir, `causas_pendientes_${Date.now()}.json`);
-            fs.writeFileSync(pendientesPath, JSON.stringify(causasPendientes, null, 2));
-            console.log(`\n📝 Causas pendientes guardadas en: ${pendientesPath}`);
-          }
-          
-          break; // Detener el scraping
+        // Guardar causas pendientes
+        const causasPendientes = causasAProcesar.slice(i + 1);
+        if (causasPendientes.length > 0) {
+          const pendientesPath = path.join(logDir, `causas_pendientes_${Date.now()}.json`);
+          fs.writeFileSync(pendientesPath, JSON.stringify(causasPendientes, null, 2));
+          console.error(`   📋 Causas pendientes guardadas en: ${pendientesPath}`);
         }
+        
+        console.error(`\n💾 Checkpoint guardado. Para reanudar más tarde, ejecuta:`);
+        console.error(`   node src/process-csv-causas.js ${limit || 0} --resume`);
+        
+        // Guardar screenshot para diagnóstico
+        const screenshotPath = path.join(logDir, `bloqueo_causa_${globalIndex + 1}_${Date.now()}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+        console.error(`   📸 Screenshot guardado: ${screenshotPath}`);
+        
+        await browser.close();
+        throw new Error(`Bloqueo/CAPTCHA detectado - Deteniendo ejecución: ${errorType}`);
+      } else if (captchaCheck.detected) {
+        // Solo advertencia si no está realmente activo
+        console.warn(`   ⚠️ Script de reCAPTCHA detectado pero inactivo, continuando...`);
       }
       
       // Si hubo error, esperar más tiempo antes de continuar

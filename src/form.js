@@ -341,31 +341,107 @@ async function fillForm(page, CONFIG) {
 async function openDetalle(page) {
   try {
     console.log("🔍 Buscando enlace 'Detalle de la causa'...");
-    
-    // Screenshot deshabilitado en modo headless
-    // await page.screenshot({ path: 'debug_09_antes_detalle.png', fullPage: false });
-    // console.log('📸 Screenshot: debug_09_antes_detalle.png');
-    
-    // Esperar a que aparezca el enlace (timeout aumentado)
-    await page.waitForSelector('a[title="Detalle de la causa"]', { timeout: 30000 }); // Aumentado de 20s a 30s
-    console.log("✅ Enlace encontrado");
 
-  console.log("🖱️ Abriendo detalle...");
+    // Esperar a que la tabla de resultados tenga filas
+    await page.waitForFunction(() => {
+      const rows = document.querySelectorAll('table tbody tr');
+      return rows.length > 0;
+    }, { timeout: 15000 });
 
-    // Esperar a que el modal aparezca después del click (timeout aumentado)
-  await Promise.all([
-      page.waitForSelector('#modalDetalleCivil, #modalDetalleLaboral', { timeout: 20000 }), // Aumentado de 8s a 20s
-      page.click('a[title="Detalle de la causa"]'),
-    ]);
+    await page.waitForTimeout(1000); // Esperar que la tabla termine de renderizar
 
-    // Delay optimizado después de abrir modal (200-500ms)
-    await page.waitForTimeout(200 + Math.random() * 300); // Optimizado: reducido de 800-1500ms a 200-500ms
-    
-    // Screenshot deshabilitado en modo headless
-    // await page.screenshot({ path: 'debug_10_detalle_abierto.png', fullPage: false });
-    // console.log('📸 Screenshot: debug_10_detalle_abierto.png');
+    // Guardar URL actual para detectar navegación
+    const urlAntes = page.url();
 
-  console.log("✅ Detalle cargado.");
+    // Buscar y hacer click usando JavaScript directamente
+    // El enlace puede tener title="Detalle de la causa" o ser el primer <a> en la celda
+    const clicked = await page.evaluate(() => {
+      // Intentar primero con el selector original
+      let link = document.querySelector('a[title="Detalle de la causa"]');
+
+      if (!link) {
+        // Buscar en la primera fila de la tabla de resultados
+        const firstRow = document.querySelector('table tbody tr');
+        if (firstRow) {
+          // El enlace de la lupa suele estar en la primera celda
+          link = firstRow.querySelector('td a') || firstRow.querySelector('a');
+        }
+      }
+
+      if (link) {
+        console.log('Encontrado enlace:', link.outerHTML.substring(0, 200));
+        link.click();
+        return true;
+      }
+      return false;
+    });
+
+    if (!clicked) {
+      await page.screenshot({ path: 'debug_no_enlace_detalle.png', fullPage: true });
+      throw new Error('No se encontró el enlace de detalle en la tabla de resultados');
+    }
+
+    console.log("✅ Click ejecutado en enlace de detalle");
+
+    // Esperar a que algo cambie (modal o navegación)
+    await page.waitForTimeout(2000);
+
+    // Verificar si navegó a otra página
+    const urlDespues = page.url();
+    const navego = urlDespues !== urlAntes;
+
+    if (navego) {
+      console.log("📄 Navegó a página de detalle:", urlDespues);
+      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    } else {
+      // Esperar el modal
+      console.log("🔄 Esperando modal...");
+
+      try {
+        // Esperar que el modal sea visible
+        await page.waitForFunction(() => {
+          const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
+          if (!modal) return false;
+
+          // Verificar que tenga contenido (tabla de historia)
+          const tabla = modal.querySelector('table tbody tr');
+          return tabla !== null;
+        }, { timeout: 20000 });
+
+        console.log("✅ Modal con contenido detectado");
+      } catch (e) {
+        // Verificar si el modal existe pero está vacío o cargando
+        const modalState = await page.evaluate(() => {
+          const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral');
+          if (!modal) return { exists: false };
+
+          const style = window.getComputedStyle(modal);
+          return {
+            exists: true,
+            display: style.display,
+            visibility: style.visibility,
+            hasShow: modal.classList.contains('show'),
+            innerHTML: modal.innerHTML.substring(0, 500)
+          };
+        });
+
+        console.log("Estado del modal:", JSON.stringify(modalState, null, 2));
+
+        if (modalState.exists && (modalState.display !== 'none' || modalState.hasShow)) {
+          console.log("✅ Modal detectado (puede estar cargando contenido)");
+          // Esperar un poco más para que cargue
+          await page.waitForTimeout(3000);
+        } else {
+          await page.screenshot({ path: 'debug_sin_modal.png', fullPage: true });
+          throw new Error('Modal no se abrió correctamente');
+        }
+      }
+    }
+
+    // Delay final
+    await page.waitForTimeout(500);
+    console.log("✅ Detalle cargado.");
+
   } catch (error) {
     console.error('❌ Error abriendo detalle:', error.message);
     await page.screenshot({ path: 'debug_error_detalle.png', fullPage: true });

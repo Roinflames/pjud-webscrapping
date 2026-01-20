@@ -5,11 +5,56 @@ const path = require('path');
 async function extractPDFUrlsFromTable(page, context, outputDir, rit) {
   console.log("🔎 Buscando URLs de PDFs en la tabla...");
 
+  // DEBUG: Capturar estructura real de la tabla para entender el DOM
+  const tableDebug = await page.evaluate(() => {
+    // Buscar todas las tablas en el modal
+    const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+    if (!modal) {
+      return { error: 'No se encontró modal', tables: [] };
+    }
+
+    const tables = modal.querySelectorAll('table');
+    const tableInfo = [];
+
+    tables.forEach((table, tableIndex) => {
+      const rows = table.querySelectorAll('tbody tr');
+      const firstRow = rows[0];
+      if (firstRow) {
+        const cells = firstRow.querySelectorAll('td');
+        const cellsInfo = Array.from(cells).map((cell, i) => ({
+          index: i,
+          text: cell.innerText.substring(0, 50).trim(),
+          hasLinks: cell.querySelectorAll('a').length,
+          hasImages: cell.querySelectorAll('img').length,
+          hasIcons: cell.querySelectorAll('i').length,
+          linksHTML: Array.from(cell.querySelectorAll('a')).map(a => a.outerHTML.substring(0, 150))
+        }));
+        tableInfo.push({
+          tableIndex,
+          className: table.className,
+          rowCount: rows.length,
+          cellCount: cells.length,
+          cells: cellsInfo
+        });
+      }
+    });
+
+    return { modalId: modal.id, tables: tableInfo };
+  });
+
+  console.log("📊 DEBUG - Estructura de tablas en modal:");
+  console.log(JSON.stringify(tableDebug, null, 2));
+
   // Obtener los datos de la tabla con información de PDFs (azul/rojo)
   // Usar extractTableAsArray para obtener información completa de los PDFs
   const { extractTableAsArray } = require('./table');
   const rows = await extractTableAsArray(page);
-  
+
+  console.log(`📊 DEBUG - Filas extraídas: ${rows.length}`);
+  if (rows.length > 0) {
+    console.log("📊 DEBUG - Primera fila:", JSON.stringify(rows[0], null, 2));
+  }
+
   const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
   const pdfMapping = {};
   let downloadedCount = 0;

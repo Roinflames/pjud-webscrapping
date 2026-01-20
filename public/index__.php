@@ -1,128 +1,121 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Contrato – CRM</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<style>
-body { background:#f5f6f8; font-size:14px; }
-.sidebar { width:230px; background:#1f2937; color:#fff; min-height:100vh; position:fixed; }
-.sidebar a { color:#cbd5e1; text-decoration:none; display:block; padding:10px 20px; }
-.sidebar a:hover { background:#374151; color:white; }
-.topbar { background:white; padding:15px 25px; border-bottom:1px solid #ddd; font-size:18px; font-weight:600; }
-.main { margin-left:230px; }
-.card { border:none; border-radius:6px; }
-.table th { font-weight:600; }
-.actions button { margin-right:3px; }
-</style>
+    <meta charset="UTF-8">
+    <title>Consulta Unificada - Réplica</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .tab-container { border: 1px solid #ccc; border-top: none; padding: 20px; background: white; }
+        .verde-tab { background-color: #5cb85c !important; color: white !important; }
+        .info-box { background: #d9edf7; padding: 12px; font-size: 18px; font-weight: bold; }
+        .alerta { background: #dff0d8; padding: 15px; border-radius: 5px; margin-top: 15px; }
+    </style>
 </head>
 
-<body>
+<body class="bg-light">
 
-<div class="d-flex">
+<div class="container mt-4">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <h5 class="p-3 border-bottom">CRM</h5>
-        <a href="#">Panel</a>
-        <a href="#">Agendas</a>
-        <a href="#">Usuarios</a>
-        <a href="#" class="bg-primary text-white">Contrato</a>
-        <a href="#">Recaudación</a>
-        <a href="#">Cobranza</a>
-        <a href="#">Reportes</a>
-        <a href="#">Salir</a>
-    </div>
+    <h5 class="mb-3">
+        <a href="#" class="text-success">Consulta de Causas</a> / Consulta Unificada
+    </h5>
 
-    <!-- MAIN -->
-    <div class="main flex-fill">
+    <!-- TABS -->
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active verde-tab" href="#">Búsqueda por RIT</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Búsqueda por Nombre</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Búsqueda por Fecha</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Búsqueda por Rut Persona Jurídica</a>
+        </li>
+    </ul>
 
-        <div class="topbar">Contrato</div>
+    <div class="tab-container">
 
-        <div class="container-fluid p-4">
-
-            <!-- FILTROS -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label">Compañía</label>
-                            <select class="form-select">
-                                <option>Todos</option>
-                                <option>CMR Falabella</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label">Folio</label>
-                            <input class="form-control" value="20212">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label">Cliente</label>
-                            <input class="form-control" value="Carlos Domingo Gutierrez Ramos">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label">RIT</label>
-                            <input class="form-control" value="C-16707-2019">
-                        </div>
-
-                        <div class="col-md-1">
-                            <button class="btn btn-primary w-100">🔍</button>
-                        </div>
-                    </div>
-                </div>
+        <!-- FILA 1 -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Competencia</label>
+                <select id="competencia" class="form-select">
+                    <option>Corte Suprema</option>
+                    <option>Corte Apelaciones</option>
+                    <option>Civil</option>
+                </select>
             </div>
 
-            <!-- TABLA -->
-            <div class="card">
-                <div class="card-body">
-
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>RIT</th>
-                                <th>Folio</th>
-                                <th>Cliente</th>
-                                <th>Rut</th>
-                                <th>Abogado</th>
-                                <th>Juzgado</th>
-                                <th>Tribunal</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr>
-                                <td>C-16707-2019</td>
-                                <td>20212</td>
-                                <td>Carlos Domingo Gutierrez Ramos</td>
-                                <td>8.462.961-8</td>
-                                <td>Tatiana Gonzalez</td>
-                                <td>Promotora CMR Falabella</td>
-                                <td>27 Juzgado Civil de Santiago</td>
-                                <td class="actions">
-                                    <button class="btn btn-sm btn-warning">⬇</button>
-                                    <button class="btn btn-sm btn-primary"
-                                            onclick="buscarCausa('C-16707-2019')"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalDetalleCivil">👁</button>
-                                    <button class="btn btn-sm btn-success">📄</button>
-                                    <button class="btn btn-sm btn-danger">✖</button>
-                                </td>
-                            </tr>
-                        </tbody>
-
-                    </table>
-
-                </div>
+            <div class="col-md-4">
+                <label class="form-label">Corte</label>
+                <select id="corte" class="form-select">
+                    <option>Todos</option>
+                    <option>C.A. de Santiago</option>
+                </select>
             </div>
 
+            <div class="col-md-4">
+                <label class="form-label">Tribunal</label>
+                <select id="tribunal" class="form-select">
+                    <option>Todos</option>
+                    <option>18º Juzgado Civil de Santiago</option>
+                </select>
+            </div>
         </div>
+
+        <!-- FILA 2 -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Libro/Tipo</label>
+                <select id="libro" class="form-select">
+                    <option>C</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Rol</label>
+                <input id="rol" type="text" class="form-control" placeholder="Ej: 16707">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Año</label>
+                <input id="anio" type="text" class="form-control" placeholder="2019">
+            </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="d-flex gap-2 mb-3">
+            <!-- onclick ejecuta JS y data-bs-... abre el modal (requiere bootstrap JS) -->
+            <button id="btnBuscar" class="btn btn-primary"
+                    onclick="buscarCausa()"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalDetalleCivil">
+                Buscar
+            </button>
+
+            <button id="btnLimpiar" class="btn btn-warning">Limpiar</button>
+        </div>
+
+        <!-- BLOQUE DE VALORES -->
+        <div class="row text-center info-box">
+            <div class="col-md-4">VALOR RECUSACIÓN: $10.852</div>
+            <div class="col-md-4">DICIEMBRE 2025</div>
+            <div class="col-md-4">VALOR SUSPENSIÓN: $34.771</div>
+        </div>
+
+        <!-- MENSAJE FINAL -->
+        <div class="alerta mt-3">
+            Recuerde que las causas reservadas no se muestran en la consulta unificada,
+            y según el tipo de reserva, podrá acceder a ellas ingresando con su usuario
+            y contraseña a la opción “<strong>Mis Causas</strong>”. Para conocer los tipos de reserva,
+            <a href="#" class="btn btn-sm btn-primary">pinchar aquí</a>
+        </div>
+
     </div>
 </div>
 
@@ -138,7 +131,7 @@ body { background:#f5f6f8; font-size:14px; }
 
       <div class="modal-body">
 
-        <!-- DATOS PRINCIPALES -->
+        <!-- DATOS PRINCIPALES (se rellenan dinámicamente en buscarCausa) -->
         <div class="row mb-3">
           <div class="col-md-4"><strong>ROL:</strong> <span id="m_rol">-</span></div>
           <div class="col-md-4"><strong>F. Ing.:</strong> <span id="m_fing">-</span></div>
@@ -186,7 +179,7 @@ body { background:#f5f6f8; font-size:14px; }
 
         <div class="tab-content">
 
-            <!-- TAB HISTORIA -->
+            <!-- TAB HISTORIA (tabla con trámites) -->
             <div class="tab-pane fade show active" id="tabHistoria">
                 <div class="table-responsive">
                   <table id="tablaHistoria" class="table table-bordered table-striped">
@@ -203,7 +196,7 @@ body { background:#f5f6f8; font-size:14px; }
                 </div>
             </div>
 
-            <!-- LOS OTROS TABS -->
+            <!-- LOS OTROS TABS (vacíos por ahora) -->
             <div class="tab-pane fade" id="tabLitigantes">Contenido litigantes...</div>
             <div class="tab-pane fade" id="tabNotif">Contenido notificaciones...</div>
             <div class="tab-pane fade" id="tabEscritos">Contenido escritos...</div>
@@ -221,25 +214,35 @@ body { background:#f5f6f8; font-size:14px; }
   </div>
 </div>
 
+<!-- Bootstrap JS (bundle incluye Popper) - REQUERIDO para modals -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-async function buscarCausa(rit) {
-    const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rit)}`);
+async function buscarCausa() {
+    // 'C-16707-2019'
+    const libroInput = document.getElementById('libro').value;
+    const anioInput = document.getElementById('anio').value;
+    const rolInput = libroInput + "-" + document.getElementById('rol').value + "-" + anioInput;
+
+    const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rolInput)}`);
     const data = await res.json();
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';
+    console.log(data);
 
     if (!Array.isArray(data)) {
-        if (data.error == 'Archivo de resultados no encontrado') {
-            tbody.innerHTML = '';
-            return;
-        }
+
+    if (data.error == 'Archivo de resultados no encontrado') {
+        tbody.innerHTML = '';
+        return
+    }
         alert('Formato de datos inválido');
         return;
     }
 
-    /* CABECERA */
+    /* ======================
+       CABECERA
+    ====================== */
     const cab = data[0];
 
     document.getElementById('m_rol').textContent = cab[1];
@@ -253,10 +256,9 @@ async function buscarCausa(rit) {
     document.getElementById('m_estproc').textContent = 'Concluido';
     document.getElementById('m_etapa').textContent = 'Terminada';
 
-    /* HISTORIA */
-    const ritParts = rit.split('-');
-    const rolNum = ritParts[1];
-    const anio = ritParts[2];
+    /* ======================
+       HISTORIA
+    ====================== */
 
     data.slice(2, 17).forEach(row => {
         const folio = row[0];
@@ -268,9 +270,10 @@ async function buscarCausa(rit) {
         const foja = row[7];
 
         const pdfUrl = folio
-            ? `/outputs/${rolNum}_${anio}_doc_${folio}.pdf`
+            ? `/outputs/16707_2019_doc_${folio}.pdf`
             : null;
-
+        console.log(pdfUrl);
+        
         tbody.innerHTML += `
             <tr>
                 <td>${folio || '-'}</td>

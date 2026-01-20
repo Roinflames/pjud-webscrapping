@@ -17,15 +17,20 @@ const path = require('path');
  */
 function tieneMovimientos(rit) {
   try {
-    // Verificar en resultados de scraping
+    // Normalizar RIT: C-16707-2019 -> 16707_2019 (sin el prefijo de letra)
+    const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
+    const ritSinPrefijo = rit.replace(/^[A-Za-z]-/, '').replace(/-/g, '_');
+
+    const outputsDir = path.resolve(__dirname, '../outputs');
+
+    // 1. Verificar en resultados de scraping (storage)
     const resultado = obtenerResultado(rit);
     if (resultado && resultado.movimientos && resultado.movimientos.length > 0) {
       return true;
     }
 
-    // Verificar en archivos JSON de movimientos
-    const outputsDir = path.resolve(__dirname, '../outputs');
-    const archivoMovimientos = path.join(outputsDir, `movimientos_${rit.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+    // 2. Verificar archivo movimientos_*.json
+    const archivoMovimientos = path.join(outputsDir, `movimientos_${ritClean}.json`);
     if (fs.existsSync(archivoMovimientos)) {
       const contenido = JSON.parse(fs.readFileSync(archivoMovimientos, 'utf-8'));
       if (contenido.movimientos && contenido.movimientos.length > 0) {
@@ -33,8 +38,33 @@ function tieneMovimientos(rit) {
       }
     }
 
+    // 3. Verificar archivo resultado_*.json (formato con prefijo)
+    const archivoResultadoJson = path.join(outputsDir, `resultado_${ritClean}.json`);
+    if (fs.existsSync(archivoResultadoJson)) {
+      return true;
+    }
+
+    // 4. Verificar archivo resultado_*.json (formato sin prefijo: 16707_2019)
+    const archivoResultadoJsonSinPrefijo = path.join(outputsDir, `resultado_${ritSinPrefijo}.json`);
+    if (fs.existsSync(archivoResultadoJsonSinPrefijo)) {
+      return true;
+    }
+
+    // 5. Verificar archivo resultado_*.csv (formato con prefijo)
+    const archivoResultadoCsv = path.join(outputsDir, `resultado_${ritClean}.csv`);
+    if (fs.existsSync(archivoResultadoCsv)) {
+      return true;
+    }
+
+    // 6. Verificar archivo resultado_*.csv (formato sin prefijo: 16707_2019)
+    const archivoResultadoCsvSinPrefijo = path.join(outputsDir, `resultado_${ritSinPrefijo}.csv`);
+    if (fs.existsSync(archivoResultadoCsvSinPrefijo)) {
+      return true;
+    }
+
     return false;
   } catch (error) {
+    console.error(`Error verificando movimientos para RIT ${rit}:`, error.message);
     return false;
   }
 }

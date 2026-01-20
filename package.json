@@ -21,7 +21,11 @@
     "services:restart": "bash scripts/control-servicios.sh restart",
     "services:status": "bash scripts/control-servicios.sh status",
     "services:enable": "bash scripts/control-servicios.sh enable",
-    "services:disable": "bash scripts/control-servicios.sh disable"
+    "services:disable": "bash scripts/control-servicios.sh disable",
+    "services:start:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 start",
+    "services:stop:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 stop",
+    "services:restart:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 restart",
+    "services:status:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 status"
   },
   "keywords": [],
   "author": "",

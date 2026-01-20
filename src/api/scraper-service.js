@@ -14,7 +14,7 @@ const { closeModalIfExists } = require('../navigation');
 const { fillForm, openDetalle } = require('../form');
 const { extractTable } = require('../table');
 const { downloadPDFsFromTable } = require('../pdfDownloader');
-const { processTableData } = require('../exporter');
+const { processTableData, exportToJSON, exportToCSV } = require('../exporter');
 
 /**
  * Convierte un archivo PDF a base64
@@ -130,7 +130,12 @@ async function ejecutarScraping(config) {
     
     // Procesar datos
     const datosProcesados = processTableData(rows, rit, pdfMapping);
-    
+
+    // Guardar resultados en archivos (JSON y CSV)
+    exportToJSON(rows, outputDir, rit, pdfMapping);
+    exportToCSV(rows, outputDir, rit);
+    console.log(`💾 Resultados guardados en ${outputDir}`);
+
     // Convertir PDFs a base64
     const pdfsBase64 = {};
     const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');

@@ -3,53 +3,109 @@
  */
 
 /**
- * Detecta si hay un CAPTCHA o reCAPTCHA en la página
+ * Detecta si hay un CAPTCHA o reCAPTCHA ACTIVO y VISIBLE en la página
+ * (No solo la presencia del script, sino si realmente está bloqueando)
  */
 async function detectCaptcha(page) {
   try {
-    // Selectores comunes de CAPTCHA/reCAPTCHA
+    // Verificar primero si el reCAPTCHA está realmente activo ejecutándose
+    // Solo detectar si está visible y bloqueando la interacción
+    const recaptchaActive = await page.evaluate(() => {
+      // Verificar si reCAPTCHA está renderizado y visible
+      const recaptchaContainer = document.querySelector('.g-recaptcha');
+      if (recaptchaContainer) {
+        const iframe = recaptchaContainer.querySelector('iframe[title*="reCAPTCHA"]');
+        if (iframe) {
+          const rect = iframe.getBoundingClientRect();
+          // Verificar que está visible (ancho y alto > 0)
+          return rect.width > 0 && rect.height > 0 && 
+                 window.getComputedStyle(iframe).display !== 'none' &&
+                 window.getComputedStyle(iframe).visibility !== 'hidden';
+        }
+      }
+      return false;
+    }).catch(() => false);
+
+    if (recaptchaActive) {
+      return { detected: true, type: 'recaptcha-active', selector: '.g-recaptcha' };
+    }
+
+    // Selectores de CAPTCHA VISIBLES (no solo presentes)
     const captchaSelectors = [
       'iframe[title*="reCAPTCHA"]',
       'iframe[src*="recaptcha"]',
-      'iframe[src*="captcha"]',
-      '.g-recaptcha',
-      '#recaptcha',
-      '[data-sitekey]', // reCAPTCHA v2
+      '.g-recaptcha iframe',
+      '[data-sitekey]', // reCAPTCHA v2 (solo si es interactivo)
       '.captcha',
       '#captcha',
       'img[alt*="captcha"]',
       'img[src*="captcha"]'
     ];
 
-    // Verificar si alguno de estos selectores existe
+    // Verificar si alguno de estos selectores existe Y está visible
     for (const selector of captchaSelectors) {
       const element = await page.$(selector);
       if (element) {
         const isVisible = await element.isVisible().catch(() => false);
+        // Verificar también que tenga dimensiones
         if (isVisible) {
-          return { detected: true, type: 'captcha', selector };
+          const boundingBox = await element.boundingBox().catch(() => null);
+          if (boundingBox && boundingBox.width > 0 && boundingBox.height > 0) {
+            // Verificar que no esté oculto con CSS
+            const isHidden = await page.evaluate((sel) => {
+              const el = document.querySelector(sel);
+              if (!el) return true;
+              const style = window.getComputedStyle(el);
+              return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+            }, selector).catch(() => false);
+
+            if (!isHidden) {
+              return { detected: true, type: 'captcha', selector };
+            }
+          }
         }
       }
     }
 
-    // Verificar texto común de bloqueo/CAPTCHA
-    const bodyText = await page.evaluate(() => document.body.innerText.toLowerCase());
+    // Verificar texto común de bloqueo/CAPTCHA (solo si es un mensaje visible)
+    const bodyText = await page.evaluate(() => document.body.innerText.toLowerCase()).catch(() => '');
+    
+    // Keywords más específicos que indiquen bloqueo real
     const blockKeywords = [
-      'captcha',
-      'recaptcha',
-      'verificación',
       'verifica que eres humano',
-      'bloqueado',
-      'acceso denegado',
-      'suspicious activity',
+      'completa la verificación',
+      'resuelve el captcha',
+      'tu ip ha sido bloqueada',
+      'acceso temporalmente bloqueado',
+      'demasiadas solicitudes',
       'too many requests',
-      'rate limit',
+      'rate limit exceeded',
+      'suspicious activity detected',
       'intento de acceso no autorizado'
     ];
 
+    // Solo marcar como bloqueo si aparece un mensaje claro, no solo la palabra "captcha"
     for (const keyword of blockKeywords) {
       if (bodyText.includes(keyword)) {
         return { detected: true, type: 'block', keyword };
+      }
+    }
+
+    // Verificar mensajes de error específicos en elementos visibles
+    const errorMessages = await page.evaluate(() => {
+      const errorElements = Array.from(document.querySelectorAll('.alert-danger, .error-message, .blocked-message, [class*="error"], [class*="blocked"]'));
+      return errorElements
+        .filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        })
+        .map(el => el.textContent.toLowerCase())
+        .join(' ');
+    }).catch(() => '');
+
+    for (const keyword of blockKeywords) {
+      if (errorMessages.includes(keyword)) {
+        return { detected: true, type: 'block', keyword, source: 'error-message' };
       }
     }
 

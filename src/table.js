@@ -64,11 +64,29 @@ async function extractTableAsArray(page) {
         links.forEach((a, linkIndex) => {
           const img = a.querySelector('img');
           const imgSrc = (img?.src || '').toLowerCase();
+          const imgAlt = (img?.alt || '').toLowerCase();
+          const imgClass = (img?.className || '').toLowerCase();
           
           // Detección precisa por nombre de archivo de imagen del PJUD
-          // ico_pdf.png = Azul (Principal)
-          // pdf_old.png = Rojo (Anexo/Escrito)
-          const isAnexo = imgSrc.includes('pdf_old') || imgSrc.includes('rojo') || imgSrc.includes('anexo');
+          // Azul (Principal) = PDFs subidos por abogados
+          // Rojo (Anexo/Escrito) = PDFs de la corte
+          // Buscar en src, alt y className para mayor precisión
+          const isAnexo = imgSrc.includes('pdf_old') || 
+                         imgSrc.includes('rojo') || 
+                         imgSrc.includes('anexo') ||
+                         imgAlt.includes('rojo') ||
+                         imgAlt.includes('anexo') ||
+                         imgAlt.includes('corte') ||
+                         imgClass.includes('rojo') ||
+                         imgClass.includes('anexo');
+          
+          // Log para debugging (solo en desarrollo)
+          if (process.env.NODE_ENV === 'development' && img) {
+            console.log(`   📄 Icono PDF - Folio: ${row.datos_limpios?.folio || 'N/A'}, ` +
+                       `src: ${imgSrc.substring(0, 50)}, ` +
+                       `alt: ${imgAlt}, ` +
+                       `tipo: ${isAnexo ? 'Rojo (Corte)' : 'Azul (Abogados)'}`);
+          }
           
           pdfs.push({
             tipo: isAnexo ? 'A' : 'P', // A = Anexo (Rojo), P = Principal (Azul)

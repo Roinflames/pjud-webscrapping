@@ -126,15 +126,26 @@ function buscarResultadoEnArchivos(rit) {
         // Intentar reconstruir el mapeo de PDFs desde nombres de archivos
         const pdfMapping = {};
         pdfFiles.forEach(pdfFile => {
-          // Formato esperado: C_571_2019_mov_11_azul.pdf
-          const match = pdfFile.match(/mov_(\d+)_(azul|rojo)\.pdf$/);
-          if (match) {
-            const indice = parseInt(match[1]);
-            const tipo = match[2];
+          // Formato esperado: 
+          // - C_571_2019_mov_11_azul.pdf (movimiento con tipo)
+          // - C_3030_2017_doc_18.pdf (documento directo)
+          const matchMov = pdfFile.match(/mov_(\d+)_(azul|rojo)\.pdf$/i);
+          const matchDoc = pdfFile.match(/doc_(\d+)\.pdf$/i);
+          
+          if (matchMov) {
+            const indice = parseInt(matchMov[1]);
+            const tipo = matchMov[2];
             if (!pdfMapping[indice]) {
               pdfMapping[indice] = { azul: null, rojo: null };
             }
             pdfMapping[indice][tipo] = pdfFile;
+          } else if (matchDoc) {
+            // Para formato doc_INDICE, asignar como azul (principal)
+            const indice = parseInt(matchDoc[1]);
+            if (!pdfMapping[indice]) {
+              pdfMapping[indice] = { azul: null, rojo: null };
+            }
+            pdfMapping[indice].azul = pdfFile;
           }
         });
         

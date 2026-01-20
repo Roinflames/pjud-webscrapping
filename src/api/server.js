@@ -24,6 +24,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
+const HOST = process.env.API_HOST || '0.0.0.0'; // Escuchar en todas las interfaces para VPS
 
 // Middleware
 app.use(cors());
@@ -32,12 +33,19 @@ app.use(express.json());
 // Servir archivos estáticos desde public/
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Servir módulos JS desde src/modules/
+app.use('/modules', express.static(path.join(__dirname, '../modules')));
+
+// Servir módulos JS desde src/modules/
+app.use('/modules', express.static(path.join(__dirname, '../modules')));
+
 // Servir vistas HTML
 app.set('views', path.join(__dirname, 'views'));
 
 // Importar routers de scraping
 const scrapingRouter = require('./scraping-api');
 const mvpRouter = require('./mvp-api');
+const erpRouter = require('./erp-api');
 
 // Cargar datos de tribunales
 const TRIBUNALES_FILE = path.resolve(__dirname, '../outputs/tribunales_pjud_ids.json');
@@ -77,6 +85,7 @@ cargarTribunales();
 // Rutas de scraping (sin autenticación para ejecutar, con autenticación para consultar)
 app.use('/api/scraping', scrapingRouter);
 app.use('/api/mvp', mvpRouter);
+app.use('/api/erp', erpRouter);
 
 /**
  * Health check
@@ -502,11 +511,13 @@ app.get('/api/exportar/csv', (req, res) => {
 
 // Iniciar servidor
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     console.log('\n' + '='.repeat(60));
     console.log('🚀 API SERVER - Tribunales PJUD');
     console.log('='.repeat(60));
+    console.log(`📍 Host: ${HOST}`);
     console.log(`📍 Puerto: ${PORT}`);
+    console.log(`🌐 URL: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
     console.log(`📂 Archivo de tribunales: ${TRIBUNALES_FILE}`);
     console.log(`\n📋 Endpoints disponibles:`);
     console.log(`   GET  /                        - Página principal (interfaz web)`);

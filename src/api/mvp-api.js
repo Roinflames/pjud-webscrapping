@@ -68,6 +68,7 @@ router.get('/causas', (req, res) => {
           competencia: c.competencia,
           tribunal: c.tribunal,
           tipoCausa: c.rit ? c.rit.split('-')[0] : 'C',
+          abogado_id: c.abogado_id || null,
           valida: true,
           errores: []
         }));
@@ -113,11 +114,13 @@ router.get('/causas', (req, res) => {
       
       return {
         causa_id: c.causa_id || c.id,
+        agenda_id: c.agenda_id,
         rit: rit,
         caratulado: c.caratulado || c.causa_nombre,
         competencia: c.competencia,
         tribunal: c.tribunal,
         tipoCausa: c.tipoCausa,
+        abogado_id: c.abogado_id || null, // Agregar abogado_id para filtros
         valida: c.validacion?.valida !== false,
         errores: c.validacion?.errores || [],
         tieneMovimientos: tieneMovs,
@@ -349,7 +352,142 @@ router.get('/resultados/:rit', (req, res) => {
  */
 router.get('/movimientos/:rit', (req, res) => {
   try {
-    const resultado = obtenerResultado(req.params.rit);
+    const rit = req.params.rit;
+    
+    // obtenerResultado ya busca en storage y archivos JSON, procesando archivos crudos
+    let resultado = obtenerResultado(rit);
+    
+    if (!resultado) {
+      return res.status(404).json({ 
+        error: 'Resultado no encontrado',
+        mensaje: 'Esta causa aún no ha sido procesada. Ejecuta scraping primero.'
+      });
+    }
+    
+    // Buscar PDFs disponibles en el directorio outputs
+    const outputsDir = path.resolve(__dirname, '../outputs');
+    const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    // Buscar todos los PDFs relacionados con este RIT
+    const pdfsDisponibles = [];
+    try {
+      const archivos = fs.readdirSync(outputsDir);
+      archivos.forEach(archivo => {
+        if (archivo.startsWith(ritClean) && archivo.endsWith('.pdf')) {
+          pdfsDisponibles.push(archivo);
+        }
+      });
+    } catch (error) {
+      console.error('Error leyendo directorio de outputs:', error);
+    }
+    
+    // Mapear PDFs a movimientos según el índice/folio
+    if (resultado.movimientos && Array.isArray(resultado.movimientos)) {
+      resultado.movimientos = resultado.movimientos.map(mov => {
+        // Obtener índice del movimiento (puede ser indice o folio)
+        const indiceMov = parseInt(mov.indice) || parseInt(mov.folio) || null;
+        
+        // Si ya tiene nombres de PDF asignados desde storage.js, usarlos
+        if (mov.pdf_principal_nombre || mov.pdf_anexo_nombre) {
+          return mov;
+        }
+        
+        // Si tiene_pdf es true y hay índice, buscar PDFs
+        if (mov.tiene_pdf && indiceMov !== null && pdfsDisponibles.length > 0) {
+          // Buscar PDFs que correspondan a este movimiento
+          // Formatos posibles:
+          // - C_3030_2017_doc_18.pdf (formato doc)
+          // - C_3030_2017_mov_18_azul.pdf (formato mov con tipo)
+          // - C_3030_2017_mov_18_rojo.pdf
+          const pdfsMov = pdfsDisponibles.filter(pdf => {
+            // Extraer número del documento del nombre del archivo
+            const matchDoc = pdf.match(/_doc_(\d+)\.pdf$/i);
+            const matchMov = pdf.match(/_mov_(\d+)_/i);
+            
+            if (matchDoc && parseInt(matchDoc[1]) === indiceMov) {
+              return true;
+            }
+            if (matchMov && parseInt(matchMov[1]) === indiceMov) {
+              return true;
+            }
+            // También buscar formato alternativo: C_RIT_mov_INDICE_P.pdf (P = Principal/Azul, pero puede ser Rojo en algunos casos)
+            const matchMovP = pdf.match(/_mov_(\d+)_P\.pdf$/i);
+            if (matchMovP && parseInt(matchMovP[1]) === indiceMov) {
+              return true;
+            }
+            return false;
+          });
+          
+          if (pdfsMov.length > 0) {
+            // Separar PDFs azules y rojos según el formato
+            // Formatos reconocidos:
+            // - _mov_INDICE_azul.pdf (azul)
+            // - _mov_INDICE_rojo.pdf (rojo)
+            // - _mov_INDICE_P.pdf (rojo/anexo - formato alternativo)
+            // - _mov_INDICE_A.pdf (azul - formato alternativo raro)
+            // - _doc_INDICE.pdf (formato antiguo - por defecto azul, pero puede haber múltiples)
+            
+            const pdfAzul = pdfsMov.find(p => {
+              const lower = p.toLowerCase();
+              // Buscar formato explícito azul
+              if (lower.includes('_azul') || lower.includes('_a.pdf')) {
+                return true;
+              }
+              // Si es formato _doc_ y no hay otro PDF para este movimiento, es azul
+              if (lower.includes('_doc_') && !lower.includes('_rojo') && !lower.includes('_p.pdf') && !lower.includes('_anexo')) {
+                // Verificar si hay otro PDF con formato _P o _rojo para el mismo movimiento
+                const tieneRojo = pdfsMov.some(p2 => {
+                  const lower2 = p2.toLowerCase();
+                  return lower2.includes('_p.pdf') || lower2.includes('_rojo') || lower2.includes('_anexo');
+                });
+                // Si no tiene rojo, o si este es el único PDF, es azul
+                return !tieneRojo || pdfsMov.length === 1;
+              }
+              return false;
+            });
+            
+            const pdfRojo = pdfsMov.find(p => {
+              const lower = p.toLowerCase();
+              // Buscar formato explícito rojo
+              // Nota: _P.pdf puede ser Principal (azul) o Anexo (rojo) dependiendo del contexto
+              // Pero en el sistema actual, generalmente _P.pdf es el anexo/rojo
+              if (lower.includes('_rojo') || 
+                  lower.match(/_mov_\d+_p\.pdf$/i) ||  // Formato _mov_INDICE_P.pdf (generalmente rojo)
+                  lower.includes('_anexo')) {
+                return true;
+              }
+              return false;
+            });
+            
+            // Asignar PDFs
+            if (pdfAzul && pdfRojo) {
+              // Hay ambos tipos explícitos
+              mov.pdf_principal_nombre = pdfAzul;
+              mov.pdf_anexo_nombre = pdfRojo;
+            } else if (pdfsMov.length === 1) {
+              // Solo hay un PDF, asignarlo como principal
+              mov.pdf_principal_nombre = pdfsMov[0];
+            } else if (pdfAzul) {
+              // Solo hay azul explícito
+              mov.pdf_principal_nombre = pdfAzul;
+            } else if (pdfRojo) {
+              // Solo hay rojo explícito
+              mov.pdf_anexo_nombre = pdfRojo;
+            } else if (pdfsMov.length > 0) {
+              // Múltiples PDFs sin clasificación clara (formato _doc_ antiguo)
+              // Asumir que el primero es azul y el segundo rojo
+              mov.pdf_principal_nombre = pdfsMov[0];
+              if (pdfsMov.length > 1) {
+                mov.pdf_anexo_nombre = pdfsMov[1];
+              }
+            }
+          }
+        }
+        
+        return mov;
+      });
+    }
+    
     if (!resultado) {
       return res.status(404).json({ 
         error: 'Resultado no encontrado',

@@ -30,8 +30,41 @@ async function startBrowser(url, options = {}) {
     // Agregar headers adicionales para parecer más real
     extraHTTPHeaders: {
       'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-    }
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'DNT': '1',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1'
+    },
+    // Deshabilitar detección de automatización
+    locale: 'es-ES',
+    timezoneId: 'America/Santiago'
+  });
+
+  // Inyectar script para ocultar automatización
+  await context.addInitScript(() => {
+    // Ocultar webdriver
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => undefined
+    });
+
+    // Modificar plugins
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => [1, 2, 3, 4, 5]
+    });
+
+    // Modificar languages
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['es-ES', 'es', 'en']
+    });
+
+    // Modificar permissions
+    const originalQuery = window.navigator.permissions.query;
+    window.navigator.permissions.query = (parameters) => (
+      parameters.name === 'notifications' ?
+        Promise.resolve({ state: Notification.permission }) :
+        originalQuery(parameters)
+    );
   });
   
   console.log('🌐 User-Agent:', userAgent);

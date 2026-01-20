@@ -144,23 +144,41 @@
         <div class="filters-panel">
             <h4><i class="fa fa-filter"></i> Filtros</h4>
             <div class="row mb-3">
-                <div class="col-md-4">
-                    <label>
-                        <input type="checkbox" id="filtroValidas" checked onchange="aplicarFiltros()">
-                        Solo causas válidas (causa_validas.csv)
-                    </label>
+                <div class="col-md-3">
+                    <div class="form-group mb-2">
+                        <label class="small">Buscar por RIT</label>
+                        <input type="text" class="form-control form-control-sm" id="filtroRITInput" 
+                               placeholder="Ej: C-12345-2020" onkeypress="if(event.key==='Enter') aplicarFiltros()">
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label>
-                        <input type="checkbox" id="filtroConMovimientos" onchange="aplicarFiltros()">
-                        Solo con movimientos procesados
-                    </label>
+                <div class="col-md-3">
+                    <div class="form-group mb-2">
+                        <label class="small">Abogado ID</label>
+                        <input type="number" class="form-control form-control-sm" id="filtroAbogadoIdInput" 
+                               placeholder="ID del abogado" onkeypress="if(event.key==='Enter') aplicarFiltros()">
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label>
-                        <input type="checkbox" id="filtroPendientes" onchange="aplicarFiltros()">
-                        Mostrar pendientes
-                    </label>
+                <div class="col-md-6">
+                    <div class="form-group mb-2">
+                        <label class="small">&nbsp;</label>
+                        <div class="d-flex align-items-end">
+                            <div class="form-check mr-3">
+                                <input class="form-check-input" type="checkbox" id="filtroValidas" checked onchange="aplicarFiltros()">
+                                <label class="form-check-label small" for="filtroValidas">
+                                    Solo válidas
+                                </label>
+                            </div>
+                            <div class="form-check mr-3">
+                                <input class="form-check-input" type="checkbox" id="filtroConMovimientos" onchange="aplicarFiltros()">
+                                <label class="form-check-label small" for="filtroConMovimientos">
+                                    Con movimientos
+                                </label>
+                            </div>
+                            <button class="btn btn-sm btn-secondary" onclick="limpiarFiltrosAvanzados()">
+                                <i class="fa fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -393,7 +411,7 @@
             tbody.innerHTML = '';
 
             if (causas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No se encontraron causas que coincidan con la búsqueda</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No se encontraron causas que coincidan con la búsqueda</td></tr>';
                 document.getElementById('paginacion').innerHTML = '';
                 return;
             }
@@ -417,6 +435,7 @@
                     <td>${causa.competencia || '-'}</td>
                     <td>${causa.tribunal || '-'}</td>
                     <td>${causa.tipoCausa || '-'}</td>
+                    <td>${causa.abogado_id || '-'}</td>
                     <td>${estadoBadge}</td>
                     <td>
                         ${causa.tieneMovimientos ? `
@@ -458,10 +477,41 @@
         function aplicarFiltros() {
             const filtroValidas = document.getElementById('filtroValidas').checked;
             const filtroConMovimientos = document.getElementById('filtroConMovimientos').checked;
-            const filtroPendientes = document.getElementById('filtroPendientes').checked;
+            const filtroRIT = document.getElementById('filtroRITInput').value.trim();
+            const filtroAbogadoId = document.getElementById('filtroAbogadoIdInput').value.trim();
             
-            // Recargar causas con filtros
-            cargarCausas(0, 1000, true, filtroValidas, filtroConMovimientos, filtroPendientes);
+            // Aplicar filtros locales después de cargar
+            let causasFiltradas = todasLasCausas;
+            
+            if (filtroRIT) {
+                const ritNormalizado = filtroRIT.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                causasFiltradas = causasFiltradas.filter(c => {
+                    const cRit = (c.rit || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+                    return cRit.includes(ritNormalizado);
+                });
+            }
+            
+            if (filtroAbogadoId) {
+                causasFiltradas = causasFiltradas.filter(c => {
+                    return c.abogado_id && String(c.abogado_id) === String(filtroAbogadoId);
+                });
+            }
+            
+            if (filtroConMovimientos) {
+                causasFiltradas = causasFiltradas.filter(c => c.tieneMovimientos);
+            }
+            
+            // Renderizar causas filtradas
+            renderizarCausas(causasFiltradas);
+        }
+        
+        // Limpiar filtros avanzados
+        function limpiarFiltrosAvanzados() {
+            document.getElementById('filtroRITInput').value = '';
+            document.getElementById('filtroAbogadoIdInput').value = '';
+            document.getElementById('filtroValidas').checked = true;
+            document.getElementById('filtroConMovimientos').checked = false;
+            aplicarFiltro(); // Usar filtro básico
         }
 
         // Cargar todas las causas (o un gran lote)
@@ -728,29 +778,39 @@
                                     // Obtener nombres de archivos PDF del movimiento
                                     const pdfPrincipal = mov.pdf_principal_nombre || mov.pdf_path;
                                     const pdfAnexo = mov.pdf_anexo_nombre;
+                                    const rit = data.rit || '';
                                     
-                                    // Obtener base64 de los PDFs
-                                    const pdfPrincipalBase64 = pdfPrincipal && data.pdfs && data.pdfs[pdfPrincipal] ? data.pdfs[pdfPrincipal] : null;
-                                    const pdfAnexoBase64 = pdfAnexo && data.pdfs && data.pdfs[pdfAnexo] ? data.pdfs[pdfAnexo] : null;
+                                    // Usar endpoint de PDF directo
+                                    const pdfPrincipalUrl = pdfPrincipal ? `/api/scraping/pdf/${rit}/${pdfPrincipal}` : null;
+                                    const pdfAnexoUrl = pdfAnexo ? `/api/scraping/pdf/${rit}/${pdfAnexo}` : null;
+                                    
+                                    // Determinar si hay PDFs disponibles
+                                    const tienePDFs = pdfPrincipal || pdfAnexo;
                                     
                                     return `
                                     <tr>
                                         <td><span class="badge badge-primary">${mov.folio || mov.indice || '-'}</span></td>
                                         <td>
-                                            ${pdfPrincipal && pdfPrincipalBase64 ? `
-                                                <button class="btn btn-sm btn-primary" onclick="verPDF('${pdfPrincipal}', '${pdfPrincipalBase64}')" title="PDF Principal (Azul)">
+                                            ${pdfPrincipal ? `
+                                                <button class="btn btn-sm btn-primary mr-1 mb-1" 
+                                                        onclick="window.open('${pdfPrincipalUrl}', '_blank')" 
+                                                        title="PDF Principal (Azul) - ${pdfPrincipal}">
                                                     <i class="fa fa-file-pdf-o"></i> Azul
                                                 </button>
                                             ` : ''}
-                                            ${pdfAnexo && pdfAnexoBase64 ? `
-                                                <button class="btn btn-sm btn-danger" onclick="verPDF('${pdfAnexo}', '${pdfAnexoBase64}')" title="PDF Anexo (Rojo)">
+                                            ${pdfAnexo ? `
+                                                <button class="btn btn-sm btn-danger mr-1 mb-1" 
+                                                        onclick="window.open('${pdfAnexoUrl}', '_blank')" 
+                                                        title="PDF Anexo (Rojo) - ${pdfAnexo}">
                                                     <i class="fa fa-file-pdf-o"></i> Rojo
                                                 </button>
                                             ` : ''}
-                                            ${mov.tiene_pdf && !pdfPrincipalBase64 && !pdfAnexoBase64 ? `
-                                                <span class="text-muted small" title="PDF indicado pero no disponible">📄</span>
+                                            ${mov.tiene_pdf && !tienePDFs ? `
+                                                <span class="badge badge-secondary" title="PDF indicado en PJUD pero no descargado aún">
+                                                    <i class="fa fa-file-pdf-o"></i> Pendiente
+                                                </span>
                                             ` : ''}
-                                            ${!mov.tiene_pdf ? '<span class="text-muted small">-</span>' : ''}
+                                            ${!mov.tiene_pdf && !tienePDFs ? '<span class="text-muted small">-</span>' : ''}
                                         </td>
                                         <td>${mov.fecha || mov.fec_tramite || '-'}</td>
                                         <td><span class="badge badge-secondary">${mov.etapa || mov.tipo_movimiento || '-'}</span></td>
@@ -773,7 +833,7 @@
             $('#modalMovimientosBody').html(html);
         }
 
-        // Ver PDF
+        // Ver PDF (función legacy - usar endpoint directo en su lugar)
         function verPDF(nombreArchivo, base64Content) {
             if (!nombreArchivo) {
                 alert('PDF no disponible en este momento');
@@ -781,19 +841,25 @@
             }
 
             // Obtener el RIT del contexto actual
-            // Intentar obtenerlo de la causa seleccionada o de la URL
             let rit = null;
             const causaSeleccionada = window.causaSeleccionada;
             if (causaSeleccionada && causaSeleccionada.rit) {
                 rit = causaSeleccionada.rit;
             } else {
-                // Intentar extraer de la URL o usar un valor por defecto
-                const urlParams = new URLSearchParams(window.location.search);
-                rit = urlParams.get('rit') || '16707-2019';
+                // Intentar extraer del modal
+                const modalTitulo = document.querySelector('#modalMovimientos .modal-title');
+                if (modalTitulo) {
+                    const match = modalTitulo.textContent.match(/- ([^-]+)$/);
+                    if (match) rit = match[1].trim();
+                }
             }
 
-            // Construir URL del PDF usando el nuevo endpoint
-            // Formato: /api/scraping/pdf/{rit}/{nombreArchivo}
+            if (!rit) {
+                alert('No se pudo determinar el RIT');
+                return;
+            }
+
+            // Construir URL del PDF usando el endpoint directo
             const pdfUrl = `/api/scraping/pdf/${rit}/${nombreArchivo}`;
             
             // Abrir PDF en nueva pestaña

@@ -69,10 +69,13 @@ function buscarResultadoEnArchivos(rit) {
   try {
     const outputsDir = path.resolve(__dirname, '../outputs');
     if (!fs.existsSync(outputsDir)) {
+      console.log(`[storage] Directorio outputs no existe: ${outputsDir}`);
       return null;
     }
 
     const ritNormalizado = normalizarRITParaArchivo(rit);
+    console.log(`[storage] Buscando archivos para RIT: ${rit}`);
+    console.log(`[storage] ritNormalizado: ${ritNormalizado}`);
     
     // Buscar archivo movimientos_*.json (estructurado)
     const archivoMovimientos = path.join(outputsDir, `movimientos_${ritNormalizado}.json`);
@@ -109,10 +112,18 @@ function buscarResultadoEnArchivos(rit) {
       };
     }
     
+    // También buscar con RIT sin prefijo (16707_2019 en vez de C_16707_2019)
+    const ritSinPrefijo = rit.replace(/^[A-Za-z]-/, '').replace(/-/g, '_');
+    console.log(`[storage] ritSinPrefijo: ${ritSinPrefijo}`);
+
     // Si no hay movimientos, intentar con resultado_*.json (crudo)
     const archivoResultado = path.join(outputsDir, `resultado_${ritNormalizado}.json`);
-    if (fs.existsSync(archivoResultado)) {
-      const contenido = JSON.parse(fs.readFileSync(archivoResultado, 'utf-8'));
+    const archivoResultadoSinPrefijo = path.join(outputsDir, `resultado_${ritSinPrefijo}.json`);
+    const archivoParaLeer = fs.existsSync(archivoResultado) ? archivoResultado :
+                           (fs.existsSync(archivoResultadoSinPrefijo) ? archivoResultadoSinPrefijo : null);
+
+    if (archivoParaLeer) {
+      const contenido = JSON.parse(fs.readFileSync(archivoParaLeer, 'utf-8'));
       
       // Si son filas crudas (array de arrays), procesarlas
       if (Array.isArray(contenido) && contenido.length > 0 && Array.isArray(contenido[0])) {
@@ -181,7 +192,85 @@ function buscarResultadoEnArchivos(rit) {
         }
       }
     }
-    
+
+    // Buscar archivos CSV: resultado_*.csv
+    const archivoCsv = path.join(outputsDir, `resultado_${ritNormalizado}.csv`);
+    const archivoCsvSinPrefijo = path.join(outputsDir, `resultado_${ritSinPrefijo}.csv`);
+    console.log(`[storage] Buscando CSV: ${archivoCsv}`);
+    console.log(`[storage] Buscando CSV sin prefijo: ${archivoCsvSinPrefijo}`);
+    console.log(`[storage] Existe archivoCsv: ${fs.existsSync(archivoCsv)}`);
+    console.log(`[storage] Existe archivoCsvSinPrefijo: ${fs.existsSync(archivoCsvSinPrefijo)}`);
+    const csvParaLeer = fs.existsSync(archivoCsv) ? archivoCsv :
+                        (fs.existsSync(archivoCsvSinPrefijo) ? archivoCsvSinPrefijo : null);
+
+    if (csvParaLeer) {
+      console.log(`[storage] ✅ Leyendo CSV: ${csvParaLeer}`);
+      try {
+        const contenidoCsv = fs.readFileSync(csvParaLeer, 'utf-8');
+        const lineas = contenidoCsv.split('\n').filter(l => l.trim());
+
+        if (lineas.length > 1) {
+          // Primera línea son los headers
+          // headers: rit;indice;fecha;tipo_movimiento;subtipo_movimiento;descripcion;folio;tiene_pdf;caratulado;juzgado
+          const movimientos = [];
+          let cabecera = {};
+
+          for (let i = 1; i < lineas.length; i++) {
+            const campos = lineas[i].split(';');
+            const mov = {
+              indice: parseInt(campos[1]) || i,
+              fecha: campos[2] || '',
+              tipo_movimiento: campos[3] || '',
+              subtipo_movimiento: campos[4] || '',
+              descripcion: campos[5] || '',
+              folio: campos[6] || '',
+              tiene_pdf: campos[7] === 'SI'
+            };
+            movimientos.push(mov);
+
+            // Obtener cabecera del primer registro
+            if (i === 1) {
+              cabecera = {
+                rit: campos[0] || rit,
+                caratulado: campos[8] || '',
+                juzgado: campos[9] || ''
+              };
+            }
+          }
+
+          // Leer PDFs disponibles
+          const pdfsBase64 = {};
+          const pdfFiles = fs.readdirSync(outputsDir).filter(f =>
+            (f.startsWith(ritNormalizado) || f.startsWith(ritSinPrefijo)) && f.endsWith('.pdf')
+          );
+
+          for (const pdfFile of pdfFiles) {
+            const pdfPath = path.join(outputsDir, pdfFile);
+            try {
+              const fileBuffer = fs.readFileSync(pdfPath);
+              pdfsBase64[pdfFile] = fileBuffer.toString('base64');
+            } catch (error) {
+              console.warn(`No se pudo leer PDF ${pdfFile}:`, error.message);
+            }
+          }
+
+          return {
+            rit: cabecera.rit || rit,
+            fecha_scraping: new Date().toISOString(),
+            movimientos: movimientos,
+            cabecera: cabecera,
+            estado_actual: {},
+            pdfs: pdfsBase64,
+            total_movimientos: movimientos.length,
+            total_pdfs: Object.keys(pdfsBase64).length,
+            estado: 'completado'
+          };
+        }
+      } catch (error) {
+        console.error(`Error leyendo CSV para ${rit}:`, error.message);
+      }
+    }
+
     return null;
   } catch (error) {
     console.error(`Error buscando resultado en archivos para ${rit}:`, error.message);

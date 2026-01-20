@@ -25,7 +25,14 @@
     "services:start:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 start",
     "services:stop:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 stop",
     "services:restart:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 restart",
-    "services:status:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 status"
+    "services:status:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 status",
+    "services:logs:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs",
+    "services:logs:api:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:api",
+    "services:logs:listener:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:listener",
+    "services:logs:worker:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:worker",
+    "services:logs:listener-erp:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:listener-erp",
+    "services:logs:worker-eventos:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:worker-eventos"
+
   },
   "keywords": [],
   "author": "",

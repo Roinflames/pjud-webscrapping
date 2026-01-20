@@ -1,13 +1,20 @@
 {
   "16707-2019": {
     "rit": "16707-2019",
-    "fecha_scraping": "2026-01-20T15:42:50.182Z",
+    "fecha_scraping": "2026-01-20T18:39:01.487Z",
     "movimientos": [],
-    "cabecera": {},
+    "cabecera": {
+      "rit": "C-16707-2019",
+      "fecha_ingreso": "17/05/2019",
+      "caratulado": "PROMOTORA CMR FALABELLA S.A/HERNÁNDEZ",
+      "juzgado": "11º Juzgado Civil de Santiago"
+    },
     "pdfs": {},
-    "total_movimientos": 10,
+    "total_movimientos": 9,
     "total_pdfs": 0,
     "estado": "completado",
-    "fecha_guardado": "2026-01-20T15:42:50.281Z"
+    "guardado_en_db": false,
+    "db_error": "",
+    "fecha_guardado": "2026-01-20T18:39:01.607Z"
   }
 }

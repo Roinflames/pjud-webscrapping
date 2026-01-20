@@ -235,45 +235,58 @@ router.post('/scraping/ejecutar', middlewareAuth, async (req, res) => {
   try {
     const { rit } = req.body;
 
-    if (!rit) {
-      return res.status(400).json({ error: 'RIT requerido' });
-    }
+    if (!rit) return res.status(400).json({ error: 'RIT requerido' });
 
     const causa = buscarCausaPorRIT(rit);
-    if (!causa) {
-      return res.status(404).json({ error: 'Causa no encontrada' });
-    }
+    if (!causa) return res.status(404).json({ error: 'Causa no encontrada' });
 
     if (!causa.validacion?.valida) {
       return res.status(400).json({ 
         error: 'Causa inválida para scraping', 
-        errores: causa.validacion?.errores || [] 
+        errores: causa.validacion.errores || [] 
       });
     }
 
     const config = prepararConfigScraping(causa);
     console.log(`🚀 Ejecutando scraping para: ${config.rit}`);
 
-    const resultado = await executeScraping(config);
-    
-    if (resultado && resultado.movimientos) {
-      guardarResultado(config.rit, resultado);
+    // 1️⃣ Ejecutar scraper (NO confiar en return)
+    await executeScraping(config);
+
+    // 2️⃣ Leer archivo generado
+    const outputPath = path.join(
+      __dirname,
+      '../../scraper/outputs',
+      `resultado_${config.rit.replace(/-/g, '_')}.json`
+    );
+
+    let data = { movimientos: [], pdfs: [] };
+
+    if (fs.existsSync(outputPath)) {
+      data = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
+    }
+
+    // 3️⃣ Guardar en DB si quieres
+    if (data.movimientos?.length) {
+      guardarResultado(config.rit, data);
     }
 
     res.json({
       success: true,
       rit: config.rit,
       resultado: {
-        movimientos: resultado.movimientos?.length || 0,
-        pdfs: resultado.pdfs?.length || 0,
+        movimientos: data.movimientos.length,
+        pdfs: data.pdfs?.nombres?.length || 0,
         fecha: new Date().toISOString()
       }
     });
+
   } catch (error) {
-    console.error('Error ejecutando scraping:', error);
+    console.error('❌ Error ejecutando scraping:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 /**
  * POST /api/mvp/cola/inicializar

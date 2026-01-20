@@ -80,7 +80,13 @@ async function processCausaBatch(page, context, config, outputDir) {
     }
 
     // 2. Descargar PDFs (azul/rojo)
-    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, config.rit) || {};
+    const pdfMapping = await downloadPDFsFromTable(
+      page,
+      context,
+      outputDir,
+      config.rit,
+      rows
+    );
 
     // 3. Descargar eBook
     await downloadEbook(page, context, config, outputDir);

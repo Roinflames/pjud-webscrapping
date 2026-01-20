@@ -12,9 +12,17 @@ const path = require('path');
 const { startBrowser } = require('../browser');
 const { closeModalIfExists } = require('../navigation');
 const { fillForm, openDetalle } = require('../form');
-const { extractTable } = require('../table');
+const { extractTableAsArray } = require('../table');
 const { downloadPDFsFromTable } = require('../pdfDownloader');
 const { processTableData, exportToJSON, exportToCSV } = require('../exporter');
+
+// Servicio de base de datos (opcional, si está configurado)
+let dbService = null;
+try {
+  dbService = require('./db-service');
+} catch (e) {
+  console.log('[scraper] db-service no disponible, guardando solo en archivos');
+}
 
 /**
  * Convierte un archivo PDF a base64
@@ -122,11 +130,17 @@ async function ejecutarScraping(config) {
     await openDetalle(page);
     
     // Extraer datos
-    const rows = await extractTable(page);
+    const rows = await extractTableAsArray(page);
     console.log(`📊 Extraídos ${rows.length} movimientos`);
     
     // Descargar PDFs
-    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, rit) || {};
+    const pdfMapping = await downloadPDFsFromTable(
+      page,
+      context,
+      outputDir,
+      rit,
+      rows
+    );
     
     // Procesar datos
     const datosProcesados = processTableData(rows, rit, pdfMapping);
@@ -166,7 +180,25 @@ async function ejecutarScraping(config) {
     };
     
     console.log(`✅ Scraping completado: ${resultado.total_movimientos} movimientos, ${resultado.total_pdfs} PDFs`);
-    
+
+    // Guardar en base de datos si está disponible
+    if (dbService) {
+      try {
+        await dbService.guardarMovimientos(
+          rit,
+          datosProcesados.movimientos || [],
+          datosProcesados.cabecera || {},
+          pdfsBase64
+        );
+        console.log(`💾 Datos guardados en base de datos`);
+        resultado.guardado_en_db = true;
+      } catch (dbError) {
+        console.warn(`⚠️ No se pudo guardar en BD: ${dbError.message}`);
+        resultado.guardado_en_db = false;
+        resultado.db_error = dbError.message;
+      }
+    }
+
     return resultado;
     
   } catch (error) {

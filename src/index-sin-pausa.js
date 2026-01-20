@@ -70,7 +70,13 @@ const { saveErrorEvidence } = require('./utils');
     exportToCSV(rows, outputDir, CONFIG.rit);
 
     const { downloadPDFsFromTable } = require('./pdfDownloader');
-    await downloadPDFsFromTable(page, context, outputDir, CONFIG.rit);
+    const pdfMapping = await downloadPDFsFromTable(
+      page,
+      context,
+      outputDir,
+      CONFIG.rit,
+      rows
+    );
 
     console.log('✅ Scraping completado exitosamente!');
     console.log('📊 Resultados guardados en:', outputDir);

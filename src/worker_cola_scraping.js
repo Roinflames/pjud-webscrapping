@@ -185,7 +185,14 @@ async function procesarRIT(colaItem) {
       require('fs').mkdirSync(outputDir, { recursive: true });
     }
     
-    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, config.rit) || {};
+    const pdfMapping = await downloadPDFsFromTable(
+      page,
+      context,
+      outputDir,
+      config.rit,
+      rows
+    );
+
     
     // Descargar eBook
     await downloadEbook(page, context, config, outputDir);

@@ -32,66 +32,51 @@ const router = express.Router();
 router.post('/ejecutar', async (req, res) => {
   try {
     const { rit, competencia, corte, tribunal, tipoCausa, headless } = req.body;
-    
-    // Validar campos requeridos
-    if (!rit || !competencia || !corte || !tribunal || !tipoCausa) {
-      return res.status(400).json({
-        error: 'Datos incompletos',
-        mensaje: 'Faltan campos requeridos',
-        campos_requeridos: ['rit', 'competencia', 'corte', 'tribunal', 'tipoCausa'],
-        recibido: { rit, competencia, corte, tribunal, tipoCausa }
-      });
+
+    if (![rit, competencia, corte, tribunal, tipoCausa].every(v => typeof v === 'string')) {
+      return res.status(400).json({ error: 'Datos inválidos' });
     }
-    
-    // Validar formato de RIT
-    if (!rit.match(/^\d+-\d{4}$/)) {
-      return res.status(400).json({
-        error: 'RIT inválido',
-        mensaje: 'El RIT debe tener el formato: ROL-AÑO (ej: 16707-2019)',
-        recibido: rit
-      });
+
+    if (!/^\d+-\d{4}$/.test(rit)) {
+      return res.status(400).json({ error: 'RIT inválido', recibido: rit });
     }
-    
-    console.log(`📥 Recibida solicitud de scraping para RIT: ${rit}`);
-    
-    // Ejecutar scraping
+
+    console.log(`📥 Scraping RIT ${rit}`);
+
     const resultado = await ejecutarScraping({
       rit,
       competencia,
       corte,
       tribunal,
       tipoCausa,
-      headless: headless || false
+      headless: !!headless
     });
-    
-    // Guardar resultado
-    guardarResultado(rit, resultado);
-    
-    // Responder sin incluir los PDFs en base64 (para no saturar la respuesta)
-    const respuesta = {
-      ...resultado,
-      pdfs: {
-        _nota: 'Los PDFs están almacenados en base64. Usa GET /api/scraping/resultado/:rit para obtenerlos.',
-        total_archivos: Object.keys(resultado.pdfs).length,
-        nombres: Object.keys(resultado.pdfs)
-      }
-    };
-    
+
+    try {
+      guardarResultado(rit, resultado);
+    } catch (e) {
+      console.warn('⚠️ No se pudo guardar el resultado:', e.message);
+    }
+
     res.json({
       success: true,
       mensaje: 'Scraping ejecutado exitosamente',
-      resultado: respuesta
+      resultado: {
+        ...resultado,
+        pdfs: {
+          nota: 'PDFs disponibles vía GET /api/scraping/resultado/:rit',
+          total: Object.keys(resultado.pdfs || {}).length,
+          nombres: Object.keys(resultado.pdfs || {})
+        }
+      }
     });
-    
+
   } catch (error) {
-    console.error('Error ejecutando scraping:', error);
-    res.status(500).json({
-      error: 'Error ejecutando scraping',
-      mensaje: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('❌ Error scraping:', error);
+    res.status(500).json({ error: error.message });
   }
 });
+
 
 /**
  * GET /api/scraping/resultado/:rit

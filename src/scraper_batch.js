@@ -217,7 +217,13 @@ async function processRIT(cause, configPath, outputDir) {
 
     // Descargar PDFs de la tabla
     const { downloadPDFsFromTable } = require('./pdfDownloader');
-    await downloadPDFsFromTable(page, context, outputDir, CONFIG.rit);
+    const pdfMapping = await downloadPDFsFromTable(
+      page,
+      context,
+      outputDir,
+      CONFIG.rit,
+      rows
+    );
 
     // Descargar eBook (opcional, comentado por defecto)
     // await downloadEbook(page, context, CONFIG, path.resolve(__dirname, 'assets/ebook'));

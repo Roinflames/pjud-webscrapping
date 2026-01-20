@@ -99,19 +99,27 @@ function Show-Logs {
     
     switch ($service) {
         "api" {
-            Write-Host "${BLUE}[LOGS] Logs de API:${NC}"
+            Write-Host "${BLUE}📋 Logs de API:${NC}"
             pm2 logs api-pjud --lines 50
         }
         "listener" {
-            Write-Host "${BLUE}[LOGS] Logs de Listener:${NC}"
+            Write-Host "${BLUE}📋 Logs de Listener:${NC}"
             pm2 logs listener-pjud --lines 50
         }
         "worker" {
-            Write-Host "${BLUE}[LOGS] Logs de Worker:${NC}"
+            Write-Host "${BLUE}📋 Logs de Worker:${NC}"
             pm2 logs worker-pjud --lines 50
         }
+        "listener-erp" {
+            Write-Host "${BLUE}📋 Logs de Listener ERP:${NC}"
+            pm2 logs listener-erp --lines 50
+        }
+        "worker-eventos" {
+            Write-Host "${BLUE}📋 Logs de Worker Eventos:${NC}"
+            pm2 logs worker-eventos --lines 50
+        }
         default {
-            Write-Host "${BLUE}[LOGS] Logs de todos los servicios:${NC}"
+            Write-Host "${BLUE}📋 Logs de todos los servicios:${NC}"
             pm2 logs --lines 50
         }
     }
@@ -142,6 +150,12 @@ switch ($command) {
     }
     "logs:worker" {
         Show-Logs -service "worker"
+    }
+    "logs:listener-erp" {
+        Show-Logs -service "listener-erp"
+    }
+    "logs:worker-eventos" {
+        Show-Logs -service "worker-eventos"
     }
     "help" {
         Show-Help

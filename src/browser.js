@@ -100,4 +100,14 @@ async function startBrowser(url, options = {}) {
   return { browser, context, page };
 }
 
-module.exports = { startBrowser };
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+module.exports = { startBrowser, delay };
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+module.exports = { startBrowser, delay };

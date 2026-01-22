@@ -17,6 +17,7 @@ docker --version
 docker-compose --version
 ```
 
+
 ## 📁 2. Archivos Creados
 
 ### Sistema de Métricas

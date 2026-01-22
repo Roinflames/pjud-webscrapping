@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación - PJUD Web Scrapping</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-code: #0d1117;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .warning-badge {
+            display: inline-block;
+            background: var(--danger);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background: rgba(99, 102, 241, 0.1);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header .icon {
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Command Blocks */
+        .command-block {
+            background: var(--bg-code);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .command-header {
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .command-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .command-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .command-badge.npm { background: #cb3837; }
+        .command-badge.node { background: #339933; }
+        .command-badge.shell { background: #4eaa25; }
+        .command-badge.mysql { background: #4479a1; }
+
+        .command-code {
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .command-code code {
+            display: block;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .command-code:hover .copy-btn {
+            opacity: 1;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .copy-btn.copied {
+            background: var(--secondary);
+        }
+
+        /* Description */
+        .description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Table */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table th,
+        .info-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-table th {
+            background: rgba(99, 102, 241, 0.1);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .info-table td {
+            font-size: 0.9rem;
+        }
+
+        .info-table code {
+            background: var(--bg-code);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        /* Status Badges */
+        .status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .status.info { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quick-action {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .quick-action h4 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-action p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .quick-action code {
+            display: block;
+            background: var(--bg-code);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--secondary);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        /* Search */
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .nav-tabs { flex-direction: column; }
+            .nav-tab { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>📚 PJUD Web Scrapping</h1>
+            <p>Documentación de Comandos y Guía de Uso</p>
+            <div class="warning-badge">⚠️ CARPETA PROTEGIDA - NO BORRAR</div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Search -->
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Buscar comando...">
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-section="quick">⚡ Acceso Rápido</button>
+            <button class="nav-tab" data-section="frontend">🖥️ Frontend</button>
+            <button class="nav-tab" data-section="servidor">🌐 Servidor</button>
+            <button class="nav-tab" data-section="scraping">🕷️ Scraping</button>
+            <button class="nav-tab" data-section="database">🗄️ Base de Datos</button>
+            <button class="nav-tab" data-section="testing">🧪 Testing</button>
+            <button class="nav-tab" data-section="tools">🔧 Herramientas</button>
+            <button class="nav-tab" data-section="urls">🔗 URLs</button>
+        </nav>
+
+        <!-- Section: Quick Access -->
+        <section class="section active" id="quick">
+            <h2 style="margin-bottom: 20px; color: var(--text-secondary);">Comandos más usados</h2>
+            
+            <div class="quick-actions">
+                <div class="quick-action" onclick="copyCommand('npm run api:start')">
+                    <h4>🚀 Iniciar Servidor</h4>
+                    <p>Levanta el servidor API en el puerto 3000</p>
+                    <code>npm run api:start</code>
+                </div>
+                
+                <div class="quick-action" onclick="copyCommand('npm test')">
+                    <h4>🧪 Ejecutar Tests</h4>
+                    <p>Ejecuta las 54 pruebas unitarias</p>
+                    <code>npm test</code>
+                </div>
+                
+                <div class="quick-action" onclick="copyCommand('npm run test:5causas')">
+                    <h4>🕷️ Scraping 5 Causas</h4>
+                    <p>Ejecuta scraping de las 5 causas de prueba</p>
+                    <code>npm run test:5causas</code>
+                </div>
+                
+                <div class="quick-action" onclick="copyCommand('npm install')">
+                    <h4>📦 Instalar Dependencias</h4>
+                    <p>Instala todas las dependencias del proyecto</p>
+                    <code>npm install</code>
+                </div>
+
+                <div class="quick-action" onclick="copyCommand('npx playwright install chromium')">
+                    <h4>🎭 Instalar Playwright</h4>
+                    <p>Instala el navegador para scraping</p>
+                    <code>npx playwright install chromium</code>
+                </div>
+
+                <div class="quick-action" onclick="copyCommand('npm run scrape:masivo')">
+                    <h4>📊 Scraping Masivo</h4>
+                    <p>Ejecuta scraping masivo desde CSV</p>
+                    <code>npm run scrape:masivo</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Frontend -->
+        <section class="section" id="frontend">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🖥️</span> Frontend - Páginas Disponibles</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        El sistema incluye varias páginas web para visualizar y gestionar las causas. 
+                        <strong>Primero debes iniciar el servidor con <code>npm run api:start</code></strong>
+                    </p>
+                    
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><a href="http://localhost:3000/demo" target="_blank" style="color: var(--primary);">localhost:3000/demo</a></td>
+                                <td><strong>Consulta de Causas</strong></td>
+                                <td>Interfaz estilo PJUD para buscar y ver causas. Incluye formulario de búsqueda y tabla de resultados.</td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/movimientos" target="_blank" style="color: var(--primary);">localhost:3000/movimientos</a></td>
+                                <td><strong>Movimientos Procesales</strong></td>
+                                <td>Tabla completa de movimientos con filtros, paginación y visualización de PDFs.</td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/mvp" target="_blank" style="color: var(--primary);">localhost:3000/mvp</a></td>
+                                <td><strong>Dashboard MVP</strong></td>
+                                <td>Panel de control con estadísticas y métricas del sistema.</td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/" target="_blank" style="color: var(--primary);">localhost:3000/</a></td>
+                                <td><strong>Página Principal</strong></td>
+                                <td>Página de inicio con información general del sistema.</td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/exportar" target="_blank" style="color: var(--primary);">localhost:3000/exportar</a></td>
+                                <td><strong>Exportación</strong></td>
+                                <td>Herramienta para exportar datos a JSON o CSV.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🎨</span> Consulta de Causas (/demo)</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Interfaz principal que replica el estilo del PJUD con colorimetría personalizada.
+                    </p>
+                    
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">Características:</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Formulario de búsqueda</strong> - Competencia, Corte, Tribunal, Tipo Causa, Rol, Año
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Tabla de resultados</strong> - Muestra causas encontradas con acciones
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Causas guardadas</strong> - Lista de causas almacenadas en el sistema
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Modal de detalle</strong> - Información completa de la causa y movimientos
+                        </li>
+                    </ul>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">Iconos de Acción:</h4>
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Icono</th>
+                                <th style="width: 100px;">Color</th>
+                                <th>Función</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>👁️ <code>fa-eye</code></td>
+                                <td><span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px;">Azul</span></td>
+                                <td>Ver detalle completo de la causa</td>
+                            </tr>
+                            <tr>
+                                <td>📄 <code>fa-file-pdf</code></td>
+                                <td><span style="background: #0ea5e9; color: white; padding: 2px 8px; border-radius: 4px;">Cyan</span></td>
+                                <td>Descargar PDF principal del movimiento</td>
+                            </tr>
+                            <tr>
+                                <td>📄 <code>fa-file-pdf</code></td>
+                                <td><span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px;">Rojo</span></td>
+                                <td>Descargar PDF anexo del movimiento</td>
+                            </tr>
+                            <tr>
+                                <td>📚 <code>fa-book</code></td>
+                                <td><span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 4px;">Verde</span></td>
+                                <td>Descargar eBook / Carpeta digital completa</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📋</span> Movimientos Procesales (/movimientos)</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Tabla avanzada para visualizar el historial completo de movimientos de una causa.
+                    </p>
+                    
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">Características:</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Paginación</strong> - 25, 50, 100, 200 o todos los registros por página
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Filtros</strong> - Por fecha, descripción y etapa procesal
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Columnas</strong> - Folio, Documentos, Fecha, Etapa, Trámite, Descripción, Foja
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Visor de PDF</strong> - Modal integrado para ver documentos sin salir de la página
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Estadísticas</strong> - Total de movimientos, documentos y PDFs disponibles
+                        </li>
+                    </ul>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">Columnas de la Tabla:</h4>
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Columna</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Folio</strong></td>
+                                <td>Número correlativo del movimiento (badge azul)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Documentos</strong></td>
+                                <td>Botones para descargar PDF principal (azul) y anexo (rojo)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fecha</strong></td>
+                                <td>Fecha del movimiento en formato DD/MM/YYYY</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Etapa</strong></td>
+                                <td>Etapa procesal (Ingreso, Notificación, Sentencia, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Trámite</strong></td>
+                                <td>Tipo de trámite realizado</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Descripción</strong></td>
+                                <td>Detalle completo del movimiento</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Foja</strong></td>
+                                <td>Número de foja en el expediente físico</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🚀</span> Cómo Iniciar el Frontend</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Paso 1: Iniciar el servidor</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run api:start</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run api:start')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Inicia el servidor Express en el puerto 3000. Esto habilita todas las páginas del frontend.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Paso 2: Abrir en el navegador</span>
+                            <span class="command-badge shell">shell</span>
+                        </div>
+                        <div class="command-code">
+                            <code># Abrir consulta de causas
+open http://localhost:3000/demo
+
+# Abrir movimientos procesales
+open http://localhost:3000/movimientos
+
+# Abrir dashboard MVP
+open http://localhost:3000/mvp</code>
+                            <button class="copy-btn" onclick="copyCommand('open http://localhost:3000/demo')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Abre la página en tu navegador por defecto. En Windows usa <code>start</code> en lugar de <code>open</code>.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Si el puerto está ocupado</span>
+                            <span class="command-badge shell">shell</span>
+                        </div>
+                        <div class="command-code">
+                            <code># Matar proceso en puerto 3000
+lsof -ti:3000 | xargs kill -9
+
+# Luego iniciar el servidor
+npm run api:start</code>
+                            <button class="copy-btn" onclick="copyCommand('lsof -ti:3000 | xargs kill -9 && npm run api:start')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Soluciona el error <code>EADDRINUSE: address already in use</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📁</span> Archivos del Frontend</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Archivo</th>
+                                <th>Ruta</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>demo.html</code></td>
+                                <td>src/api/public/</td>
+                                <td>Consulta de causas estilo PJUD</td>
+                            </tr>
+                            <tr>
+                                <td><code>demo-movimientos-completo.html</code></td>
+                                <td>src/api/public/</td>
+                                <td>Tabla de movimientos procesales</td>
+                            </tr>
+                            <tr>
+                                <td><code>mvp-dashboard.html</code></td>
+                                <td>src/api/public/</td>
+                                <td>Dashboard con estadísticas</td>
+                            </tr>
+                            <tr>
+                                <td><code>modulos-erp.html</code></td>
+                                <td>src/api/public/</td>
+                                <td>Módulos ERP disponibles</td>
+                            </tr>
+                            <tr>
+                                <td><code>style.css</code></td>
+                                <td>src/api/public/css/</td>
+                                <td>Estilos globales</td>
+                            </tr>
+                            <tr>
+                                <td><code>app.js</code></td>
+                                <td>src/api/public/js/</td>
+                                <td>JavaScript principal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🎨</span> Colorimetría del Sistema</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Colores principales usados en el frontend (variables CSS):
+                    </p>
+                    
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Color</th>
+                                <th>Uso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>--primary</code></td>
+                                <td><span style="background: #4f46e5; color: white; padding: 2px 12px; border-radius: 4px;">#4f46e5</span></td>
+                                <td>Elementos principales, headers, botones primarios</td>
+                            </tr>
+                            <tr>
+                                <td><code>--secondary</code></td>
+                                <td><span style="background: #0ea5e9; color: white; padding: 2px 12px; border-radius: 4px;">#0ea5e9</span></td>
+                                <td>Elementos secundarios, enlaces, PDF principal</td>
+                            </tr>
+                            <tr>
+                                <td><code>--success</code></td>
+                                <td><span style="background: #10b981; color: white; padding: 2px 12px; border-radius: 4px;">#10b981</span></td>
+                                <td>Estados exitosos, eBook, confirmaciones</td>
+                            </tr>
+                            <tr>
+                                <td><code>--warning</code></td>
+                                <td><span style="background: #f59e0b; color: white; padding: 2px 12px; border-radius: 4px;">#f59e0b</span></td>
+                                <td>Advertencias, estados pendientes</td>
+                            </tr>
+                            <tr>
+                                <td><code>--danger</code></td>
+                                <td><span style="background: #ef4444; color: white; padding: 2px 12px; border-radius: 4px;">#ef4444</span></td>
+                                <td>Errores, PDF anexo, eliminar</td>
+                            </tr>
+                            <tr>
+                                <td><code>--bg-page</code></td>
+                                <td><span style="background: #f8fafc; color: #333; padding: 2px 12px; border-radius: 4px;">#f8fafc</span></td>
+                                <td>Fondo de página</td>
+                            </tr>
+                            <tr>
+                                <td><code>--text-primary</code></td>
+                                <td><span style="background: #1e293b; color: white; padding: 2px 12px; border-radius: 4px;">#1e293b</span></td>
+                                <td>Texto principal</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Servidor -->
+        <section class="section" id="servidor">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🌐</span> Comandos del Servidor</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Iniciar servidor API</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run api:start</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run api:start')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Inicia el servidor Express en el puerto 3000. Sirve la API REST y los archivos estáticos del frontend.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Iniciar listener de eventos</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run api:listener</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run api:listener')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Inicia el listener de eventos para procesamiento asíncrono de causas.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Matar proceso en puerto 3000</span>
+                            <span class="command-badge shell">shell</span>
+                        </div>
+                        <div class="command-code">
+                            <code>lsof -ti:3000 | xargs kill -9</code>
+                            <button class="copy-btn" onclick="copyCommand('lsof -ti:3000 | xargs kill -9')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Mata cualquier proceso que esté usando el puerto 3000. Útil cuando hay error "EADDRINUSE".
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Scraping -->
+        <section class="section" id="scraping">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🕷️</span> Comandos de Scraping</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Scraping de 5 causas de prueba</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run test:5causas</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run test:5causas')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta el scraping de las 5 causas configuradas en <code>src/config/causas_test.json</code>. 
+                            Descarga movimientos, PDFs y eBooks.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Dry-run (sin scraping real)</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run test:5causas:dry</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run test:5causas:dry')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Simula el scraping sin conectarse al PJUD. Útil para probar la configuración.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Scraping masivo desde CSV</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run scrape:masivo</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run scrape:masivo')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Procesa todas las causas del archivo <code>causa_validas.csv</code> de forma masiva.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Scraping por lotes</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run scrape:batch</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run scrape:batch')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Procesa causas en lotes con pausas entre cada una para evitar bloqueos.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Scraping individual</span>
+                            <span class="command-badge node">node</span>
+                        </div>
+                        <div class="command-code">
+                            <code>node src/index.js</code>
+                            <button class="copy-btn" onclick="copyCommand('node src/index.js')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta scraping de una sola causa usando la configuración en <code>src/config/pjud_config.json</code>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Database -->
+        <section class="section" id="database">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🗄️</span> Comandos de Base de Datos</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Crear schema en MariaDB</span>
+                            <span class="command-badge mysql">mysql</span>
+                        </div>
+                        <div class="command-code">
+                            <code>mysql -u usuario -p nombre_bd < database/schema_mariadb_5.5.sql</code>
+                            <button class="copy-btn" onclick="copyCommand('mysql -u usuario -p nombre_bd < database/schema_mariadb_5.5.sql')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Crea todas las tablas necesarias en la base de datos. Compatible con MariaDB 5.5.68.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Probar conexión a BD</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run db:test</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run db:test')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Prueba la conexión a la base de datos usando las credenciales del archivo <code>.env</code>.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Importar movimientos a BD</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run importar:movimientos</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run importar:movimientos')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Importa los movimientos extraídos de los archivos JSON a la base de datos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📋</span> Tablas de la Base de Datos</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Tabla</th>
+                                <th>Descripción</th>
+                                <th>Campos Principales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>causas</code></td>
+                                <td>Información general de causas</td>
+                                <td>rit, caratulado, juzgado, fecha_ingreso, estado</td>
+                            </tr>
+                            <tr>
+                                <td><code>movimientos</code></td>
+                                <td>Historial de movimientos</td>
+                                <td>causa_id, folio, fecha, etapa, descripcion</td>
+                            </tr>
+                            <tr>
+                                <td><code>etapas_juicio</code></td>
+                                <td>Catálogo de etapas procesales</td>
+                                <td>codigo, nombre, orden</td>
+                            </tr>
+                            <tr>
+                                <td><code>pdfs</code></td>
+                                <td>Registro de PDFs descargados</td>
+                                <td>movimiento_id, nombre_archivo, ruta</td>
+                            </tr>
+                            <tr>
+                                <td><code>ebooks</code></td>
+                                <td>Registro de eBooks descargados</td>
+                                <td>causa_id, nombre_archivo, ruta</td>
+                            </tr>
+                            <tr>
+                                <td><code>errores_scraping</code></td>
+                                <td>Log de errores del scraping</td>
+                                <td>rit, tipo_error, mensaje, intentos</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Testing -->
+        <section class="section" id="testing">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🧪</span> Comandos de Testing</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ejecutar todas las pruebas</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm test</code>
+                            <button class="copy-btn" onclick="copyCommand('npm test')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta las 54 pruebas unitarias de los módulos: dataProcessor, ErrorRegistry, clasificarEtapa.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ejecutar test específico</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm test -- --only=data-processor</code>
+                            <button class="copy-btn" onclick="copyCommand('npm test -- --only=data-processor')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta solo el archivo de test especificado. Opciones: data-processor, error-registry, etapas-juicio.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Test de carga</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run test:carga</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run test:carga')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta pruebas de carga para verificar el rendimiento del sistema.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📁</span> Archivos de Test</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Archivo</th>
+                                <th>Tests</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>test-data-processor.js</code></td>
+                                <td><span class="status success">16</span></td>
+                                <td>Procesamiento de datos extraídos</td>
+                            </tr>
+                            <tr>
+                                <td><code>test-error-registry.js</code></td>
+                                <td><span class="status success">18</span></td>
+                                <td>Registro y control de errores</td>
+                            </tr>
+                            <tr>
+                                <td><code>test-etapas-juicio.js</code></td>
+                                <td><span class="status success">20</span></td>
+                                <td>Clasificación de etapas procesales</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Tools -->
+        <section class="section" id="tools">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🔧</span> Herramientas y Utilidades</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Instalar dependencias</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm install</code>
+                            <button class="copy-btn" onclick="copyCommand('npm install')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Instalar Playwright (navegador)</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npx playwright install chromium</code>
+                            <button class="copy-btn" onclick="copyCommand('npx playwright install chromium')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Backup y limpieza</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run backup:clean</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run backup:clean')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Monitor de recursos</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run monitor</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run monitor')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Control de servicios</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npm run services:start   # Iniciar servicios
+npm run services:stop    # Detener servicios
+npm run services:status  # Ver estado</code>
+                            <button class="copy-btn" onclick="copyCommand('npm run services:start')">Copiar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">⚙️</span> Variables de Entorno (.env)</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Descripción</th>
+                                <th>Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>OJV_URL</code></td>
+                                <td>URL del portal PJUD</td>
+                                <td>https://oficinajudicialvirtual.pjud.cl/indexN.php</td>
+                            </tr>
+                            <tr>
+                                <td><code>DB_HOST</code></td>
+                                <td>Host de la base de datos</td>
+                                <td>localhost</td>
+                            </tr>
+                            <tr>
+                                <td><code>DB_USER</code></td>
+                                <td>Usuario de BD</td>
+                                <td>root</td>
+                            </tr>
+                            <tr>
+                                <td><code>DB_PASSWORD</code></td>
+                                <td>Contraseña de BD</td>
+                                <td>********</td>
+                            </tr>
+                            <tr>
+                                <td><code>DB_NAME</code></td>
+                                <td>Nombre de la BD</td>
+                                <td>pjud_scraping</td>
+                            </tr>
+                            <tr>
+                                <td><code>API_PORT</code></td>
+                                <td>Puerto del servidor</td>
+                                <td>3000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: URLs -->
+        <section class="section" id="urls">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🔗</span> URLs del Sistema</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>URL</th>
+                                <th>Descripción</th>
+                                <th>Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><a href="http://localhost:3000" target="_blank" style="color: var(--primary);">http://localhost:3000</a></td>
+                                <td>Página principal</td>
+                                <td><span class="status info">Frontend</span></td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/demo" target="_blank" style="color: var(--primary);">http://localhost:3000/demo</a></td>
+                                <td>Consulta de causas (estilo PJUD)</td>
+                                <td><span class="status info">Frontend</span></td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/movimientos" target="_blank" style="color: var(--primary);">http://localhost:3000/movimientos</a></td>
+                                <td>Tabla de movimientos</td>
+                                <td><span class="status info">Frontend</span></td>
+                            </tr>
+                            <tr>
+                                <td><a href="http://localhost:3000/mvp" target="_blank" style="color: var(--primary);">http://localhost:3000/mvp</a></td>
+                                <td>Dashboard MVP</td>
+                                <td><span class="status info">Frontend</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/health</code></td>
+                                <td>Health check del servidor</td>
+                                <td><span class="status success">API</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/scraping/ejecutar</code></td>
+                                <td>Ejecutar scraping (POST)</td>
+                                <td><span class="status success">API</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/tribunales</code></td>
+                                <td>Listar tribunales</td>
+                                <td><span class="status success">API</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/cortes</code></td>
+                                <td>Listar cortes de apelaciones</td>
+                                <td><span class="status success">API</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📂</span> Estructura de Carpetas</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-code" style="position: relative;">
+                        <code>pjud-webscrapping/
+├── documentacion/          # ⚠️ NO BORRAR - Esta carpeta
+│   ├── index.html          # Este archivo
+│   └── NO_BORRAR.md
+├── database/               # Schemas SQL
+├── src/
+│   ├── api/               # Servidor Express
+│   │   └── public/        # Frontend
+│   ├── config/            # Configuraciones
+│   ├── database/          # Conexión BD
+│   ├── test/              # Pruebas unitarias
+│   ├── outputs/           # Resultados JSON
+│   ├── logs/              # Logs y screenshots
+│   └── *.js               # Módulos de scraping
+├── scripts/               # Scripts de utilidad
+├── .env                   # Variables de entorno
+└── package.json           # Dependencias NPM</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            📚 Documentación PJUD Web Scrapping | 
+            ⚠️ <strong>Esta carpeta NO debe ser borrada</strong> | 
+            Última actualización: <span id="lastUpdate"></span>
+        </p>
+    </footer>
+
+    <script>
+        // Set last update date
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('es-CL');
+
+        // Tab navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                const sectionId = tab.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+
+        // Copy command function
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                // Show feedback
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    z-index: 9999;
+                    animation: slideIn 0.3s ease;
+                    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+                `;
+                notification.innerHTML = `✅ Copiado: <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">${command}</code>`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }, 2000);
+            });
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            if (searchTerm.length < 2) {
+                // Show all command blocks
+                document.querySelectorAll('.command-block').forEach(block => {
+                    block.style.display = 'block';
+                });
+                return;
+            }
+
+            // Show all sections temporarily
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'block';
+            });
+
+            // Filter command blocks
+            document.querySelectorAll('.command-block').forEach(block => {
+                const text = block.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    block.style.display = 'block';
+                    block.style.border = '2px solid var(--primary)';
+                } else {
+                    block.style.display = 'none';
+                    block.style.border = '';
+                }
+            });
+
+            // Also search in quick actions
+            document.querySelectorAll('.quick-action').forEach(action => {
+                const text = action.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    action.style.display = 'block';
+                    action.style.border = '2px solid var(--primary)';
+                } else {
+                    action.style.display = 'none';
+                    action.style.border = '';
+                }
+            });
+        });
+
+        // Clear search on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('searchInput').value = '';
+                document.querySelectorAll('.command-block, .quick-action').forEach(el => {
+                    el.style.display = '';
+                    el.style.border = '';
+                });
+                // Restore section visibility based on active tab
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelector('.nav-tab.active').click();
+            }
+        });
+    </script>
+</body>
+</html>

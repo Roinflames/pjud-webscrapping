@@ -127,7 +127,8 @@ function buscarResultadoEnArchivos(rit) {
       
       // Si son filas crudas (array de arrays), procesarlas
       if (Array.isArray(contenido) && contenido.length > 0 && Array.isArray(contenido[0])) {
-        const { processTableData } = require('../dataProcessor');
+        try {
+          const { processTableData } = require('../dataProcessor');
         
         // Leer PDFs primero para mapeo
         const pdfFiles = fs.readdirSync(outputsDir).filter(f => 
@@ -188,6 +189,10 @@ function buscarResultadoEnArchivos(rit) {
           };
         } catch (error) {
           console.error(`Error procesando resultado crudo para ${rit}:`, error.message);
+          return null;
+        }
+        } catch (outerError) {
+          console.error(`Error cargando dataProcessor para ${rit}:`, outerError.message);
           return null;
         }
       }

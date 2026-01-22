@@ -4,10 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node src/test/run-tests.js",
+    "test:unit": "node src/test/run-tests.js",
+    "test:5causas": "node src/test/scraper-5-causas.js",
+    "test:5causas:dry": "node src/test/scraper-5-causas.js --dry-run",
     "scrape": "node src/index.js",
     "scrape:batch": "node src/process-csv-causas.js",
+    "scrape:masivo": "node src/scraping_masivo.js",
+    "scrape:test": "node src/test/scraper-5-causas.js",
     "backup:clean": "node src/backup_and_clean.js",
+    "db:setup": "mysql < database/schema_mariadb_5.5.sql",
+    "db:test": "node src/database/db-mariadb.js",
     "importar:movimientos": "node src/importar_movimientos_sql.js",
     "api:start": "node src/api/server.js",
     "api:listener": "node src/api/listener.js",
@@ -21,18 +28,7 @@
     "services:restart": "bash scripts/control-servicios.sh restart",
     "services:status": "bash scripts/control-servicios.sh status",
     "services:enable": "bash scripts/control-servicios.sh enable",
-    "services:disable": "bash scripts/control-servicios.sh disable",
-    "services:start:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 start",
-    "services:stop:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 stop",
-    "services:restart:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 restart",
-    "services:status:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 status",
-    "services:logs:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs",
-    "services:logs:api:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:api",
-    "services:logs:listener:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:listener",
-    "services:logs:worker:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:worker",
-    "services:logs:listener-erp:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:listener-erp",
-    "services:logs:worker-eventos:win": "powershell -ExecutionPolicy Bypass -File scripts/control-servicios.ps1 logs:worker-eventos"
-
+    "services:disable": "bash scripts/control-servicios.sh disable"
   },
   "keywords": [],
   "author": "",
@@ -44,7 +40,6 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "prom-client": "^15.1.0",
     "express": "^4.18.2",
     "mysql2": "^3.16.1",
     "winston": "^3.18.3"

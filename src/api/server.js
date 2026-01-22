@@ -317,14 +317,27 @@ app.post('/api/tribunales/recargar', (req, res) => {
 
 /**
  * GET /demo
- * Página de demostración del frontend profesional con datos de ejemplo
+ * Página de consulta de causas (réplica estilo PJUD)
  */
 app.get('/demo', (req, res) => {
-  const demoPath = path.join(__dirname, 'public', 'demo-movimientos-completo.html');
+  const demoPath = path.join(__dirname, 'public', 'demo.html');
   if (fs.existsSync(demoPath)) {
     res.sendFile(demoPath);
   } else {
     res.send('Demo no disponible. Verifica que el archivo exista.');
+  }
+});
+
+/**
+ * GET /movimientos
+ * Página de movimientos procesales con datos de ejemplo
+ */
+app.get('/movimientos', (req, res) => {
+  const movPath = path.join(__dirname, 'public', 'demo-movimientos-completo.html');
+  if (fs.existsSync(movPath)) {
+    res.sendFile(movPath);
+  } else {
+    res.send('Página de movimientos no disponible.');
   }
 });
 

@@ -57,21 +57,82 @@ async function extractTableAsArray(page) {
             name: inp.name,
             value: inp.value
           })),
-          // 👇 selector AL FORM (NO al <a>)
           selector: `table tbody tr:nth-child(${rowIndex + 1}) form:nth-of-type(${i + 1})`
         }));
 
+        const texto = tds.map(td => td.innerText.trim());
+        const datos_limpios = {
+          folio: texto[0] || null,
+          doc: texto[1] || null,
+          anexo: texto[2] || null,
+          etapa: texto[3] || null,
+          tramite: texto[4] || null,
+          desc_tramite: texto[5] || null,
+          fecha: texto[6] || null,
+          foja: texto[7] || null,
+          georref: texto[8] || null
+        };
+
+        const pdfs = forms.map((f, i) => ({
+          linkIndex: i,
+          tipo: i === 0 ? 'P' : 'R',
+          tipo_desc: i === 0 ? 'azul' : 'rojo'
+        }));
+
         return {
-          texto: tds.map(td => td.innerText.trim()),
-          datos_limpios: {
-            folio: tds[0]?.innerText.trim() || null,
-            tramite: tds[4]?.innerText.trim() || null,
-            desc_tramite: tds[5]?.innerText.trim() || null
-          },
-          forms
+          texto,
+          datos_limpios,
+          forms,
+          pdfs
         };
       })
   ).then(r => r.filter(Boolean));
 }
 
-module.exports = { extractTable, extractTableAsArray };
+/**
+ * Extrae tabla del modal detalle con columnas completas:
+ * Folio | Doc. | Anexo | Etapa | Trámite | Desc. Trámite | Fec. Trámite | Foja | Georref
+ * Incluye pdfs por fila (azul/rojo) para descarga.
+ */
+async function extractTableDetalle(page) {
+  await page.waitForSelector(
+    'table.table.table-bordered.table-striped.table-hover tbody tr, #tablaHistoria tbody tr, .modal table.table tbody tr',
+    { timeout: 15000 }
+  );
+
+  return await page.$$eval(
+    'table.table.table-bordered.table-striped.table-hover tbody tr, #tablaHistoria tbody tr, .modal table.table tbody tr',
+    trs => trs.map((tr, rowIndex) => {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 2) return null;
+
+      const texto = tds.map(td => td.innerText.trim());
+      const forms = [...tr.querySelectorAll('form')].map((f, i) => ({
+        index: i,
+        action: f.getAttribute('action'),
+        method: f.getAttribute('method') || 'get',
+        inputs: [...f.querySelectorAll('input')].map(inp => ({ name: inp.name, value: inp.value }))
+      }));
+
+      const pdfs = forms.map((f, i) => ({ linkIndex: i, tipo: i === 0 ? 'P' : 'R', tipo_desc: i === 0 ? 'azul' : 'rojo' }));
+
+      return {
+        indice: rowIndex + 1,
+        folio: texto[0] || null,
+        doc: texto[1] || null,
+        anexo: texto[2] || null,
+        etapa: texto[3] || null,
+        tramite: texto[4] || null,
+        desc_tramite: texto[5] || null,
+        fecha: texto[6] || null,
+        foja: texto[7] || null,
+        georref: texto[8] || null,
+        texto,
+        forms,
+        pdfs
+      };
+    })
+  ).then(r => r.filter(Boolean));
+}
+
+module.exports = { extractTable, extractTableAsArray, extractTableDetalle };

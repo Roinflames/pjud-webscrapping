@@ -198,13 +198,7 @@ async function procesarEvento(connection, evento) {
       require('fs').mkdirSync(outputDir, { recursive: true });
     }
 
-    const pdfMapping = await downloadPDFsFromTable(
-      page,
-      context,
-      outputDir,
-      config.rit,
-      rows
-    );
+    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, config.rit) || {};
 
     
     // Descargar eBook

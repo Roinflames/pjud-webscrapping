@@ -408,13 +408,13 @@ router.get('/movimientos/:rit', (req, res) => {
     }
     
     // Buscar PDFs disponibles en el directorio outputs
-    const outputsDir = path.resolve(__dirname, '../outputs');
+    const outputsDirPDFs = path.resolve(__dirname, '../outputs');
     const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
     
     // Buscar todos los PDFs relacionados con este RIT
     const pdfsDisponibles = [];
     try {
-      const archivos = fs.readdirSync(outputsDir);
+      const archivos = fs.readdirSync(outputsDirPDFs);
       archivos.forEach(archivo => {
         if (archivo.startsWith(ritClean) && archivo.endsWith('.pdf')) {
           pdfsDisponibles.push(archivo);

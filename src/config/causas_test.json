@@ -1,0 +1,55 @@
+{
+  "descripcion": "5 causas de prueba con datos completos para testing",
+  "causas": [
+    {
+      "rit": "3030-2017",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "30",
+      "tribunal": "61",
+      "caratulado": "CCAF LOS ANDES/SÁNCHEZ",
+      "tribunal_nombre": "3º Juzgado Civil de Viña del Mar",
+      "corte_nombre": "C.A. de Valparaíso"
+    },
+    {
+      "rit": "27311-2019",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "11",
+      "tribunal": "11",
+      "caratulado": "BANCO CHILE/ROMERO",
+      "tribunal_nombre": "3º Juzgado de Letras de Iquique",
+      "corte_nombre": "C.A. de Iquique"
+    },
+    {
+      "rit": "571-2019",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "40",
+      "tribunal": "124",
+      "caratulado": "CAJA DE COMPENSACION DE ASIGNACION FAMILIAR",
+      "tribunal_nombre": "3º Juzgado de Letras de Talca",
+      "corte_nombre": "C.A. de Talca"
+    },
+    {
+      "rit": "9473-2019",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "20",
+      "tribunal": "31",
+      "caratulado": "BANCO FALABELLA/AROS",
+      "tribunal_nombre": "1º Juzgado de Letras de Copiapó",
+      "corte_nombre": "C.A. de Copiapó"
+    },
+    {
+      "rit": "16322-2017",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "20",
+      "tribunal": "36",
+      "caratulado": "BANCO DE CRÉDITO E INVERSIONES",
+      "tribunal_nombre": "1º Juzgado de Letras de Vallenar",
+      "corte_nombre": "C.A. de Copiapó"
+    }
+  ]
+}

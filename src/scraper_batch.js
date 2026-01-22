@@ -179,10 +179,63 @@ function loadProgress(progressPath) {
   return null;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getDelayConfig() {
+  return {
+    base: parseInt(process.env.SCRAPER_DELAY_MS || '2500', 10),
+    jitter: parseInt(process.env.SCRAPER_DELAY_JITTER_MS || '2000', 10),
+    longBreakEvery: parseInt(process.env.SCRAPER_LONG_BREAK_EVERY || '40', 10),
+    longBreakMs: parseInt(process.env.SCRAPER_LONG_BREAK_MS || '60000', 10)
+  };
+}
+
+function isCaptureEnabled() {
+  return process.env.SCRAPER_CAPTURE === '1' || process.env.SCRAPER_CAPTURE === 'true';
+}
+
+async function captureStep(page, baseDir, rit, step) {
+  if (!isCaptureEnabled()) return;
+
+  const safeRit = rit.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const stepDir = path.join(baseDir, 'capturas', safeRit);
+  if (!fs.existsSync(stepDir)) fs.mkdirSync(stepDir, { recursive: true });
+
+  const timestamp = Date.now();
+  const screenshotPath = path.join(stepDir, `${timestamp}_${step}.png`);
+  const htmlPath = path.join(stepDir, `${timestamp}_${step}.html`);
+
+  await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
+  const html = await page.content().catch(() => '');
+  if (html) fs.writeFileSync(htmlPath, html, 'utf-8');
+}
+
+function createRunLogger(logDir) {
+  const runId = Date.now();
+  const logPath = path.join(logDir, `metrics_${runId}.json`);
+  const data = {
+    runId,
+    startedAt: new Date().toISOString(),
+    items: []
+  };
+
+  return {
+    add(item) {
+      data.items.push(item);
+    },
+    finalize() {
+      data.finishedAt = new Date().toISOString();
+      fs.writeFileSync(logPath, JSON.stringify(data, null, 2), 'utf-8');
+    }
+  };
+}
+
 /**
  * Procesa un RIT individual
  */
-async function processRIT(cause, configPath, outputDir) {
+async function processRIT(cause, configPath, outputDir, session, logger) {
   const logDir = path.resolve(__dirname, 'logs');
   const screenshotPath = path.join(logDir, `pjud_error_${Date.now()}.png`);
   const htmlPath = path.join(logDir, `pjud_error_${Date.now()}.html`);
@@ -193,18 +246,37 @@ async function processRIT(cause, configPath, outputDir) {
   console.log(`\n🔍 Procesando RIT: ${CONFIG.rit}`);
   console.log(`   Competencia: ${CONFIG.competencia}, Tribunal: ${CONFIG.tribunal}, Tipo: ${CONFIG.tipoCausa}`);
 
-  const { browser, context, page } = await startBrowser(process.env.OJV_URL);
+  const { context, page } = session;
+  const itemMetrics = {
+    rit: CONFIG.rit,
+    startedAt: new Date().toISOString(),
+    steps: []
+  };
 
   try {
     console.log('🌐 Página cargada:', page.url());
 
+    const stepStartNav = Date.now();
     await closeModalIfExists(page);
     await goToConsultaCausas(page);
-    await fillForm(page, CONFIG);
-    await openDetalle(page);
+    itemMetrics.steps.push({ step: 'go_to_consulta', ms: Date.now() - stepStartNav });
+    await captureStep(page, logDir, CONFIG.rit, '01_consulta_causas');
 
+    const stepStartForm = Date.now();
+    await fillForm(page, CONFIG);
+    itemMetrics.steps.push({ step: 'fill_form', ms: Date.now() - stepStartForm });
+    await captureStep(page, logDir, CONFIG.rit, '02_form_enviado');
+
+    const stepStartDetalle = Date.now();
+    await openDetalle(page);
+    itemMetrics.steps.push({ step: 'open_detalle', ms: Date.now() - stepStartDetalle });
+    await captureStep(page, logDir, CONFIG.rit, '03_detalle_abierto');
+
+    const stepStartTable = Date.now();
     const rows = await extractTable(page);
+    itemMetrics.steps.push({ step: 'extract_table', ms: Date.now() - stepStartTable, rows: rows.length });
     console.log(`✅ Extraídas ${rows.length} filas`);
+    await captureStep(page, logDir, CONFIG.rit, '04_tabla_extraida');
 
     // Exportar resultados
     if (!fs.existsSync(outputDir)) {
@@ -217,7 +289,7 @@ async function processRIT(cause, configPath, outputDir) {
 
     // Descargar PDFs de la tabla
     const { downloadPDFsFromTable } = require('./pdfDownloader');
-    const pdfMapping = await downloadPDFsFromTable(
+    await downloadPDFsFromTable(
       page,
       context,
       outputDir,
@@ -229,14 +301,19 @@ async function processRIT(cause, configPath, outputDir) {
     // await downloadEbook(page, context, CONFIG, path.resolve(__dirname, 'assets/ebook'));
 
     console.log(`✅ RIT ${CONFIG.rit} procesado exitosamente\n`);
+    itemMetrics.success = true;
+    itemMetrics.finishedAt = new Date().toISOString();
+    logger.add(itemMetrics);
     return { success: true, rit: CONFIG.rit };
 
   } catch (err) {
     console.error(`❌ Error procesando RIT ${CONFIG.rit}:`, err.message);
     await saveErrorEvidence(page, screenshotPath, htmlPath);
+    itemMetrics.success = false;
+    itemMetrics.error = err.message;
+    itemMetrics.finishedAt = new Date().toISOString();
+    logger.add(itemMetrics);
     return { success: false, rit: CONFIG.rit, error: err.message };
-  } finally {
-    await browser.close();
   }
 }
 
@@ -249,6 +326,7 @@ async function processRIT(cause, configPath, outputDir) {
   const configPath = path.resolve(__dirname, 'config/pjud_config.json');
   const csvPath = path.resolve(__dirname, '../causa.csv');
   const progressPath = path.resolve(__dirname, 'progress.json');
+  const delayConfig = getDelayConfig();
 
   // Crear directorios necesarios
   [logDir, outputDir].forEach(dir => {
@@ -305,33 +383,59 @@ async function processRIT(cause, configPath, outputDir) {
   let successful = 0;
   let failed = 0;
   const failedRITs = [];
+  let blocked = false;
 
-  for (let i = 0; i < remainingCauses.length; i++) {
-    const cause = remainingCauses[i];
-    
-    console.log(`[${i + 1}/${remainingCauses.length}] Procesando causa...`);
-    
-    const result = await processRIT(cause, configPath, outputDir);
-    processed++;
+  const headless = process.env.SCRAPER_HEADLESS !== 'false';
+  const slowMo = parseInt(process.env.SCRAPER_SLOWMO || '120', 10);
+  const session = await startBrowser(process.env.OJV_URL, { headless, slowMo });
+  session.page.setDefaultTimeout(30000);
+  session.page.setDefaultNavigationTimeout(60000);
+  const logger = createRunLogger(logDir);
 
-    if (result.success) {
-      successful++;
-      // Guardar progreso después de cada procesamiento exitoso
-      saveProgress(result.rit, progressPath);
-    } else {
-      failed++;
-      failedRITs.push(result.rit);
-      // También guardar progreso para continuar desde el siguiente
-      if (i + 1 < remainingCauses.length) {
-        saveProgress(cause.rit, progressPath);
+  try {
+    for (let i = 0; i < remainingCauses.length; i++) {
+      const cause = remainingCauses[i];
+      
+      console.log(`[${i + 1}/${remainingCauses.length}] Procesando causa...`);
+      
+      const result = await processRIT(cause, configPath, outputDir, session, logger);
+      processed++;
+
+      if (result.success) {
+        successful++;
+        // Guardar progreso después de cada procesamiento exitoso
+        saveProgress(result.rit, progressPath);
+      } else {
+        failed++;
+        failedRITs.push(result.rit);
+        // También guardar progreso para continuar desde el siguiente
+        if (i + 1 < remainingCauses.length) {
+          saveProgress(cause.rit, progressPath);
+        }
+
+        if (result.error && result.error.toLowerCase().includes('captcha/bloqueo')) {
+          blocked = true;
+          console.error('⛔ Bloqueo/CAPTCHA detectado. Deteniendo procesamiento masivo.');
+          break;
+        }
+      }
+
+      // Esperar entre procesamientos para no sobrecargar el servidor
+      if (i < remainingCauses.length - 1) {
+        const waitMs = delayConfig.base + Math.random() * delayConfig.jitter;
+        console.log(`⏳ Esperando ${Math.round(waitMs / 1000)}s antes del siguiente procesamiento...\n`);
+        await sleep(waitMs);
+      }
+
+      // Pausa larga cada cierto número de causas
+      if ((i + 1) % delayConfig.longBreakEvery === 0 && i < remainingCauses.length - 1) {
+        console.log(`🛑 Pausa larga de ${Math.round(delayConfig.longBreakMs / 1000)}s para evitar bloqueo...`);
+        await sleep(delayConfig.longBreakMs);
       }
     }
-
-    // Esperar un poco entre procesamientos para no sobrecargar el servidor
-    if (i < remainingCauses.length - 1) {
-      console.log('⏳ Esperando 2 segundos antes del siguiente procesamiento...\n');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
+  } finally {
+    logger.finalize();
+    await session.browser.close();
   }
 
   // Resumen final
@@ -350,7 +454,7 @@ async function processRIT(cause, configPath, outputDir) {
   console.log('\n🧭 Proceso completado.');
   
   // Eliminar archivo de progreso si se completó todo
-  if (startIndex + processed >= causes.length && failed === 0) {
+  if (!blocked && startIndex + processed >= causes.length && failed === 0) {
     if (fs.existsSync(progressPath)) {
       fs.unlinkSync(progressPath);
       console.log('✅ Archivo de progreso eliminado (procesamiento completado)');

@@ -173,3 +173,11 @@ causa_backup_*.csv
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+
+# ============================================
+# ⚠️ CARPETA PROTEGIDA - NO BORRAR ⚠️
+# ============================================
+# La carpeta /documentacion/ contiene documentación
+# crítica del proyecto y NUNCA debe ser eliminada.
+# NO agregar documentacion/ a este archivo.
+# ============================================

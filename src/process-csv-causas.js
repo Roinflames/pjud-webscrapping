@@ -1,391 +1,737 @@
+// Script para procesar múltiples causas desde el CSV
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+
+const { readCausaCSV, mapCsvToDB } = require('./read-csv');
 const { startBrowser } = require('./browser');
+const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
+const { fillForm, openDetalle } = require('./form');
+const { extractTable } = require('./table');
+const { exportToJSON, exportToCSV, processTableData } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
 const { downloadEbook } = require('./ebook');
-const { fillForm, openDetalle, resetForm } = require('./form');
-const { extractTable } = require('./table');
-const { closeModalIfExists } = require('./navigation');
 const { saveErrorEvidence } = require('./utils');
-const { readCausaCSV } = require('./read-csv');
-const { processTableData } = require('./dataProcessor');
-const { importarAMovimientosIntermedia } = require('./importar_intermedia_sql');
+const { saveCausaJSON, appendCausaNDJSON, upsertIndex } = require('./jsonStore');
 
-const PROGRESS_FILE = path.resolve(__dirname, 'progress.json');
-const DAILY_LIMIT_FILE = path.resolve(__dirname, 'daily_count.json');
-const DEFAULT_DAILY_LIMIT = 150;
+// Mapeo de tribunal_id a corte_id usando el scraping de tribunales
+let tribunalToCorteMap = null;
 
 /**
- * Mapear datos del CSV a formato para scraping
+ * Cargar mapeo de tribunales a cortes desde el archivo JSON extraído
+ * Busca en TODAS las competencias, pero prioriza Civil (id=3)
  */
-function csvToScrapingConfig(csvCausa) {
-  return {
-    rit: csvCausa.rit || `${csvCausa.rol}-${csvCausa.anio}`,
-    competencia: csvCausa.competencia_id || '3',
-    corte: csvCausa.corte_id || '90',
-    tribunal: csvCausa.tribunal_id || '',
-    tipoCausa: csvCausa.tipo_causa || 'C'
-  };
-}
-
-/**
- * Validar si una causa es válida para scraping
- */
-function isValidForScraping(csvCausa) {
-  const rit = csvCausa.rit || (csvCausa.rol && csvCausa.anio);
-  if (!rit) return false;
-  return true;
-}
-
-/**
- * Guardar progreso del scraping
- */
-function saveProgress(rit, causaId) {
-  const progress = {
-    lastRit: rit,
-    lastCausaId: causaId,
-    timestamp: new Date().toISOString()
-  };
-  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
-}
-
-/**
- * Cargar progreso anterior
- */
-function loadProgress() {
-  if (fs.existsSync(PROGRESS_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-}
-
-/**
- * Procesar una sola causa (versión actualizada)
- */
-async function processCausaBatch(page, context, config, outputDir) {
+function loadTribunalToCorteMap() {
+  if (tribunalToCorteMap) return tribunalToCorteMap;
+  
+  tribunalToCorteMap = new Map();
+  
   try {
-    console.log(`📝 Llenando formulario para RIT: ${config.rit}...`);
-    await fillForm(page, config);
-    await openDetalle(page);
-
-    // 1. Extraer tabla con el nuevo formato (9 columnas + icons)
-    const rows = await extractTable(page);
-    if (!rows || rows.length === 0) {
-      throw new Error('No se pudieron extraer movimientos de la tabla');
+    const tribunalesPath = path.resolve(__dirname, 'outputs/tribunales_pjud_completo.json');
+    if (!fs.existsSync(tribunalesPath)) {
+      console.warn('⚠️ Archivo de tribunales no encontrado, usando corte por defecto');
+      return tribunalToCorteMap;
     }
-
-    // 2. Descargar PDFs (azul/rojo)
-    const pdfMapping = await downloadPDFsFromTable(
-      page,
-      context,
-      outputDir,
-      config.rit,
-      rows
-    );
-
-    // 3. Descargar eBook
-    await downloadEbook(page, context, config, outputDir);
-
-    // 4. Identificar y clonar PDF de demanda
-    const ritClean = config.rit.replace(/[^a-zA-Z0-9]/g, '_');
-    let demandaNombre = null;
-    const movDemanda = rows.find(r => 
-      r.texto && r.texto[5] && r.texto[5].toLowerCase().includes('demanda')
-    );
-    if (movDemanda) {
-      const indiceMov = parseInt(movDemanda.texto[0]) || null;
-      if (indiceMov && pdfMapping[indiceMov] && pdfMapping[indiceMov].azul) {
-        const pdfPrincipal = pdfMapping[indiceMov].azul;
-        const oldPath = path.join(outputDir, pdfPrincipal);
-        const newPath = path.join(outputDir, `${ritClean}_demanda.pdf`);
-        if (fs.existsSync(oldPath)) {
-          fs.copyFileSync(oldPath, newPath);
-          demandaNombre = `${ritClean}_demanda.pdf`;
-          console.log(`   ✅ PDF de demanda guardado: ${demandaNombre}`);
+    
+    const data = JSON.parse(fs.readFileSync(tribunalesPath, 'utf-8'));
+    
+    // Primero buscar en competencia Civil (id=3) - prioridad alta
+    const compCivil = data.cortes?.find(c => c.competencia?.id === '3');
+    if (compCivil && compCivil.cortes) {
+      for (const corteData of compCivil.cortes) {
+        const corteId = corteData.corte?.id;
+        if (corteId && corteData.tribunales) {
+          for (const tribunal of corteData.tribunales) {
+            const tribunalId = tribunal.value;
+            if (tribunalId) {
+              tribunalToCorteMap.set(String(tribunalId), String(corteId));
+            }
+          }
         }
       }
     }
-
-    // 5. Verificar si existe el eBook
-    const ebookNombre = fs.existsSync(path.join(outputDir, `${ritClean}_ebook.pdf`)) 
-      ? `${ritClean}_ebook.pdf` 
-      : null;
-
-    // 6. Procesar datos para SQL
-    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
     
-     // 7. Importar a la tabla intermedia SQL local (y guardar SQL en archivo)
-     // El parámetro 'true' indica que también se deben guardar los SQL en archivos
-     await importarAMovimientosIntermedia(config.rit, datosProcesados, config, pdfMapping, true, demandaNombre, ebookNombre);
-
-    return { success: true };
+    // Luego buscar en TODAS las demás competencias (para tribunales que no están en Civil)
+    if (data.cortes) {
+      for (const compData of data.cortes) {
+        // Ya procesamos Civil, saltar
+        if (compData.competencia?.id === '3') continue;
+        
+        if (compData.cortes) {
+          for (const corteData of compData.cortes) {
+            const corteId = corteData.corte?.id;
+            if (corteId && corteData.tribunales) {
+              for (const tribunal of corteData.tribunales) {
+                const tribunalId = tribunal.value;
+                // Solo agregar si no está ya en el mapa (prioridad a Civil)
+                if (tribunalId && !tribunalToCorteMap.has(String(tribunalId))) {
+                  tribunalToCorteMap.set(String(tribunalId), String(corteId));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`✅ Mapeo de tribunales cargado: ${tribunalToCorteMap.size} tribunales mapeados`);
   } catch (error) {
-    console.error(`   ❌ Error en RIT ${config.rit}:`, error.message);
+    console.warn(`⚠️ Error cargando mapeo de tribunales: ${error.message}`);
+  }
+  
+  return tribunalToCorteMap;
+}
+
+/**
+ * Obtener corte_id a partir de tribunal_id
+ */
+function getCorteFromTribunal(tribunalId) {
+  if (!tribunalId) return null;
+  
+  const map = loadTribunalToCorteMap();
+  const corteId = map.get(String(tribunalId));
+  
+  return corteId || null;
+}
+
+// Función para extraer tipoCausa del RIT
+function extractTipoCausa(rit) {
+  if (!rit || rit === 'NULL') return null;
+  // Formato: "C-13786-2018" -> "C"
+  const match = rit.match(/^([A-Za-z0-9]+)-/);
+  return match ? match[1] : null;
+}
+
+// Función para extraer rol y año del RIT
+function extractRolAnio(rit) {
+  if (!rit || rit === 'NULL') return { rol: null, año: null };
+  // Formato: "C-13786-2018" -> rol: "13786", año: "2018"
+  const parts = rit.split('-');
+  if (parts.length >= 3) {
+    return { rol: parts[1], año: parts[2] };
+  }
+  return { rol: null, año: null };
+}
+
+// Mapear datos del CSV a formato para scraping
+// IMPORTANTE: Todas las causas con RIT son civiles (competencia = 3)
+function csvToScrapingConfig(csvCausa) {
+  const { rol, año } = extractRolAnio(csvCausa.rit);
+  const tipoCausa = extractTipoCausa(csvCausa.rit);
+  
+  // Extraer tribunal (requerido - debe estar en CSV)
+  const tribunal = csvCausa.tribunal || csvCausa.tribunal_id || csvCausa.juzgado || csvCausa.juzgado_id || null;
+  
+  // Obtener corte: primero del CSV, luego del mapeo de tribunales, finalmente default
+  let corte = csvCausa.corte || csvCausa.corte_id;
+  let corteSource = 'CSV';
+  
+  if (!corte || corte === 'NULL' || String(corte).trim() === '') {
+    // Si no hay corte en CSV, buscarlo en el mapeo usando el tribunal
+    if (tribunal) {
+      corte = getCorteFromTribunal(tribunal);
+      if (corte) {
+        corteSource = 'mapeo';
+        // No mostrar log aquí para no saturar la consola
+      } else {
+        // Tribunal no encontrado en el mapeo
+        console.warn(`   ⚠️ Tribunal ${tribunal} no encontrado en el mapeo de tribunales`);
+      }
+    }
+    
+    // Si aún no hay corte, usar default '90' (C.A. de Santiago)
+    if (!corte) {
+      corte = '90';
+      corteSource = 'default';
+      if (tribunal) {
+        console.warn(`   ⚠️ Usando corte por defecto '90' para tribunal ${tribunal} (no encontrado en mapeo)`);
+      }
+    }
+  }
+  
+  return {
+    rit: csvCausa.rit,
+    competencia: '3', // SIEMPRE Civil (todas las causas con RIT son civiles)
+    corte: String(corte), // Obtenido del CSV, mapeo o default
+    tribunal: tribunal ? String(tribunal) : null, // REQUERIDO - debe estar en CSV
+    tipoCausa: tipoCausa || 'C', // Extraído del RIT
+    rol: rol, // Rol extraído del RIT (ej: "13786" de "C-13786-2018")
+    año: año, // Año extraído del RIT (ej: "2018" de "C-13786-2018")
+    caratulado: csvCausa.caratulado,
+    cliente: csvCausa.cliente,
+    rut: csvCausa.rut,
+    abogado_id: csvCausa.abogado_id,
+    cuenta_id: csvCausa.cuenta_id,
+    // Datos originales
+    causa_id: csvCausa.causa_id,
+    agenda_id: csvCausa.agenda_id
+  };
+}
+
+// Extraer datos básicos de la tabla de resultados (Rol, Fecha, Caratulado)
+async function extractResultadosBasicos(page, config) {
+  try {
+    // Esperar a que aparezca la tabla de resultados (solo que esté en el DOM, no necesariamente visible)
+    await page.waitForTimeout(1500); // Dar tiempo a que cargue
+    try {
+      await page.waitForSelector('table tbody tr, #tablaConsultas tbody tr, table tr', { 
+        timeout: 10000,
+        state: 'attached' // Solo verificar que existe en el DOM, no que sea visible
+      });
+    } catch (error) {
+      // Si no encontramos con waitForSelector, intentar directamente
+      console.warn('   ⚠️ Tabla no encontrada con waitForSelector, intentando extraer directamente...');
+    }
+    
+    // Extraer datos de la fila que corresponde al RIT buscado
+    const datos = await page.evaluate((ritBuscado, rolBuscado) => {
+      // Buscar en todas las tablas posibles
+      const tables = document.querySelectorAll('table, #tablaConsultas');
+      
+      for (const table of tables) {
+        const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
+        
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td'));
+          if (cells.length < 3) continue; // Necesitamos al menos 3 columnas
+          
+          const rowText = row.innerText || '';
+          
+          // Buscar la fila que contiene el RIT o el rol
+          const contieneRIT = rowText.includes(ritBuscado);
+          const contieneRol = rolBuscado && rowText.includes(rolBuscado);
+          
+          if (contieneRIT || contieneRol) {
+            let rol = '';
+            let fecha = '';
+            let caratulado = '';
+            
+            // Extraer del RIT si está presente
+            const ritMatch = rowText.match(/([A-Z])-(\d+)-(\d{4})/);
+            if (ritMatch) {
+              rol = ritMatch[2]; // El rol es la segunda parte
+            } else if (rolBuscado) {
+              rol = rolBuscado;
+            }
+            
+            // Buscar en cada celda
+            for (let i = 0; i < cells.length; i++) {
+              const text = cells[i].innerText.trim();
+              if (!text) continue;
+              
+              // Buscar fecha (formatos: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD)
+              if (!fecha) {
+                const fechaMatch = text.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})|(\d{4}[\/\-]\d{2}[\/\-]\d{2})/);
+                if (fechaMatch) {
+                  fecha = fechaMatch[0];
+                }
+              }
+              
+              // Buscar caratulado (texto largo, no numérico, no fecha, no RIT)
+              if (!caratulado && text.length > 10 && 
+                  !text.match(/^\d+$/) && 
+                  !text.match(/\d{2}[\/\-]\d{2}[\/\-]\d{4}/) &&
+                  !text.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}/) &&
+                  !text.match(/^[A-Z]-\d+-\d{4}$/) &&
+                  !text.match(/^[A-Z]$/)) {
+                caratulado = text;
+              }
+            }
+            
+            // Si no encontramos rol, intentar extraer de la primera columna numérica
+            if (!rol) {
+              for (let i = 0; i < cells.length; i++) {
+                const text = cells[i].innerText.trim();
+                if (text && /^\d{4,}$/.test(text) && text !== ritBuscado.split('-')[2]) {
+                  rol = text;
+                  break;
+                }
+              }
+            }
+            
+            return { rol, fecha, caratulado, encontrado: true };
+          }
+        }
+      }
+      
+      return { rol: null, fecha: null, caratulado: null, encontrado: false };
+    }, config.rit, config.rol);
+    
+    // Si no encontramos en la tabla, usar los datos del config
+    if (!datos.encontrado || !datos.rol) {
+      datos.rol = config.rol || datos.rol || '';
+      datos.caratulado = config.caratulado || datos.caratulado || '';
+    }
+    
+    return datos;
+  } catch (error) {
+    console.warn(`   ⚠️ Error extrayendo datos básicos: ${error.message}`);
+    // Retornar datos del config como fallback
+    return {
+      rol: config.rol || '',
+      fecha: null,
+      caratulado: config.caratulado || '',
+      encontrado: false
+    };
+  }
+}
+
+// Procesar una causa individual
+async function processCausa(page, context, config, outputDir) {
+  try {
+    console.log(`\n📋 Procesando causa: ${config.rit}`);
+    console.log(`   Caratulado: ${config.caratulado || 'N/A'}`);
+    
+    await fillForm(page, config);
+    
+    // PASO 1: Extraer Rol, Fecha y Caratulado de la tabla de resultados
+    const datosBasicos = await extractResultadosBasicos(page, config);
+    console.log(`   ✅ Datos básicos extraídos:`);
+    console.log(`      Rol: ${datosBasicos.rol || 'N/A'}`);
+    console.log(`      Fecha: ${datosBasicos.fecha || 'N/A'}`);
+    console.log(`      Caratulado: ${datosBasicos.caratulado || 'N/A'}`);
+
+    // Guardar datos básicos en CSV
+    const ritClean = config.rit.replace(/[^a-zA-Z0-9]/g, '_');
+    const datosAGuardar = {
+      rol: datosBasicos.rol || config.rol || '',
+      fecha: datosBasicos.fecha || '',
+      caratulado: datosBasicos.caratulado || config.caratulado || ''
+    };
+    
+    // Guardar datos básicos en CSV consolidado
+    const csvPath = path.join(outputDir, 'causas_extraidas.csv');
+    const limpiarParaCSV = (valor) => {
+      if (!valor) return '';
+      return String(valor)
+        .replace(/;/g, ',')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, '')
+        .trim();
+    };
+    
+    const rolLimpio = limpiarParaCSV(datosAGuardar.rol);
+    const fechaLimpia = limpiarParaCSV(datosAGuardar.fecha);
+    const caratuladoLimpio = limpiarParaCSV(datosAGuardar.caratulado);
+    const csvLine = `${rolLimpio};${fechaLimpia};${caratuladoLimpio}\n`;
+    
+    if (!fs.existsSync(csvPath)) {
+      fs.writeFileSync(csvPath, 'Rol;Fecha;Caratulado\n', 'utf8');
+    }
+    fs.appendFileSync(csvPath, csvLine, 'utf8');
+    console.log(`   💾 Datos básicos guardados en CSV`);
+    
+    // PASO 2: Abrir el detalle usando el mismo flujo que el sitio (detalleCausaCivil(token))
+    console.log(`   🔍 Buscando icono de lupa para entrar al detalle...`);
+    try {
+      // 1) Buscar el token del onclick "detalleCausaCivil('TOKEN')" en la fila del RIT
+      const onclickToken = await page.evaluate((ritBuscado) => {
+        const tables = document.querySelectorAll('table, #tablaConsultas');
+        
+        for (const table of tables) {
+          const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
+          
+          for (const row of rows) {
+            const rowText = row.innerText || '';
+            if (!rowText) continue;
+
+            // Emparejar por RIT completo o por la parte numérica del RIT (rol)
+            const partes = ritBuscado.split('-');
+            const rolRit = partes.length >= 2 ? partes[1] : null;
+            const coincideRit = rowText.includes(ritBuscado);
+            const coincideRol = rolRit && rowText.includes(rolRit);
+
+            if (coincideRit || coincideRol) {
+              // Buscar enlace con onclick detalleCausaCivil('TOKEN')
+              const link = row.querySelector('a[onclick*="detalleCausaCivil"]') 
+                        || row.querySelector('a.toggle-modal[title*="Detalle"]') 
+                        || row.querySelector('a[href="#modalDetalleCivil"]');
+
+              if (link) {
+                const onclickAttr = link.getAttribute('onclick') || '';
+                const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                if (match && match[1]) {
+                  return match[1]; // TOKEN JWT que usa el sitio
+                }
+              }
+
+              // Fallback: buscar el icono y su padre <a> con onclick
+              const icon = row.querySelector('i.fa-search.fa-lg, i.fa-search');
+              if (icon) {
+                const parentLink = icon.closest('a');
+                if (parentLink) {
+                  const onclickAttr = parentLink.getAttribute('onclick') || '';
+                  const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                  if (match && match[1]) {
+                    return match[1];
+                  }
+                }
+              }
+            }
+          }
+        }
+        return null;
+      }, config.rit);
+
+      if (!onclickToken) {
+        console.log('   ⚠️ No se encontró token de detalleCausaCivil en la tabla, intentando click simple en la lupa...');
+        // Último recurso: clickear el primer enlace de detalle (puede abrir modal vacío)
+        await page.click('a[onclick*="detalleCausaCivil"], a[href="#modalDetalleCivil"], i.fa-search').catch(() => {
+          throw new Error('No se pudo encontrar el icono/enlace de detalle');
+        });
+      } else {
+        // 2) Ejecutar detalleCausaCivil(token) dentro del contexto de la página
+        console.log('   ✅ Token de detalleCausaCivil encontrado, ejecutando función en el navegador...');
+        await page.evaluate((token) => {
+          // La función puede estar en window o en el scope global
+          if (typeof window.detalleCausaCivil === 'function') {
+            window.detalleCausaCivil(token);
+          } else if (typeof detalleCausaCivil === 'function') {
+            detalleCausaCivil(token);
+          } else {
+            // Fallback: buscar cualquier función global que contenga 'detalleCausaCivil'
+            for (const key of Object.keys(window)) {
+              if (key.toLowerCase().includes('detallecausacivil') && typeof window[key] === 'function') {
+                window[key](token);
+                break;
+              }
+            }
+          }
+        }, onclickToken);
+      }
+
+      console.log(`   ✅ Detalle solicitado vía detalleCausaCivil`);
+    } catch (error) {
+      console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
+      throw error;
+    }
+    
+    // PASO 3: Esperar a que se abra el modal de detalle
+    console.log(`   ⏳ Esperando que se abra el detalle...`);
+    await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
+      timeout: 20000 
+    });
+    await page.waitForTimeout(1500); // Dar tiempo a que cargue completamente
+    console.log(`   ✅ Detalle abierto`);
+    
+    // PASO 4: Extraer tabla de movimientos
+    console.log(`   📊 Extrayendo tabla de movimientos...`);
+    const rows = await extractTable(page);
+    console.log(`   ✅ Extraídas ${rows.length} filas de movimientos`);
+
+    // PASO 5: Crear subcarpeta para PDFs
+    const pdfDir = path.join(outputDir, 'pdf');
+    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
+
+    // PASO 6: Descargar PDFs
+    console.log(`   📄 Descargando PDFs...`);
+    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean) || {};
+    console.log(`   ✅ PDFs descargados`);
+
+    // PASO 7: Descargar eBook
+    console.log(`   📚 Descargando eBook...`);
+    await downloadEbook(page, context, config, pdfDir);
+    console.log(`   ✅ eBook descargado`);
+
+    // PASO 8: Identificar PDF de demanda y obtener nombres
+    let demandaNombre = null;
+    let ebookNombre = null;
+    
+    // Identificar PDF de demanda (buscar movimiento con "demanda" en descripción)
+    // extractTable retorna objetos con 'raw' (array de celdas) o 'folio' (primera celda)
+    const movDemanda = rows.find(r => {
+      // Buscar en raw (array de celdas) si existe, o en las propiedades del objeto
+      if (r.raw && Array.isArray(r.raw) && r.raw.length > 5) {
+        return r.raw[5] && r.raw[5].toLowerCase().includes('demanda');
+      }
+      // Fallback: buscar en descripción si existe
+      if (r.descripcion) {
+        return r.descripcion.toLowerCase().includes('demanda');
+      }
+      return false;
+    });
+    
+    if (movDemanda) {
+      // Usar folio del movimiento (primera celda) para buscar en pdfMapping
+      const folioDemanda = movDemanda.folio || (movDemanda.raw && movDemanda.raw[0]);
+      if (folioDemanda && pdfMapping[folioDemanda] && pdfMapping[folioDemanda].azul) {
+        demandaNombre = pdfMapping[folioDemanda].azul;
+      }
+    }
+    
+    // Verificar si existe eBook descargado
+    const ebookPath = path.join(pdfDir, `${ritClean}_ebook.pdf`);
+    if (fs.existsSync(ebookPath)) {
+      ebookNombre = `${ritClean}_ebook.pdf`;
+    }
+
+    // PASO 9: Procesar datos estructurados
+    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
+
+    // PASO 10: Crear payload completo para JSON
+    const payload = {
+      rit: config.rit,
+      metadata: {
+        processed_at: new Date().toISOString(),
+        total_movimientos: Array.isArray(datosProcesados.movimientos) ? datosProcesados.movimientos.length : 0,
+        tiene_documentos_pdf: !!pdfMapping && Object.keys(pdfMapping).length > 0,
+        tiene_demanda: !!demandaNombre,
+        tiene_ebook: !!ebookNombre,
+      },
+      config_entrada: {
+        causa_id: config.causa_id,
+        agenda_id: config.agenda_id,
+        competencia: config.competencia,
+        corte: config.corte,
+        tribunal: config.tribunal,
+        tipoCausa: config.tipoCausa,
+        rol: config.rol,
+        año: config.año,
+        caratulado: config.caratulado,
+        cliente: config.cliente,
+        rut: config.rut,
+        abogado_id: config.abogado_id,
+        cuenta_id: config.cuenta_id,
+      },
+      datos_basicos: {
+        rol: datosAGuardar.rol,
+        fecha: datosAGuardar.fecha,
+        caratulado: datosAGuardar.caratulado,
+      },
+      demanda: demandaNombre,
+      ebook: ebookNombre,
+      pdf_mapping: pdfMapping,
+      // Datos estructurados de processTableData
+      cabecera: datosProcesados.cabecera,
+      estado_actual: datosProcesados.estado_actual,
+      movimientos: datosProcesados.movimientos,
+      partes: datosProcesados.partes,
+    };
+
+    // PASO 11: Guardar JSON por causa
+    const jsonPath = saveCausaJSON(outputDir, config.rit, payload);
+    console.log(`   ✅ JSON guardado: ${jsonPath}`);
+
+    // Opcional: Append a NDJSON
+    appendCausaNDJSON(outputDir, payload);
+
+    // Opcional: Actualizar índice
+    upsertIndex(outputDir, {
+      rit: config.rit,
+      processed_at: payload.metadata.processed_at,
+      caratulado: payload.cabecera?.caratulado || payload.datos_basicos?.caratulado || null,
+      tribunal: payload.cabecera?.juzgado || payload.config_entrada?.tribunal || null,
+      estado: payload.estado_actual?.estado || null,
+      fecha_ultimo_mov: payload.estado_actual?.fecha_ultimo_movimiento || null,
+      total_movimientos: payload.metadata.total_movimientos,
+      tiene_pdf: payload.metadata.tiene_documentos_pdf,
+      tiene_demanda: payload.metadata.tiene_demanda,
+      tiene_ebook: payload.metadata.tiene_ebook,
+    });
+
+    // PASO 12: Exportar también formato legacy (JSON y CSV de movimientos) para compatibilidad
+    console.log(`   💾 Exportando datos legacy...`);
+    exportToJSON(rows, outputDir, ritClean, pdfMapping);
+    exportToCSV(rows, outputDir, ritClean);
+    console.log(`   ✅ Datos legacy exportados`);
+
+    // Cerrar modal/detalle y volver al formulario
+    try {
+      const closeButtons = [
+        'button.close',
+        '.modal-header button',
+        '[data-dismiss="modal"]',
+        'button[aria-label="Close"]'
+      ];
+      
+      for (const selector of closeButtons) {
+        try {
+          const closeBtn = await page.$(selector);
+          if (closeBtn) {
+            await closeBtn.click();
+            await page.waitForTimeout(500);
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    } catch (error) {
+      console.warn('   ⚠️ No se pudo cerrar modal:', error.message);
+    }
+
+    return { 
+      success: true, 
+      rol: datosAGuardar.rol,
+      fecha: datosAGuardar.fecha,
+      caratulado: datosAGuardar.caratulado,
+      movimientos: rows.length,
+      json_path: jsonPath
+    };
+  } catch (error) {
+    console.error(`   ❌ Error procesando ${config.rit}:`, error.message);
+    
+    // Intentar cerrar modal/volver al formulario en caso de error
+    try {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    } catch (e) {
+      // Ignorar errores al cerrar
+    }
+    
     return { success: false, error: error.message };
   }
 }
 
-/**
- * Función principal para procesar N causas
- */
-async function processMultipleCausas(limit = 5) {
-  const logDir = path.resolve(__dirname, 'logs');
-  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-  const checkpointDir = path.join(logDir, 'checkpoints');
-  if (!fs.existsSync(checkpointDir)) fs.mkdirSync(checkpointDir, { recursive: true });
-
-  console.log(`🚀 Iniciando scraping masivo...`);
-  console.log(`📊 Límite: ${limit === 0 ? 'TODAS las causas' : limit} causas`);
-  
-  const causas = readCausaCSV();
-  let causasValidas = causas.filter(c => isValidForScraping(c));
-  
-  // Opcional: filtrar también por tribunal (comentado por defecto)
-  const requireTribunal = false; // Cambiar a true si quieres solo causas con tribunal
-  if (requireTribunal) {
-    const conTribunal = causasValidas.filter(c => 
-      c.tribunal && c.tribunal !== 'NULL' && c.tribunal.trim() !== ''
-    );
-    console.log(`\n📊 Causas válidas: ${causasValidas.length}`);
-    console.log(`   Con tribunal: ${conTribunal.length}`);
-    console.log(`   Sin tribunal: ${causasValidas.length - conTribunal.length}`);
-    console.log(`   ⚠️  Nota: Todas las causas con RIT son civiles (competencia = 3)`);
-    causasValidas = conTribunal;
-  } else {
-    console.log(`\n📊 Causas válidas: ${causasValidas.length}`);
-    console.log(`   ✅ Todas las causas con RIT son civiles (competencia = 3)`);
+// Validar si una causa es válida para scraping
+// IMPORTANTE: Todas las causas con RIT son civiles
+// REQUIERE: RIT y Tribunal/Juzgado (Corte puede ser default si no está en CSV)
+function isValidForScraping(csvCausa) {
+  // Debe tener RIT válido (formato: TIPO-ROL-AÑO)
+  if (!csvCausa.rit || csvCausa.rit === 'NULL' || csvCausa.rit.trim() === '') {
+    return false;
   }
   
-  // Si limit es 0 o negativo, procesar todas
-  let causasAProcesar = limit > 0 ? causasValidas.slice(0, limit) : causasValidas;
+  // Validar formato RIT (debe tener al menos 2 guiones)
+  const parts = csvCausa.rit.split('-');
+  if (parts.length < 3) {
+    // RITs como "SIN ROL", "SOLEDAD SILV", "10187-2021" son inválidos
+    return false;
+  }
   
-  const { browser, context, page } = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
+  // Validar que tenga TRIBUNAL/JUZGADO (requerido - sin esto no se puede buscar)
+  const tribunal = csvCausa.tribunal || csvCausa.tribunal_id || csvCausa.juzgado || csvCausa.juzgado_id;
+  if (!tribunal || tribunal === 'NULL' || String(tribunal).trim() === '') {
+    return false;
+  }
   
-  // Intentar cargar checkpoint para reanudar desde donde se quedó
-  const checkpoint = loadCheckpoint();
-  let startIndex = 0;
-  let resultados = [];
-  let startTime = Date.now();
+  // Corte es opcional en el CSV (si no está, usaremos default '90')
+  // No validamos corte aquí porque puede no estar en el CSV
   
-  if (checkpoint) {
-    console.log(`\n🔄 Reanudando desde checkpoint...`);
-    
-    // Verificar si el usuario quiere continuar desde el checkpoint
-    const resumeFromCheckpoint = process.argv.includes('--resume') || process.argv.includes('-r');
-    
-    if (resumeFromCheckpoint) {
-      // El checkpoint solo tiene causas exitosas, así que empezamos desde el siguiente índice
-      startIndex = checkpoint.lastProcessedIndex + 1;
-      resultados = checkpoint.resultados || []; // Solo resultados exitosos
-      startTime = new Date(checkpoint.startTime).getTime();
-      
-      // Filtrar causas ya procesadas EXITOSAMENTE
-      // Las causas que fallaron NO están en el checkpoint, así que se reintentarán
-      const processedIds = new Set(
-        (checkpoint.processedCausas || []).map(c => String(c.causa_id || c.rit))
-      );
-      
-      const causasAntesFiltro = causasAProcesar.length;
-      causasAProcesar = causasAProcesar.filter(c => {
-        const causaId = String(c.causa_id || '');
-        const rit = String(c.rit || '');
-        return !processedIds.has(causaId) && !processedIds.has(rit);
-      });
-      
-      const causasReintentar = causasAntesFiltro - causasAProcesar.length;
-      
-      console.log(`   ✅ Reanudando desde causa ${startIndex + 1}`);
-      console.log(`   📋 Causas exitosas guardadas: ${checkpoint.stats.exitosas}`);
-      console.log(`   🔄 Causas a reintentar: ${checkpoint.stats.reintentar || causasReintentar}`);
-      console.log(`   📋 Causas restantes: ${causasAProcesar.length}`);
-      console.log(`   💡 Para empezar desde cero, elimina: src/logs/checkpoints/last_checkpoint.json\n`);
-    } else {
-      console.log(`   ⚠️  Checkpoint encontrado pero no se está reanudando automáticamente.`);
-      console.log(`   💡 Para reanudar desde el checkpoint, ejecuta con: --resume o -r`);
-      console.log(`   💡 Para empezar desde cero, elimina: src/logs/checkpoints/last_checkpoint.json\n`);
-      
-      // Si no se especifica --resume, preguntar o empezar desde cero
-      // Por ahora, empezamos desde cero si no se especifica --resume
-      clearCheckpoint();
-      console.log(`   🆕 Iniciando desde cero...\n`);
-    }
+  return true;
+}
+
+// Procesar múltiples causas
+async function processMultipleCausas(limit = 10, requireTribunal = true) {
+  console.log('📂 Leyendo CSV de causas...');
+  
+  // Cargar mapeo de tribunales a cortes al inicio
+  console.log('🔍 Cargando mapeo de tribunales a cortes...');
+  loadTribunalToCorteMap();
+  
+  const causas = readCausaCSV();
+  
+  // Filtrar solo las válidas para scraping
+  let causasValidas = causas.filter(c => isValidForScraping(c));
+  
+  // Mostrar estadísticas de causas válidas
+  const causasConTribunal = causasValidas.filter(c => {
+    const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
+    return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
+  });
+  
+  console.log(`\n📊 Causas válidas: ${causasValidas.length}`);
+  console.log(`   Con tribunal/juzgado: ${causasConTribunal.length}`);
+  console.log(`   Sin tribunal/juzgado: ${causasValidas.length - causasConTribunal.length}`);
+  console.log(`   ⚠️  Nota: Todas las causas con RIT son civiles (competencia = 3)`);
+  console.log(`   ⚠️  IMPORTANTE: Solo se procesarán causas que tengan TRIBUNAL/JUZGADO`);
+  console.log(`   ℹ️  CORTE: Se usará valor por defecto '90' si no está en el CSV`);
+  
+  // Filtrar solo las que tienen tribunal (corte puede ser default)
+  causasValidas = causasValidas.filter(c => {
+    const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
+    return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
+  });
+  
+  const causasDescartadas = causas.length - causasValidas.length;
+  if (causasDescartadas > 0) {
+    console.log(`   ⚠️  Se descartaron ${causasDescartadas} causas por falta de TRIBUNAL/JUZGADO`);
   }
   
   console.log(`\n📊 Causas válidas para procesar: ${causasValidas.length}`);
-  if (limit > 0) {
-    console.log(`   Procesando las primeras ${limit} causas`);
-  } else {
-    console.log(`   Procesando TODAS las causas (${causasAProcesar.length})`);
-  }
-  if (startIndex > 0) {
-    console.log(`   🔄 Reanudando desde índice ${startIndex}\n`);
-  } else {
-    console.log(`\n`);
-  }
+  console.log(`   Limitando a las primeras ${limit} causas\n`);
+  
+  const outputDir = path.resolve(__dirname, 'outputs');
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  
+  const logDir = path.resolve(__dirname, 'logs');
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+  
+  const { browser, context, page } = await startBrowser(process.env.OJV_URL);
   
   try {
-    // Manejo inicial de sesión
-    await closeModalIfExists(page);
-    const currentUrl = page.url();
-    
-    if (currentUrl.includes('home/index.php')) {
-      console.log('🔐 Estableciendo sesión de invitado...');
-      await page.evaluate(async () => {
-        const response = await fetch('../includes/sesion-invitado.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'nombreAcceso=CC'
-        });
-        localStorage.setItem('logged-in', 'true');
-        return response.ok;
-      });
-      await page.goto('https://oficinajudicialvirtual.pjud.cl/indexN.php', { waitUntil: 'domcontentloaded' });
+    // Verificar página inicial
+    const bodyContent = await page.evaluate(() => document.body.innerText);
+    if (!bodyContent || bodyContent.trim().length === 0) {
+      throw new Error('La página está en blanco');
     }
-
-    // Esperar a que el formulario esté completamente cargado
-    await page.waitForSelector('#competencia', { timeout: 30000 });
-    await page.waitForTimeout(500);
     
-    // Procesar cada causa (startIndex ya está configurado si hay checkpoint)
-    const totalCausas = causasAProcesar.length + startIndex;
+    await closeModalIfExists(page);
+    await page.waitForTimeout(1000 + Math.random() * 1000);
+    
+    // Navegar a consulta causas una sola vez
+    await goToConsultaCausas(page);
+    
+    // Esperar a que el formulario esté completamente cargado
+    await page.waitForSelector('#competencia', { timeout: 20000 });
+    await page.waitForTimeout(1000);
+    
+    // Procesar cada causa
+    const resultados = [];
+    const causasAProcesar = causasValidas.slice(0, limit);
     
     for (let i = 0; i < causasAProcesar.length; i++) {
-      const globalIndex = startIndex + i;
       const csvCausa = causasAProcesar[i];
       const config = csvToScrapingConfig(csvCausa);
       
-      // Calcular progreso y tiempo estimado
-      const progreso = ((globalIndex + 1) / totalCausas * 100).toFixed(1);
-      const tiempoTranscurrido = (Date.now() - startTime) / 1000; // segundos
-      const causasProcesadasHastaAhora = resultados.length;
-      const tiempoPromedioPorCausa = causasProcesadasHastaAhora > 0 
-        ? tiempoTranscurrido / causasProcesadasHastaAhora 
-        : 0;
-      const tiempoRestante = (tiempoPromedioPorCausa * (causasAProcesar.length - i - 1)) / 60; // minutos
+      console.log(`\n[${i + 1}/${causasAProcesar.length}] Procesando causa ID: ${csvCausa.causa_id}`);
       
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`[${globalIndex + 1}/${totalCausas}] Progreso: ${progreso}%`);
-      if (tiempoRestante > 0) {
-        console.log(`⏱️  Tiempo estimado restante: ${tiempoRestante.toFixed(1)} minutos`);
-      }
-      console.log(`📋 Procesando causa ID: ${csvCausa.causa_id} | RIT: ${config.rit}`);
-      
-      const resultado = await processCausaBatch(page, context, config, outputDir);
-      const resultadoCompleto = {
-        causa_id: csvCausa.causa_id,
-        agenda_id: csvCausa.agenda_id,
-        rit: config.rit,
-        caratulado: config.caratulado,
-        cliente: config.cliente,
-        rut: config.rut,
-        tribunal: config.tribunal,
-        ...resultado
-      };
-      resultados.push(resultadoCompleto);
-      
-      // Guardar checkpoint después de cada causa procesada
-      // IMPORTANTE: Solo guarda causas exitosas, las fallidas se reintentarán
-      saveCheckpoint({
-        lastProcessedIndex: globalIndex,
-        totalCausas: totalCausas,
-        processedCausas: causasAProcesar.slice(0, i + 1).map(c => ({
-          causa_id: c.causa_id,
-          rit: c.rit
-        })),
-        resultados: resultados, // Incluye todos, pero el checkpoint solo guarda exitosas
-        causasAProcesar: causasAProcesar,
-        startTime: startTime
-      });
-      
-      // Si falló, mostrar mensaje de que se reintentará
-      if (!resultado.success) {
-        console.log(`   ⚠️ Esta causa falló y se reintentará al reanudar desde checkpoint`);
-      }
-      
-      // Mostrar resumen parcial cada 10 causas
-      if ((globalIndex + 1) % 10 === 0) {
-        const exitosasParciales = resultados.filter(r => r.success).length;
-        const fallidasParciales = resultados.filter(r => !r.success).length;
-        console.log(`\n📊 Resumen parcial (${globalIndex + 1}/${totalCausas}):`);
-        console.log(`   ✅ Exitosas: ${exitosasParciales} | ❌ Fallidas: ${fallidasParciales}`);
-      }
-      
-      // Verificar CAPTCHA o bloqueo después de cada causa - NOTIFICAR Y DETENER (NO reintentar)
-      const { detectCaptcha, checkIfBlocked } = require('./utils/captcha-detector');
-      const captchaCheck = await detectCaptcha(page);
-      const blockCheck = await checkIfBlocked(page);
-      
-      // Solo detener si es CAPTCHA activo o bloqueo real (NO reintentar automáticamente)
-      if ((captchaCheck.detected && captchaCheck.type === 'recaptcha-active') || blockCheck.blocked) {
-        const errorType = captchaCheck.detected ? captchaCheck.type : blockCheck.reason;
-        
-        console.error('\n🚨 ============================================');
-        console.error('🚨 BLOQUEO/CAPTCHA DETECTADO - DETENIENDO');
-        console.error('🚨 ============================================');
-        console.error(`\n❌ Causa procesada: ${globalIndex + 1}/${totalCausas}`);
-        console.error(`❌ Tipo: ${errorType}`);
-        console.error(`📋 Razón: ${blockCheck.blocked ? blockCheck.reason : captchaCheck.type}`);
-        console.error('\n📝 ACCIÓN REQUERIDA:');
-        console.error('   1. Espera 30-60 minutos antes de reintentar');
-        console.error('   2. Considera usar una VPN o cambiar tu IP');
-        console.error('   3. Reduce la velocidad de scraping si continúas');
-        console.error('   4. Verifica manualmente en el navegador si el bloqueo persiste');
-        console.error('\n⏸️  El proceso se ha detenido para evitar empeorar el bloqueo.');
-        console.error('🚨 ============================================\n');
-        
-        // Guardar checkpoint antes de detener
-        saveCheckpoint({
-          lastProcessedIndex: globalIndex,
-          totalCausas: totalCausas,
-          processedCausas: causasAProcesar.slice(0, i + 1).map(c => ({
-            causa_id: c.causa_id,
-            rit: c.rit
-          })),
-          resultados: resultados,
-          causasAProcesar: causasAProcesar,
-          startTime: startTime,
-          detenido_por_bloqueo: true
+      // Validar que tenga tribunal antes de procesar (corte puede ser default)
+      if (!config.tribunal || config.tribunal === 'NULL' || String(config.tribunal).trim() === '') {
+        console.log(`   ⚠️ Causa saltada: No tiene TRIBUNAL/JUZGADO (RIT: ${config.rit})`);
+        resultados.push({
+          causa_id: csvCausa.causa_id,
+          rit: config.rit,
+          success: false,
+          error: 'Falta campo TRIBUNAL/JUZGADO',
+          saltada: true
         });
-        backupCheckpoint(); // Backup adicional
-        
-        // Guardar causas pendientes
-        const causasPendientes = causasAProcesar.slice(i + 1);
-        if (causasPendientes.length > 0) {
-          const pendientesPath = path.join(logDir, `causas_pendientes_${Date.now()}.json`);
-          fs.writeFileSync(pendientesPath, JSON.stringify(causasPendientes, null, 2));
-          console.error(`   📋 Causas pendientes guardadas en: ${pendientesPath}`);
-        }
-        
-        console.error(`\n💾 Checkpoint guardado. Para reanudar más tarde, ejecuta:`);
-        console.error(`   node src/process-csv-causas.js ${limit || 0} --resume`);
-        
-        // Guardar screenshot para diagnóstico
-        const screenshotPath = path.join(logDir, `bloqueo_causa_${globalIndex + 1}_${Date.now()}.png`);
-        await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
-        console.error(`   📸 Screenshot guardado: ${screenshotPath}`);
-        
-        await browser.close();
-        throw new Error(`Bloqueo/CAPTCHA detectado - Deteniendo ejecución: ${errorType}`);
-      } else if (captchaCheck.detected) {
-        // Solo advertencia si no está realmente activo
-        console.warn(`   ⚠️ Script de reCAPTCHA detectado pero inactivo, continuando...`);
+        continue;
       }
+      
+      // Validar que tenga corte (si no está en CSV, ya tiene default '90')
+      if (!config.corte || config.corte === 'NULL' || String(config.corte).trim() === '') {
+        console.log(`   ⚠️ Causa saltada: No tiene CORTE (RIT: ${config.rit})`);
+        resultados.push({
+          causa_id: csvCausa.causa_id,
+          rit: config.rit,
+          success: false,
+          error: 'Falta campo CORTE',
+          saltada: true
+        });
+        continue;
+      }
+      
+      const resultado = await processCausa(page, context, config, outputDir);
+      resultados.push({
+        causa_id: csvCausa.causa_id,
+        rit: config.rit,
+        ...resultado
+      });
       
       // Si hubo error, esperar más tiempo antes de continuar
       if (!resultado.success) {
         console.log(`   ⚠️ Error en causa anterior, esperando más tiempo...`);
-        await page.waitForTimeout(3000 + Math.random() * 2000); // Aumentado a 3-5s
+        await page.waitForTimeout(3000 + Math.random() * 2000);
       }
       
-      // Delay entre causas aumentado significativamente para evitar bloqueos (5-15 segundos)
+      // Delay entre causas (como humano: 2-4 segundos)
       if (i < causasAProcesar.length - 1) {
-        const delay = 5000 + Math.random() * 10000; // Aumentado a 5-15s para evitar bloqueos
-        console.log(`   ⏳ Esperando ${Math.round(delay/1000)}s antes de la siguiente causa (anti-bloqueo)...`);
+        const delay = 2000 + Math.random() * 2000;
+        console.log(`   ⏳ Esperando ${Math.round(delay/1000)}s antes de la siguiente causa...`);
         await page.waitForTimeout(delay);
         
         // Verificar que estamos en el formulario (no navegar si ya estamos ahí)
@@ -398,18 +744,18 @@ async function processMultipleCausas(limit = 5) {
             if (!currentUrl.includes('consulta') && !currentUrl.includes('causa')) {
               console.log('   🔄 Volviendo al formulario de consulta...');
               await goToConsultaCausas(page);
-              await page.waitForSelector('#competencia', { timeout: 20000 }); // Aumentado de 10s a 20s
-              await page.waitForTimeout(300);
+              await page.waitForSelector('#competencia', { timeout: 20000 });
+              await page.waitForTimeout(1000);
             } else {
               // Estamos en la URL correcta pero el formulario no es visible (puede ser modal)
               console.log('   🔄 Cerrando modales para mostrar formulario...');
               await page.keyboard.press('Escape');
-              await page.waitForTimeout(200);
-              await page.waitForSelector('#competencia', { timeout: 20000 }); // Aumentado de 8s a 20s
+              await page.waitForTimeout(500);
+              await page.waitForSelector('#competencia', { timeout: 10000 });
             }
           } else {
             // Ya estamos en el formulario, solo asegurar que esté listo
-            await page.waitForTimeout(200); // Reducido de 500ms a 200ms
+            await page.waitForTimeout(500);
           }
         } catch (error) {
           console.warn('   ⚠️ No se pudo verificar formulario:', error.message);
@@ -424,58 +770,13 @@ async function processMultipleCausas(limit = 5) {
     console.log(`   ✅ Exitosas: ${exitosas}`);
     console.log(`   ❌ Fallidas: ${fallidas}`);
     
-    // Limpiar checkpoint si se completó todo
-    if (resultados.length >= totalCausas) {
-      clearCheckpoint();
-      console.log(`\n✅ Proceso completado. Checkpoint eliminado.`);
-    }
-    
-    // Guardar log completo de resultados
+    // Guardar log de resultados
     const logPath = path.join(logDir, `procesamiento_${Date.now()}.json`);
     fs.writeFileSync(logPath, JSON.stringify(resultados, null, 2));
-    console.log(`\n📝 Log completo guardado en: ${logPath}`);
-    
-    // Guardar JSON específico con solo las causas fallidas
-    const causasFallidas = resultados.filter(r => !r.success);
-    if (causasFallidas.length > 0) {
-      const fallidasPath = path.join(logDir, `causas_fallidas_${Date.now()}.json`);
-      fs.writeFileSync(fallidasPath, JSON.stringify(causasFallidas, null, 2));
-      console.log(`\n❌ Causas fallidas guardadas en: ${fallidasPath}`);
-      console.log(`   Total fallidas: ${causasFallidas.length}`);
-      
-      // También guardar en outputs para fácil acceso
-      const fallidasOutputPath = path.join(outputDir, 'causas_fallidas.json');
-      fs.writeFileSync(fallidasOutputPath, JSON.stringify(causasFallidas, null, 2));
-      console.log(`   También guardado en: ${fallidasOutputPath}`);
-    } else {
-      console.log(`\n✅ ¡Todas las causas se procesaron exitosamente!`);
-    }
+    console.log(`\n📝 Log guardado en: ${logPath}`);
     
   } catch (error) {
     console.error('💥 Error general:', error);
-    
-    // Guardar checkpoint antes de cerrar en caso de error
-    if (resultados && resultados.length > 0) {
-      try {
-        saveCheckpoint({
-          lastProcessedIndex: startIndex + resultados.length - 1,
-          totalCausas: totalCausas || causasAProcesar.length,
-          processedCausas: causasAProcesar.slice(0, resultados.length).map(c => ({
-            causa_id: c.causa_id,
-            rit: c.rit
-          })),
-          resultados: resultados,
-          causasAProcesar: causasAProcesar,
-          startTime: startTime
-        });
-        backupCheckpoint();
-        console.error(`\n💾 Checkpoint guardado antes de cerrar por error.`);
-        console.error(`   Para reanudar: node src/process-csv-causas.js ${limit || 0} --resume`);
-      } catch (checkpointError) {
-        console.warn('⚠️ No se pudo guardar checkpoint:', checkpointError.message);
-      }
-    }
-    
     await saveErrorEvidence(
       page, 
       path.join(logDir, `error_${Date.now()}.png`),
@@ -483,13 +784,24 @@ async function processMultipleCausas(limit = 5) {
     );
   } finally {
     await browser.close();
-    console.log('\n🏁 Fin de la prueba de 5 causas.');
   }
 }
 
+// Ejecutar
 if (require.main === module) {
   const limit = process.argv[2] ? parseInt(process.argv[2]) : 5;
+  console.log(`🚀 Iniciando procesamiento de ${limit} causas...\n`);
   processMultipleCausas(limit).catch(console.error);
 }
 
-module.exports = { processMultipleCausas };
+module.exports = { 
+  processCausa, 
+  processMultipleCausas, 
+  csvToScrapingConfig,
+  isValidForScraping,
+  loadTribunalToCorteMap,
+  getCorteFromTribunal,
+  extractTipoCausa,
+  extractRolAnio
+};
+

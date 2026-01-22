@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Causas - Sistema Legal</title>
+    <!-- Bootstrap 4 (mismo que usa PJUD) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <!-- Font Awesome (iconos similares a PJUD) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           COLORIMETRÍA PERSONALIZADA
+           (Basada en PJUD pero con nuestros colores)
+           ============================================ */
+        :root {
+            /* Colores principales */
+            --primary: #4f46e5;          /* Indigo - Principal */
+            --primary-dark: #3730a3;     /* Indigo oscuro */
+            --primary-light: #818cf8;    /* Indigo claro */
+            --secondary: #0ea5e9;        /* Cyan - Secundario */
+            --secondary-dark: #0284c7;
+            
+            /* Estados */
+            --success: #10b981;          /* Emerald */
+            --warning: #f59e0b;          /* Amber */
+            --danger: #ef4444;           /* Red */
+            --info: #06b6d4;             /* Cyan */
+            
+            /* Fondos */
+            --bg-page: #f8fafc;          /* Slate 50 */
+            --bg-card: #ffffff;
+            --bg-header: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+            --bg-sidebar: #1e1b4b;       /* Indigo 950 */
+            
+            /* Textos */
+            --text-primary: #1e293b;     /* Slate 800 */
+            --text-secondary: #64748b;   /* Slate 500 */
+            --text-muted: #94a3b8;       /* Slate 400 */
+            --text-light: #f8fafc;
+            
+            /* Bordes */
+            --border-color: #e2e8f0;     /* Slate 200 */
+            --border-light: #f1f5f9;     /* Slate 100 */
+            
+            /* Sombras */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           HEADER - Estilo PJUD adaptado
+           ============================================ */
+        .pjud-header {
+            background: var(--bg-header);
+            color: white;
+            padding: 0;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-top {
+            background: rgba(0,0,0,0.15);
+            padding: 8px 0;
+            font-size: 12px;
+        }
+
+        .header-top .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-main {
+            padding: 15px 0;
+        }
+
+        .header-main .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text span {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ============================================
+           NAVEGACIÓN - Tabs estilo PJUD
+           ============================================ */
+        .nav-tabs-pjud {
+            background: rgba(0,0,0,0.1);
+            padding: 0 20px;
+        }
+
+        .nav-tabs-pjud .nav-link {
+            color: rgba(255,255,255,0.8);
+            border: none;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 0;
+            transition: all 0.2s;
+        }
+
+        .nav-tabs-pjud .nav-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-tabs-pjud .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.2);
+            border-bottom: 3px solid white;
+        }
+
+        .nav-tabs-pjud .nav-link i {
+            margin-right: 8px;
+        }
+
+        /* ============================================
+           CONTENEDOR PRINCIPAL
+           ============================================ */
+        .main-container {
+            padding: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ============================================
+           BREADCRUMB - Estilo PJUD
+           ============================================ */
+        .pjud-breadcrumb {
+            background: var(--bg-card);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .pjud-breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .pjud-breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .pjud-breadcrumb span {
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           FORMULARIO DE BÚSQUEDA - Estilo PJUD
+           ============================================ */
+        .search-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .search-card-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-card-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-card-body {
+            padding: 25px;
+        }
+
+        .form-row-pjud {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group-pjud {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group-pjud label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-group-pjud label .required {
+            color: var(--danger);
+        }
+
+        .form-control-pjud {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .form-control-pjud:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-control-pjud:disabled {
+            background: var(--bg-page);
+            cursor: not-allowed;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-pjud {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+
+        .btn-pjud-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-pjud-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-pjud-secondary {
+            background: var(--bg-page);
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-pjud-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* ============================================
+           TABLA DE RESULTADOS - Estilo PJUD
+           ============================================ */
+        .results-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .results-card-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-card-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .results-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .table-pjud {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-pjud thead {
+            background: var(--bg-page);
+        }
+
+        .table-pjud th {
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .table-pjud td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .table-pjud tbody tr {
+            transition: background 0.15s;
+        }
+
+        .table-pjud tbody tr:hover {
+            background: rgba(79, 70, 229, 0.03);
+        }
+
+        /* Iconos de acción en tabla */
+        .action-icons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 14px;
+        }
+
+        /* Icono azul - Ver detalle (similar a PJUD) */
+        .action-btn.btn-detail {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .action-btn.btn-detail:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+
+        /* Icono PDF azul - Documento principal */
+        .action-btn.btn-pdf-blue {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .action-btn.btn-pdf-blue:hover {
+            background: #0284c7;
+            transform: scale(1.1);
+        }
+
+        /* Icono PDF rojo - Documento anexo */
+        .action-btn.btn-pdf-red {
+            background: #ef4444;
+            color: white;
+        }
+
+        .action-btn.btn-pdf-red:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        /* Icono verde - eBook/Carpeta */
+        .action-btn.btn-ebook {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn.btn-ebook:hover {
+            background: #059669;
+            transform: scale(1.1);
+        }
+
+        /* Badges de estado */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-badge.en-tramite {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-badge.terminada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.suspendida {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* ============================================
+           MODAL DETALLE - Estilo PJUD
+           ============================================ */
+        .modal-pjud .modal-content {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .modal-pjud .modal-header {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .modal-pjud .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .modal-pjud .close {
+            color: white;
+            opacity: 0.8;
+            text-shadow: none;
+        }
+
+        .modal-pjud .modal-body {
+            padding: 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Sección de información en modal */
+        .detail-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+        .detail-section h5 {
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Tabla de movimientos en modal */
+        .movements-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .movements-table th {
+            background: var(--bg-page);
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+
+        .movements-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+
+        .movements-table tbody tr:hover {
+            background: rgba(79, 70, 229, 0.03);
+        }
+
+        .folio-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .etapa-tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .table-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            min-width: 140px;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .pagination-info { font-size: 13px; color: var(--text-secondary); }
+        .pagination-buttons { display: flex; gap: 8px; align-items: center; }
+        .pagination-btn {
+            padding: 6px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-right: 4px; }
+        .stat-value { font-size: 16px; font-weight: 600; color: var(--primary); }
+        .documentos-cell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .truncate {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .pjud-footer {
+            background: var(--bg-sidebar);
+            color: var(--text-light);
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
+        /* ============================================
+           LOADING & ESTADOS
+           ============================================ */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner-pjud {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .header-main .container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .form-row-pjud {
+                grid-template-columns: 1fr;
+            }
+
+            .main-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-pjud"></div>
+        <span>Buscando causas...</span>
+    </div>
+
+    <!-- Header -->
+    <header class="pjud-header">
+        <div class="header-top">
+            <div class="container">
+                <span><i class="fas fa-phone-alt"></i> Soporte: +56 2 1234 5678</span>
+                <span><i class="fas fa-clock"></i> Última actualización: <span id="lastUpdate"></span></span>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="container">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Sistema Legal</h1>
+                        <span>Consulta de Causas Judiciales</span>
+                    </div>
+                </div>
+                <div class="user-section">
+                    <div class="user-badge">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Modo Invitado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <nav class="nav-tabs-pjud">
+            <div class="container">
+                <ul class="nav nav-tabs border-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-search"></i> Consulta Causas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="demo-movimientos-completo.html"><i class="fas fa-list"></i> Movimientos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="mvp-dashboard.html"><i class="fas fa-chart-bar"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="modulos-erp.html"><i class="fas fa-th"></i> Módulos ERP</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Breadcrumb -->
+        <div class="pjud-breadcrumb">
+            <i class="fas fa-home"></i>
+            <a href="#">Inicio</a>
+            <span>/</span>
+            <a href="#">Consultas</a>
+            <span>/</span>
+            <span>Consulta de Causas</span>
+        </div>
+
+        <!-- Formulario de Búsqueda -->
+        <div class="search-card">
+            <div class="search-card-header">
+                <h3><i class="fas fa-search"></i> Búsqueda de Causas</h3>
+                <span class="badge badge-light">Civil</span>
+            </div>
+            <div class="search-card-body">
+                <form id="searchForm">
+                    <div class="form-row-pjud">
+                        <div class="form-group-pjud">
+                            <label>Competencia <span class="required">*</span></label>
+                            <select class="form-control-pjud" id="competencia" required>
+                                <option value="">Seleccione...</option>
+                                <option value="3" selected>Civil</option>
+                                <option value="1">Familia</option>
+                                <option value="2">Laboral</option>
+                                <option value="4">Cobranza</option>
+                            </select>
+                        </div>
+                        <div class="form-group-pjud">
+                            <label>Corte de Apelaciones <span class="required">*</span></label>
+                            <select class="form-control-pjud" id="corte" required>
+                                <option value="">Seleccione...</option>
+                                <option value="10">C.A. de Arica</option>
+                                <option value="11">C.A. de Iquique</option>
+                                <option value="12">C.A. de Antofagasta</option>
+                                <option value="20">C.A. de Copiapó</option>
+                                <option value="30" selected>C.A. de Valparaíso</option>
+                                <option value="90">C.A. de Santiago</option>
+                                <option value="91">C.A. de San Miguel</option>
+                            </select>
+                        </div>
+                        <div class="form-group-pjud">
+                            <label>Tribunal</label>
+                            <select class="form-control-pjud" id="tribunal">
+                                <option value="">Todos los tribunales</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row-pjud">
+                        <div class="form-group-pjud">
+                            <label>Tipo de Causa <span class="required">*</span></label>
+                            <select class="form-control-pjud" id="tipoCausa" required>
+                                <option value="">Seleccione...</option>
+                                <option value="C" selected>C - Civil</option>
+                                <option value="V">V - Voluntario</option>
+                            </select>
+                        </div>
+                        <div class="form-group-pjud">
+                            <label>N° Rol <span class="required">*</span></label>
+                            <input type="number" class="form-control-pjud" id="numRol" placeholder="Ej: 3030" value="3030" required>
+                        </div>
+                        <div class="form-group-pjud">
+                            <label>Año <span class="required">*</span></label>
+                            <input type="number" class="form-control-pjud" id="anio" placeholder="Ej: 2017" value="2017" min="1990" max="2030" required>
+                        </div>
+                    </div>
+                    <div class="btn-row">
+                        <button type="button" class="btn-pjud btn-pjud-secondary" onclick="limpiarFormulario()">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                        <button type="submit" class="btn-pjud btn-pjud-primary">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Resultados -->
+        <div class="results-card" id="resultsCard" style="display: none;">
+            <div class="results-card-header">
+                <h3><i class="fas fa-gavel"></i> Resultados de Búsqueda</h3>
+                <span class="results-badge" id="resultsCount">0 resultado(s)</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="table-pjud">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Acciones</th>
+                            <th style="width: 100px;">RIT/Rol</th>
+                            <th>Caratulado</th>
+                            <th style="width: 200px;">Tribunal</th>
+                            <th style="width: 100px;">Fecha Ingreso</th>
+                            <th style="width: 100px;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- Resultados dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Causas de Ejemplo (datos guardados) -->
+        <div class="results-card">
+            <div class="results-card-header" style="background: #10b981;">
+                <h3><i class="fas fa-database"></i> Causas Guardadas en Sistema</h3>
+                <span class="results-badge" id="savedCount">2 causa(s)</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="table-pjud">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Acciones</th>
+                            <th style="width: 100px;">RIT/Rol</th>
+                            <th>Caratulado</th>
+                            <th style="width: 200px;">Tribunal</th>
+                            <th style="width: 100px;">Fecha Ingreso</th>
+                            <th style="width: 100px;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="savedCausasBody">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Detalle de Causa -->
+    <div class="modal fade modal-pjud" id="modalDetalle" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-folder-open"></i> 
+                        Detalle de Causa <span id="modalRit"></span>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Información General -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-info-circle"></i> Información General</h5>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">RIT/Rol</span>
+                                <span class="detail-value" id="detailRit">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Caratulado</span>
+                                <span class="detail-value" id="detailCaratulado">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Tribunal</span>
+                                <span class="detail-value" id="detailTribunal">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Fecha de Ingreso</span>
+                                <span class="detail-value" id="detailFechaIngreso">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado Actual -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-flag"></i> Estado Actual</h5>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Estado</span>
+                                <span class="detail-value" id="detailEstado">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Etapa</span>
+                                <span class="detail-value" id="detailEtapa">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Último Movimiento</span>
+                                <span class="detail-value" id="detailUltimoMov">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documentos -->
+                    <div class="detail-section">
+                        <h5><i class="fas fa-file-pdf"></i> Documentos Disponibles</h5>
+                        <div class="action-icons" style="gap: 15px;">
+                            <button class="action-btn btn-ebook" title="Descargar eBook/Carpeta" id="btnEbook">
+                                <i class="fas fa-book"></i>
+                            </button>
+                            <span style="font-size: 13px; color: var(--text-secondary);">
+                                <span id="detailPdfsCount">0</span> PDF(s) disponibles
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Movimientos (misma info que /movimientos) -->
+                    <div class="detail-section" style="padding-bottom: 0;">
+                        <h5><i class="fas fa-list"></i> Historial de Movimientos Procesales</h5>
+                        <p class="text-muted small mb-2">Misma estructura que la pestaña Movimientos: Folio, Documentos, Fecha, Etapa, Trámite, Descripción, Foja.</p>
+                    </div>
+                    <div class="detail-section" id="cuadernoSection" style="display: none;">
+                        <label class="detail-label">Cuaderno</label>
+                        <select class="form-control-pjud" id="filterCuaderno" style="max-width: 280px;">
+                            <option value="">Todos los cuadernos</option>
+                        </select>
+                    </div>
+                    <div class="detail-section" style="padding-top: 0;">
+                        <div class="table-filters" style="margin-bottom: 12px;">
+                            <input type="text" class="filter-input" id="filterFecha" placeholder="🔍 Fecha...">
+                            <input type="text" class="filter-input" id="filterDescripcion" placeholder="🔍 Descripción...">
+                            <select class="filter-input" id="filterEtapa">
+                                <option value="">Todas las etapas</option>
+                            </select>
+                        </div>
+                        <div class="table-wrapper" style="max-height: 420px; overflow: auto;">
+                            <table class="movements-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">Folio</th>
+                                        <th style="width: 100px;">Documentos</th>
+                                        <th style="width: 95px;">Fecha</th>
+                                        <th style="width: 100px;">Etapa</th>
+                                        <th style="width: 110px;">Trámite</th>
+                                        <th>Descripción del Trámite</th>
+                                        <th style="width: 60px;">Foja</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movimientosBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-controls" style="padding: 12px; border-top: 1px solid var(--border-color); margin-top: 0;">
+                            <div class="pagination-info" id="paginationInfo">Mostrando 0 movimientos</div>
+                            <div class="pagination-buttons">
+                                <button type="button" class="pagination-btn" id="btnPrevMov">← Anterior</button>
+                                <span class="mx-2" id="paginaMovText">Pág. 1</span>
+                                <button type="button" class="pagination-btn" id="btnNextMov">Siguiente →</button>
+                            </div>
+                        </div>
+                        <div class="stats-bar" style="padding: 10px 0 0; border-top: 1px solid var(--border-light);">
+                            <div><span class="stat-label">Total</span> <span class="stat-value" id="statTotalMov">0</span></div>
+                            <div><span class="stat-label">Con docs</span> <span class="stat-value" id="statConDocs">0</span></div>
+                            <div><span class="stat-label">PDFs</span> <span class="stat-value" id="statPdfs">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="pjud-footer">
+        <p>
+            <i class="fas fa-shield-alt"></i> Sistema de Consulta de Causas | 
+            Desarrollado para integración con PJUD | 
+            &copy; 2024-2026
+        </p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================
+        // FUNCIONES DE MANEJO DE PDFs BASE64
+        // ============================================
+        
+        /**
+         * Decodifica un string base64 y lo descarga como PDF
+         * @param {string} base64String - El string base64 del PDF
+         * @param {string} nombreArchivo - Nombre del archivo a descargar
+         */
+        function descargarPDFBase64(base64String, nombreArchivo) {
+            try {
+                // Decodificar base64 a bytes
+                const byteCharacters = atob(base64String);
+                const byteNumbers = new Array(byteCharacters.length);
+                
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                
+                // Crear enlace de descarga
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = nombreArchivo || 'documento.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                mostrarNotificacion(`✅ Descargado: ${nombreArchivo}`, 'success');
+            } catch (error) {
+                console.error('Error al decodificar PDF:', error);
+                mostrarNotificacion('❌ Error al descargar el PDF', 'error');
+            }
+        }
+        
+        /**
+         * Abre un PDF base64 en una nueva pestaña
+         * @param {string} base64String - El string base64 del PDF
+         */
+        function abrirPDFBase64(base64String) {
+            try {
+                const byteCharacters = atob(base64String);
+                const byteNumbers = new Array(byteCharacters.length);
+                
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Error al abrir PDF:', error);
+                mostrarNotificacion('❌ Error al abrir el PDF', 'error');
+            }
+        }
+        
+        /**
+         * Muestra una notificación temporal
+         * @param {string} mensaje - Mensaje a mostrar
+         * @param {string} tipo - 'success', 'error', 'info'
+         */
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const colores = {
+                success: '#10b981',
+                error: '#ef4444',
+                info: '#3b82f6'
+            };
+            
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${colores[tipo] || colores.info};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 9999;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = mensaje;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Agregar estilos de animación
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // ============================================
+        // DATOS DE CAUSAS CON PDFs EN BASE64
+        // ============================================
+        
+        // Datos de causas guardadas (con PDFs en base64)
+        // En producción, estos datos vendrían de la API/BD
+        const causasGuardadas = [
+            {
+                rit: "C-3030-2017",
+                caratulado: "ESPINOZA/TRANSPORTES PLAZUELA ECUADOR S.A",
+                tribunal: "5º Juzgado Civil de Valparaíso",
+                fechaIngreso: "27/11/2017",
+                estado: "EN_TRAMITE",
+                movimientos: [
+                    { 
+                        folio: 1, 
+                        fecha: "27/11/2017", 
+                        etapa: "Ingreso", 
+                        tramite: "Ingreso",
+                        descripcion: "Ingreso de demanda",
+                        foja: "1",
+                        pdf_azul: {
+                            nombre: "C_3030_2017_mov_1_azul.pdf",
+                            // En producción, aquí iría el base64 real
+                            base64: null, // Se llenará con datos reales del scraping
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 2, 
+                        fecha: "28/11/2017", 
+                        etapa: "Providencia", 
+                        tramite: "Providencia",
+                        descripcion: "Se tiene por presentada la demanda",
+                        foja: "2",
+                        pdf_azul: {
+                            nombre: "C_3030_2017_mov_2_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: {
+                            nombre: "C_3030_2017_mov_2_rojo.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: true
+                    },
+                    { 
+                        folio: 3, 
+                        fecha: "05/12/2017", 
+                        etapa: "Notificación", 
+                        tramite: "Notificación",
+                        descripcion: "Notificación personal al demandado",
+                        foja: "3",
+                        pdf_azul: null,
+                        pdf_rojo: null,
+                        tiene_pdf_azul: false,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 4, 
+                        fecha: "15/12/2017", 
+                        etapa: "Contestación", 
+                        tramite: "Contestación",
+                        descripcion: "Se presenta contestación de demanda",
+                        foja: "4",
+                        pdf_azul: {
+                            nombre: "C_3030_2017_mov_4_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 5, 
+                        fecha: "20/12/2017", 
+                        etapa: "Réplica", 
+                        tramite: "Réplica",
+                        descripcion: "Escrito de réplica del demandante",
+                        foja: "5",
+                        pdf_azul: {
+                            nombre: "C_3030_2017_mov_5_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 6, 
+                        fecha: "28/12/2017", 
+                        etapa: "Tramitación", 
+                        tramite: "Citación",
+                        descripcion: "Se cita a audiencia de conciliación",
+                        foja: "6",
+                        pdf_azul: null,
+                        pdf_rojo: null,
+                        tiene_pdf_azul: false,
+                        tiene_pdf_rojo: false
+                    }
+                ],
+                totalPdfs: 5,
+                tieneEbook: true,
+                ebook: {
+                    nombre: "C_3030_2017_ebook.pdf",
+                    base64: null,
+                    tipo: "application/pdf"
+                }
+            },
+            {
+                rit: "C-571-2019",
+                caratulado: "HERRERA/LANDERO",
+                tribunal: "Juzgado de Letras de San Javier",
+                fechaIngreso: "27/05/2019",
+                estado: "EN_TRAMITE",
+                movimientos: [
+                    { 
+                        folio: 1, 
+                        fecha: "27/05/2019", 
+                        etapa: "Ingreso", 
+                        descripcion: "Se ingresa demanda civil",
+                        pdf_azul: {
+                            nombre: "C_571_2019_mov_1_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 2, 
+                        fecha: "28/05/2019", 
+                        etapa: "Providencia", 
+                        descripcion: "A lo principal téngase por presentada demanda",
+                        pdf_azul: {
+                            nombre: "C_571_2019_mov_2_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 3, 
+                        fecha: "10/06/2019", 
+                        etapa: "Notificación", 
+                        descripcion: "Certificación de notificación",
+                        pdf_azul: null,
+                        pdf_rojo: null,
+                        tiene_pdf_azul: false,
+                        tiene_pdf_rojo: false
+                    },
+                    { 
+                        folio: 4, 
+                        fecha: "25/06/2019", 
+                        etapa: "Tramitación", 
+                        descripcion: "Se declara rebeldía del demandado",
+                        pdf_azul: {
+                            nombre: "C_571_2019_mov_4_azul.pdf",
+                            base64: null,
+                            tipo: "application/pdf"
+                        },
+                        pdf_rojo: null,
+                        tiene_pdf_azul: true,
+                        tiene_pdf_rojo: false
+                    }
+                ],
+                totalPdfs: 3,
+                tieneEbook: false,
+                ebook: null
+            }
+        ];
+
+        // Variable para almacenar la causa actual en el modal
+        let causaActual = null;
+        let modalMovimientos = [];
+        let filteredModalMovimientos = [];
+        let modalPage = 1;
+        const modalPageSize = 25;
+
+        // Actualizar fecha
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleString('es-CL');
+
+        // ============================================
+        // FUNCIONES DE RENDERIZADO
+        // ============================================
+
+        function applyModalFilters(resetPage) {
+            const fecha = (document.getElementById('filterFecha')?.value || '').toLowerCase();
+            const desc = (document.getElementById('filterDescripcion')?.value || '').toLowerCase();
+            const etapa = document.getElementById('filterEtapa')?.value || '';
+            const cuaderno = document.getElementById('filterCuaderno')?.value || '';
+            filteredModalMovimientos = modalMovimientos.filter(m => {
+                const matchFecha = !fecha || (m.fecha || '').toLowerCase().includes(fecha);
+                const matchDesc = !desc || (m.descripcion || m.desc_tramite || '').toLowerCase().includes(desc);
+                const matchEtapa = !etapa || (m.etapa || '') === etapa;
+                const matchCuaderno = !cuaderno || (m.id_cuaderno || '') === cuaderno;
+                return matchFecha && matchDesc && matchEtapa && matchCuaderno;
+            });
+            if (resetPage !== false) modalPage = 1;
+        }
+
+        function renderModalMovimientos(resetPage) {
+            applyModalFilters(resetPage !== false);
+            const total = filteredModalMovimientos.length;
+            const totalPages = Math.max(1, Math.ceil(total / modalPageSize));
+            const start = (modalPage - 1) * modalPageSize;
+            const slice = filteredModalMovimientos.slice(start, start + modalPageSize);
+            const cause = causaActual;
+            if (!cause) return;
+
+            const tbody = document.getElementById('movimientosBody');
+            tbody.innerHTML = slice.map((mov, idx) => {
+                const i = modalMovimientos.indexOf(mov);
+                const folio = mov.folio ?? mov.indice ?? '-';
+                const fecha = mov.fecha ?? '-';
+                const etapa = mov.etapa ?? '';
+                const tramite = mov.tramite ?? mov.tipo_movimiento ?? '';
+                const desc = mov.descripcion ?? mov.desc_tramite ?? '';
+                const foja = mov.foja ?? '-';
+                const hasAzul = mov.tiene_pdf_azul ?? !!mov.pdf_azul;
+                const hasRojo = mov.tiene_pdf_rojo ?? !!mov.pdf_rojo;
+                return `
+                <tr data-id-pagina="${mov.id_pagina || ''}" data-id-cuaderno="${mov.id_cuaderno || ''}">
+                    <td><span class="folio-badge">${folio}</span></td>
+                    <td>
+                        <div class="documentos-cell">
+                            ${hasAzul ? `<button class="action-btn btn-pdf-blue" title="PDF Principal" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'azul')"><i class="fas fa-file-pdf"></i></button>` : ''}
+                            ${hasRojo ? `<button class="action-btn btn-pdf-red" title="PDF Anexo" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'rojo')"><i class="fas fa-file-pdf"></i></button>` : ''}
+                            ${!hasAzul && !hasRojo ? '<span style="color:#999;font-size:11px;">Sin documentos</span>' : ''}
+                        </div>
+                    </td>
+                    <td>${fecha}</td>
+                    <td>${etapa ? `<span class="etapa-tag">${etapa}</span>` : ''}</td>
+                    <td>${tramite}</td>
+                    <td><div class="truncate" title="${desc}">${desc}</div></td>
+                    <td style="text-align:center;color:var(--text-muted);">${foja}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('paginationInfo').textContent = `Mostrando ${total ? start + 1 : 0} - ${Math.min(start + modalPageSize, total)} de ${total} movimientos`;
+            document.getElementById('paginaMovText').textContent = `Pág. ${modalPage} de ${totalPages}`;
+            document.getElementById('btnPrevMov').disabled = modalPage <= 1;
+            document.getElementById('btnNextMov').disabled = modalPage >= totalPages;
+            document.getElementById('statTotalMov').textContent = modalMovimientos.length;
+            document.getElementById('statConDocs').textContent = modalMovimientos.filter(m => m.tiene_pdf_azul || m.tiene_pdf_rojo || m.pdf_azul || m.pdf_rojo).length;
+            document.getElementById('statPdfs').textContent = cause.totalPdfs ?? modalMovimientos.filter(m => m.tiene_pdf_azul || m.tiene_pdf_rojo).length;
+        }
+
+        // Renderizar causas guardadas
+        function renderizarCausasGuardadas() {
+            const tbody = document.getElementById('savedCausasBody');
+            tbody.innerHTML = causasGuardadas.map(causa => `
+                <tr>
+                    <td>
+                        <div class="action-icons">
+                            <button class="action-btn btn-detail" title="Ver detalle" onclick="verDetalle('${causa.rit}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${causa.tieneEbook ? `
+                            <button class="action-btn btn-ebook" title="Descargar eBook" onclick="descargarEbook('${causa.rit}')">
+                                <i class="fas fa-book"></i>
+                            </button>
+                            ` : ''}
+                            ${causa.totalPdfs > 0 ? `
+                            <button class="action-btn btn-pdf-blue" title="${causa.totalPdfs} PDF(s) disponibles" onclick="verDetalle('${causa.rit}')">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                    <td><strong>${causa.rit}</strong></td>
+                    <td>${causa.caratulado}</td>
+                    <td>${causa.tribunal}</td>
+                    <td>${causa.fechaIngreso}</td>
+                    <td>
+                        <span class="status-badge ${causa.estado === 'EN_TRAMITE' ? 'en-tramite' : 'terminada'}">
+                            ${causa.estado === 'EN_TRAMITE' ? 'En Trámite' : 'Terminada'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('savedCount').textContent = `${causasGuardadas.length} causa(s)`;
+        }
+
+        // Ver detalle de causa
+        function verDetalle(rit) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa) return;
+
+            causaActual = causa;
+            modalMovimientos = (causa.movimientos || []).map(m => ({
+                ...m,
+                fecha: m.fecha ?? m.fec_tramite,
+                etapa: m.etapa ?? m.etapa_codigo,
+                tramite: m.tramite ?? m.tipo_movimiento,
+                descripcion: m.descripcion ?? m.desc_tramite,
+                foja: m.foja,
+                id_pagina: m.id_pagina,
+                id_cuaderno: m.id_cuaderno,
+                cuaderno_nombre: m.cuaderno_nombre
+            }));
+
+            document.getElementById('modalRit').textContent = causa.rit;
+            document.getElementById('detailRit').textContent = causa.rit;
+            document.getElementById('detailCaratulado').textContent = causa.caratulado;
+            document.getElementById('detailTribunal').textContent = causa.tribunal;
+            document.getElementById('detailFechaIngreso').textContent = causa.fechaIngreso;
+            document.getElementById('detailEstado').innerHTML = `
+                <span class="status-badge ${causa.estado === 'EN_TRAMITE' ? 'en-tramite' : 'terminada'}">
+                    ${causa.estado === 'EN_TRAMITE' ? 'En Trámite' : 'Terminada'}
+                </span>
+            `;
+            const last = causa.movimientos[causa.movimientos.length - 1];
+            document.getElementById('detailEtapa').textContent = last?.etapa || last?.etapa_codigo || '-';
+            document.getElementById('detailUltimoMov').textContent = last?.fecha || last?.fec_tramite || '-';
+            document.getElementById('detailPdfsCount').textContent = causa.totalPdfs ?? 0;
+
+            const etapas = [...new Set(modalMovimientos.map(m => m.etapa).filter(Boolean))].sort();
+            const selEtapa = document.getElementById('filterEtapa');
+            selEtapa.innerHTML = '<option value="">Todas las etapas</option>' + etapas.map(e => `<option value="${e}">${e}</option>`).join('');
+
+            const cuadernoSection = document.getElementById('cuadernoSection');
+            const selCuaderno = document.getElementById('filterCuaderno');
+            const cuadernos = causa.cuadernos || [];
+            if (cuadernos.length > 0) {
+                cuadernoSection.style.display = 'block';
+                selCuaderno.innerHTML = '<option value="">Todos los cuadernos</option>' +
+                    cuadernos.map(c => `<option value="${c.id_cuaderno}">${c.nombre}</option>`).join('');
+            } else {
+                cuadernoSection.style.display = 'none';
+                selCuaderno.innerHTML = '<option value="">Todos los cuadernos</option>';
+            }
+
+            document.getElementById('filterFecha').value = '';
+            document.getElementById('filterDescripcion').value = '';
+
+            renderModalMovimientos();
+
+            const btnEbook = document.getElementById('btnEbook');
+            btnEbook.style.display = causa.tieneEbook ? 'flex' : 'none';
+            btnEbook.onclick = () => descargarEbook(causa.rit);
+
+            $('#modalDetalle').modal('show');
+        }
+
+        function setupModalFiltersAndPagination() {
+            $('#filterFecha, #filterDescripcion').off('input').on('input', () => renderModalMovimientos());
+            $('#filterEtapa, #filterCuaderno').off('change').on('change', () => renderModalMovimientos());
+            $('#btnPrevMov').off('click').on('click', () => { if (modalPage > 1) { modalPage--; renderModalMovimientos(false); } });
+            $('#btnNextMov').off('click').on('click', () => {
+                const totalPages = Math.max(1, Math.ceil(filteredModalMovimientos.length / modalPageSize));
+                if (modalPage < totalPages) { modalPage++; renderModalMovimientos(false); }
+            });
+        }
+
+        // ============================================
+        // FUNCIONES DE DESCARGA
+        // ============================================
+
+        /**
+         * Descarga un PDF de un movimiento específico
+         * @param {string} rit - RIT de la causa
+         * @param {number} movIndex - Índice del movimiento
+         * @param {string} tipo - 'azul' o 'rojo'
+         */
+        function descargarPDF(rit, movIndex, tipo) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa) {
+                mostrarNotificacion('❌ Causa no encontrada', 'error');
+                return;
+            }
+
+            const mov = causa.movimientos[movIndex];
+            if (!mov) {
+                mostrarNotificacion('❌ Movimiento no encontrado', 'error');
+                return;
+            }
+
+            const pdfData = tipo === 'azul' ? mov.pdf_azul : mov.pdf_rojo;
+            
+            if (!pdfData) {
+                mostrarNotificacion(`❌ No hay PDF ${tipo} disponible`, 'error');
+                return;
+            }
+
+            if (pdfData.base64) {
+                // Tiene base64, descargar directamente
+                descargarPDFBase64(pdfData.base64, pdfData.nombre);
+            } else {
+                // No tiene base64, simular descarga o mostrar mensaje
+                mostrarNotificacion(`📄 PDF: ${pdfData.nombre} (pendiente de descarga desde PJUD)`, 'info');
+                
+                // En producción, aquí se haría la llamada a la API para obtener el PDF
+                // fetch(`/api/scraping/pdf/${rit}/${pdfData.nombre}`)
+                //     .then(res => res.blob())
+                //     .then(blob => { ... })
+            }
+        }
+
+        /**
+         * Descarga el eBook de una causa
+         * @param {string} rit - RIT de la causa
+         */
+        function descargarEbook(rit) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa || !causa.ebook) {
+                mostrarNotificacion('❌ eBook no disponible', 'error');
+                return;
+            }
+
+            if (causa.ebook.base64) {
+                // Tiene base64, descargar directamente
+                descargarPDFBase64(causa.ebook.base64, causa.ebook.nombre || `${rit}_ebook.pdf`);
+            } else if (causa.ebook.ruta) {
+                // Tiene ruta pero no base64, intentar cargar desde servidor
+                mostrarNotificacion('📚 Cargando eBook desde servidor...', 'info');
+                fetch(`/api/scraping/pdf/${rit}/${causa.ebook.nombre}`)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = causa.ebook.nombre || `${rit}_ebook.pdf`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        mostrarNotificacion(`✅ eBook descargado: ${causa.ebook.nombre}`, 'success');
+                    })
+                    .catch(() => {
+                        mostrarNotificacion(`❌ No se pudo descargar el eBook`, 'error');
+                    });
+            } else {
+                mostrarNotificacion(`📚 eBook: ${causa.ebook.nombre || 'pendiente'} (pendiente de descarga desde PJUD)`, 'info');
+            }
+        }
+
+        // ============================================
+        // BÚSQUEDA
+        // ============================================
+
+        // Buscar causas
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loadingOverlay');
+            loading.classList.add('active');
+
+            setTimeout(() => {
+                loading.classList.remove('active');
+                
+                const resultsCard = document.getElementById('resultsCard');
+                const resultsBody = document.getElementById('resultsBody');
+                
+                const numRol = document.getElementById('numRol').value;
+                const anio = document.getElementById('anio').value;
+                const rit = `C-${numRol}-${anio}`;
+                
+                const causaEncontrada = causasGuardadas.find(c => c.rit === rit);
+                
+                if (causaEncontrada) {
+                    resultsBody.innerHTML = `
+                        <tr>
+                            <td>
+                                <div class="action-icons">
+                                    <button class="action-btn btn-detail" title="Ver detalle" onclick="verDetalle('${causaEncontrada.rit}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${causaEncontrada.tieneEbook ? `
+                                    <button class="action-btn btn-ebook" title="Descargar eBook" onclick="descargarEbook('${causaEncontrada.rit}')">
+                                        <i class="fas fa-book"></i>
+                                    </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                            <td><strong>${causaEncontrada.rit}</strong></td>
+                            <td>${causaEncontrada.caratulado}</td>
+                            <td>${causaEncontrada.tribunal}</td>
+                            <td>${causaEncontrada.fechaIngreso}</td>
+                            <td>
+                                <span class="status-badge en-tramite">En Trámite</span>
+                            </td>
+                        </tr>
+                    `;
+                    document.getElementById('resultsCount').textContent = '1 resultado(s)';
+                } else {
+                    resultsBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-search" style="font-size: 40px; color: #ccc; margin-bottom: 15px; display: block;"></i>
+                                <p style="color: #999; margin: 0;">No se encontraron resultados para RIT: ${rit}</p>
+                                <small style="color: #ccc;">Intente con otra búsqueda o verifique los datos ingresados</small>
+                            </td>
+                        </tr>
+                    `;
+                    document.getElementById('resultsCount').textContent = '0 resultado(s)';
+                }
+                
+                resultsCard.style.display = 'block';
+            }, 1500);
+        });
+
+        // Limpiar formulario
+        function limpiarFormulario() {
+            document.getElementById('searchForm').reset();
+            document.getElementById('resultsCard').style.display = 'none';
+        }
+
+        // ============================================
+        // CARGAR DATOS DESDE ARCHIVOS JSON
+        // ============================================
+
+        /**
+         * Carga los datos de causas desde los archivos JSON generados por el scraping
+         */
+        async function cargarCausasDesdeJSON() {
+            try {
+                // Lista de archivos JSON a cargar (generados por el scraping)
+                const archivosJSON = [
+                    '/api/scraping/resultado/C-3030-2017',
+                    '/api/scraping/resultado/C-571-2019'
+                ];
+                
+                const causasCargadas = [];
+                
+                for (const archivo of archivosJSON) {
+                    try {
+                        const response = await fetch(archivo);
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // Transformar datos del formato del scraper al formato del frontend
+                            const movs = (data.movimientos || []).map(mov => ({
+                                folio: mov.folio || mov.indice,
+                                fecha: mov.fecha || mov.fec_tramite || '-',
+                                etapa: mov.etapa || mov.etapa_codigo || 'TRAMITACION',
+                                tramite: mov.tramite || mov.tipo_movimiento,
+                                descripcion: mov.descripcion || mov.desc_tramite || mov.tipo_movimiento || '-',
+                                foja: mov.foja,
+                                id_pagina: mov.id_pagina,
+                                id_cuaderno: mov.id_cuaderno,
+                                cuaderno_nombre: mov.cuaderno_nombre,
+                                pdf_azul: mov.pdf_azul || null,
+                                pdf_rojo: mov.pdf_rojo || null,
+                                tiene_pdf_azul: mov.tiene_pdf_azul || false,
+                                tiene_pdf_rojo: mov.tiene_pdf_rojo || false
+                            }));
+                            const causa = {
+                                rit: data.rit || data.cabecera?.rit,
+                                caratulado: data.cabecera?.caratulado || '-',
+                                tribunal: data.cabecera?.juzgado || '-',
+                                fechaIngreso: data.cabecera?.fecha_ingreso || '-',
+                                estado: data.estado_actual?.estado || 'EN_TRAMITE',
+                                movimientos: movs,
+                                totalPdfs: movs.filter(m => m.tiene_pdf_azul || m.tiene_pdf_rojo).length,
+                                tieneEbook: !!data.ebook,
+                                ebook: data.ebook || null,
+                                cuadernos: data.cuadernos || null
+                            };
+                            
+                            causasCargadas.push(causa);
+                        }
+                    } catch (error) {
+                        console.warn(`No se pudo cargar ${archivo}:`, error.message);
+                    }
+                }
+                
+                if (causasCargadas.length > 0) {
+                    // Combinar con datos estáticos (mantener los que no se cargaron)
+                    const ritsCargados = new Set(causasCargadas.map(c => c.rit));
+                    const causasEstaticas = causasGuardadas.filter(c => !ritsCargados.has(c.rit));
+                    
+                    causasGuardadas.length = 0;
+                    causasGuardadas.push(...causasCargadas, ...causasEstaticas);
+                    
+                    renderizarCausasGuardadas();
+                    console.log(`✅ Cargadas ${causasCargadas.length} causas desde JSON`);
+                }
+            } catch (error) {
+                console.log('Usando datos estáticos (no se pudieron cargar JSON):', error.message);
+            }
+        }
+
+        /**
+         * Carga los datos de causas desde la API
+         * En producción, reemplazaría los datos estáticos
+         */
+        async function cargarCausasDesdeAPI() {
+            try {
+                const response = await fetch('/api/scraping/listar');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Actualizar causasGuardadas con datos de la API
+                    console.log('Datos cargados desde API:', data);
+                }
+            } catch (error) {
+                console.log('Usando datos locales (API no disponible)');
+            }
+        }
+
+        // Inicializar
+        $(document).ready(function() {
+            renderizarCausasGuardadas();
+            setupModalFiltersAndPagination();
+            cargarCausasDesdeJSON(); // Cargar datos reales desde JSON
+            // cargarCausasDesdeAPI(); // Descomentar en producción
+        });
+    </script>
+</body>
+</html>

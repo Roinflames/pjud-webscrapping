@@ -1,13 +1,10 @@
 {
-  "rit": "16707-2019",
+  "rit": "3030-2017",
   "competencia": "3",
-  "corte": "90",
-  "tribunal": "276",
+  "corte": "30",
+  "tribunal": "61",
   "tipoCausa": "C",
-  "cliente": "Carlos Domingo Gutierrez Ramos",
-  "rut": "8.462.961-8",
-  "caratulado": "27 Juzgado Civil de Santiago",
-  "abogado": "Tatiana Gonzalez",
-  "juzgado": "Promotora CMR Falabella",
-  "folio": "20212"
+  "caratulado": "CCAF LOS ANDES/SÁNCHEZ",
+  "tribunal_nombre": "3º Juzgado Civil de Viña del Mar",
+  "corte_nombre": "C.A. de Valparaíso"
 }

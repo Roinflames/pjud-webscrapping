@@ -440,6 +440,7 @@
             <button class="nav-tab" data-section="servidor">🌐 Servidor</button>
             <button class="nav-tab" data-section="scraping">🕷️ Scraping</button>
             <button class="nav-tab" data-section="database">🗄️ Base de Datos</button>
+            <button class="nav-tab" data-section="git">🔀 Git & Versiones</button>
             <button class="nav-tab" data-section="testing">🧪 Testing</button>
             <button class="nav-tab" data-section="tools">🔧 Herramientas</button>
             <button class="nav-tab" data-section="urls">🔗 URLs</button>
@@ -1067,6 +1068,365 @@ npm run api:start</code>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Git & Versiones -->
+        <section class="section" id="git">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🔀</span> Comandos Git Comunes</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver estado actual</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git status</code>
+                            <button class="copy-btn" onclick="copyCommand('git status')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Muestra el estado del repositorio: archivos modificados, nuevos, y en qué rama estás.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver todas las ramas</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git branch -a</code>
+                            <button class="copy-btn" onclick="copyCommand('git branch -a')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista todas las ramas locales y remotas del proyecto.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Cambiar de rama</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git checkout nombre-rama</code>
+                            <button class="copy-btn" onclick="copyCommand('git checkout nombre-rama')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Cambia a otra rama. Ejemplo: <code>git checkout front-estable</code>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver historial de commits</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git log --oneline -10</code>
+                            <button class="copy-btn" onclick="copyCommand('git log --oneline -10')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Muestra los últimos 10 commits en formato resumido (una línea por commit).
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver todos los tags (versiones)</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git tag -l</code>
+                            <button class="copy-btn" onclick="copyCommand('git tag -l')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista todas las versiones etiquetadas del proyecto.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Agregar cambios al staging</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git add .</code>
+                            <button class="copy-btn" onclick="copyCommand('git add .')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Agrega todos los archivos modificados al área de staging (preparación para commit).
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Hacer commit de cambios</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git commit -m "Mensaje descriptivo"</code>
+                            <button class="copy-btn" onclick="copyCommand('git commit -m "Mensaje descriptivo"')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Guarda los cambios en el historial con un mensaje descriptivo.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Subir cambios al remoto</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git push origin nombre-rama</code>
+                            <button class="copy-btn" onclick="copyCommand('git push origin nombre-rama')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Sube los commits de la rama al repositorio remoto (GitHub). Ejemplo: <code>git push origin front-estable</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🌿</span> Ramas del Proyecto</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Rama</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>front-estable</code></td>
+                                <td>Versión estable con implementación completa de cuadernos y mejoras del frontend</td>
+                                <td><span class="status success">✅ Activa</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>diegogo-test</code></td>
+                                <td>Rama de desarrollo y pruebas</td>
+                                <td><span class="status info">🔄 Desarrollo</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>main</code></td>
+                                <td>Rama principal del proyecto</td>
+                                <td><span class="status info">📦 Producción</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>feature/exportar-pdf-json</code></td>
+                                <td>Feature para exportar PDFs en formato JSON</td>
+                                <td><span class="status warning">⚠️ Feature</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📌</span> Versiones Etiquetadas (Tags)</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Tag</th>
+                                <th>Commit</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>v1.0.0-front-estable</code></td>
+                                <td><code>e5e4dd5</code></td>
+                                <td>Versión estable: Implementación completa de cuadernos, tabla completa con todas las columnas, frontend mejorado con selector de cuaderno</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📜</span> Commits Importantes</h3>
+                </div>
+                <div class="card-body">
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Commit</th>
+                                <th>Mensaje</th>
+                                <th>Archivos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>e5e4dd5</code></td>
+                                <td>feat: Implementación completa de cuadernos y mejora del frontend</td>
+                                <td>36 archivos (8466 inserciones, 523 eliminaciones)</td>
+                            </tr>
+                            <tr>
+                                <td><code>808a21d</code></td>
+                                <td>Versiòn con problemas de descarga PDF</td>
+                                <td>Versión anterior con problemas conocidos</td>
+                            </tr>
+                            <tr>
+                                <td><code>a776d97</code></td>
+                                <td>FIX MVP movimientos causas</td>
+                                <td>Corrección de movimientos en MVP</td>
+                            </tr>
+                            <tr>
+                                <td><code>22bae10</code></td>
+                                <td>feat: Primera versión estable 0.0.1 - Vista MVP completa</td>
+                                <td>Primera versión estable del MVP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">⏮️</span> Cómo Volver a una Versión Anterior</h3>
+                </div>
+                <div class="card-body">
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opción 1: Volver a una rama específica</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git checkout front-estable</code>
+                            <button class="copy-btn" onclick="copyCommand('git checkout front-estable')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Cambia a la rama <code>front-estable</code> que contiene la versión estable más reciente.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opción 2: Volver a un tag (versión específica)</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git checkout v1.0.0-front-estable</code>
+                            <button class="copy-btn" onclick="copyCommand('git checkout v1.0.0-front-estable')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Vuelve a la versión etiquetada <code>v1.0.0-front-estable</code>. Esto te dejará en estado "detached HEAD".
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opción 3: Crear nueva rama desde un tag</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git checkout -b recuperacion v1.0.0-front-estable</code>
+                            <button class="copy-btn" onclick="copyCommand('git checkout -b recuperacion v1.0.0-front-estable')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Crea una nueva rama llamada "recuperacion" desde el tag, permitiéndote trabajar sobre esa versión.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opción 4: Volver a un commit específico</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git checkout e5e4dd5</code>
+                            <button class="copy-btn" onclick="copyCommand('git checkout e5e4dd5')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Vuelve al commit específico <code>e5e4dd5</code> (versión estable actual). Reemplaza con el hash del commit que necesites.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opción 5: Resetear a un commit (⚠️ CUIDADO: pierde cambios)</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git reset --hard e5e4dd5</code>
+                            <button class="copy-btn" onclick="copyCommand('git reset --hard e5e4dd5')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            <strong>⚠️ ADVERTENCIA:</strong> Este comando elimina todos los cambios no guardados y resetea el repositorio al commit especificado. Úsalo solo si estás seguro.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver detalles de un commit</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git show e5e4dd5</code>
+                            <button class="copy-btn" onclick="copyCommand('git show e5e4dd5')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Muestra información detallada del commit: autor, fecha, mensaje y archivos modificados.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Ver qué archivos cambió un commit</span>
+                            <span class="command-badge shell">git</span>
+                        </div>
+                        <div class="command-code">
+                            <code>git show --stat e5e4dd5</code>
+                            <button class="copy-btn" onclick="copyCommand('git show --stat e5e4dd5')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Muestra un resumen estadístico de los archivos modificados en el commit (cuántas líneas agregadas/eliminadas).
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">💾</span> Información de Respaldo</h3>
+                </div>
+                <div class="card-body">
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--secondary); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <h4 style="color: var(--secondary); margin-bottom: 10px;">✅ Versión Estable Actual</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 8px 0;"><strong>Rama:</strong> <code>front-estable</code></li>
+                            <li style="margin: 8px 0;"><strong>Commit:</strong> <code>e5e4dd5</code></li>
+                            <li style="margin: 8px 0;"><strong>Tag:</strong> <code>v1.0.0-front-estable</code></li>
+                            <li style="margin: 8px 0;"><strong>Remoto:</strong> <code>origin/front-estable</code></li>
+                            <li style="margin: 8px 0;"><strong>Archivos:</strong> 36 archivos (8466 inserciones, 523 eliminaciones)</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px;">
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">📋 Características de esta versión</h4>
+                        <ul style="list-style: disc; padding-left: 20px; margin: 0;">
+                            <li>Módulo <code>cuadernos.js</code> para extraer movimientos por cuaderno con <code>id_pagina</code></li>
+                            <li>Tabla completa con todas las columnas (Folio, Doc, Anexo, Etapa, Trámite, Desc, Fecha, Foja, Georref)</li>
+                            <li>Frontend <code>demo.html</code> con misma estructura que <code>/movimientos</code></li>
+                            <li>Selector de Cuaderno con filtrado por <code>id_cuaderno</code></li>
+                            <li>Descarga de PDFs por cuaderno con base64</li>
+                            <li>Sistema completo de <code>id_pagina</code> e <code>id_cuaderno</code> para mostrar movimientos tal cual en PJUD</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>

@@ -46,6 +46,10 @@ app.set('views', path.join(__dirname, 'views'));
 const scrapingRouter = require('./scraping-api');
 const mvpRouter = require('./mvp-api');
 const erpRouter = require('./erp-api');
+const dashboardRouter = require('./dashboard-api');
+const causasRouter = require('./causas-api');
+const movimientosRouter = require('./movimientos-api');
+const pdfsRouter = require('./pdfs-api');
 
 // Cargar datos de tribunales
 const TRIBUNALES_FILE = path.resolve(__dirname, '../outputs/tribunales_pjud_ids.json');
@@ -95,6 +99,12 @@ try {
 app.use('/api/scraping', scrapingRouter);
 app.use('/api/mvp', mvpRouter);
 app.use('/api/erp', erpRouter);
+app.use('/api/dashboard', dashboardRouter);
+
+// Rutas REST de datos desde BD
+app.use('/api/causas', causasRouter);
+app.use('/api/movimientos', movimientosRouter);
+app.use('/api/pdfs', pdfsRouter);
 
 // ============================================
 // ENDPOINTS DE PDFs DESDE BASE DE DATOS
@@ -742,9 +752,27 @@ if (require.main === module) {
     console.log(`   GET  /api/scraping/listar         - Listar RITs procesados (requiere token)`);
     console.log(`   DELETE /api/scraping/resultado/:rit - Eliminar resultado (requiere token)`);
     console.log(`   GET  /api/scraping/pdf/:rit/:archivo - Servir PDF directamente (sin autenticación)`);
-    console.log(`       Ejemplo: /api/scraping/pdf/16707-2019/16707_2019_mov_7_rojo.pdf`);
-    console.log(`       O: /api/scraping/pdf/16707-2019/mov/7/rojo`);
-    console.log('\n💡 Para obtener el token por defecto, verifica el archivo storage/tokens.json');
+    console.log(`\n📋 Endpoints REST de Causas (desde BD):`);
+    console.log(`   GET  /api/causas                    - Listar causas (con filtros y paginación)`);
+    console.log(`   GET  /api/causas/:rit               - Obtener causa por RIT`);
+    console.log(`   GET  /api/causas/:rit/completa      - Causa completa con movimientos y PDFs`);
+    console.log(`   GET  /api/causas/:rit/movimientos   - Movimientos de una causa`);
+    console.log(`   GET  /api/causas/:rit/pdfs          - PDFs de una causa`);
+    console.log(`   GET  /api/causas/:rit/ebook         - eBook de una causa`);
+    console.log(`\n📋 Endpoints REST de Movimientos (desde BD):`);
+    console.log(`   GET  /api/movimientos               - Listar movimientos (con filtros)`);
+    console.log(`   GET  /api/movimientos/:id           - Obtener movimiento por ID`);
+    console.log(`   GET  /api/movimientos/:id/pdfs      - PDFs de un movimiento`);
+    console.log(`\n📋 Endpoints REST de PDFs (desde BD):`);
+    console.log(`   GET  /api/pdfs                      - Listar PDFs (con filtros)`);
+    console.log(`   GET  /api/pdfs/:id/metadata         - Metadata de un PDF`);
+    console.log(`   GET  /api/pdf/:id                   - Descargar PDF (archivo binario)`);
+    console.log(`   GET  /api/pdf/:id/base64            - PDF en base64`);
+    console.log(`\n📋 Endpoints de Dashboard:`);
+    console.log(`   GET  /api/dashboard/estadisticas     - Estadísticas para abogados`);
+    console.log(`   GET  /api/dashboard/movimientos-nuevos - Causas con movimientos nuevos`);
+    console.log(`   POST /api/dashboard/verificar-movimientos/:rit - Verificar y notificar`);
+    console.log(`\n💡 Para obtener el token por defecto, verifica el archivo storage/tokens.json`);
     console.log('='.repeat(60) + '\n');
   });
 }

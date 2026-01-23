@@ -777,6 +777,194 @@ async function getEstadisticas() {
   };
 }
 
+/**
+ * Obtiene estadísticas relevantes para abogados
+ */
+async function getEstadisticasAbogados() {
+  const stats = {
+    total_causas: 0,
+    causas_en_tramite: 0,
+    causas_terminadas: 0,
+    total_movimientos: 0,
+    movimientos_ultimos_7_dias: 0,
+    movimientos_ultimos_30_dias: 0,
+    causas_con_movimientos_nuevos: 0,
+    total_pdfs: 0,
+    pdfs_pendientes_descarga: 0,
+    causas_sin_scraping: 0,
+    ultimo_scraping: null
+  };
+
+  try {
+    // Total causas
+    const totalCausas = await query('SELECT COUNT(*) as total FROM causas');
+    stats.total_causas = totalCausas[0]?.total || 0;
+
+    // Causas en trámite vs terminadas
+    const estados = await query(`
+      SELECT estado, COUNT(*) as total 
+      FROM causas 
+      GROUP BY estado
+    `);
+    estados.forEach(e => {
+      if (e.estado === 'EN_TRAMITE') stats.causas_en_tramite = e.total;
+      if (e.estado === 'TERMINADA') stats.causas_terminadas = e.total;
+    });
+
+    // Total movimientos
+    const totalMovs = await query('SELECT COUNT(*) as total FROM movimientos');
+    stats.total_movimientos = totalMovs[0]?.total || 0;
+
+    // Movimientos últimos 7 días (solo si fecha_parsed no es NULL)
+    const movs7d = await query(`
+      SELECT COUNT(*) as total 
+      FROM movimientos 
+      WHERE fecha_parsed IS NOT NULL 
+      AND fecha_parsed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    `);
+    stats.movimientos_ultimos_7_dias = movs7d[0]?.total || 0;
+
+    // Movimientos últimos 30 días (solo si fecha_parsed no es NULL)
+    const movs30d = await query(`
+      SELECT COUNT(*) as total 
+      FROM movimientos 
+      WHERE fecha_parsed IS NOT NULL 
+      AND fecha_parsed >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    `);
+    stats.movimientos_ultimos_30_dias = movs30d[0]?.total || 0;
+
+    // Causas con movimientos nuevos (últimos 7 días)
+    const causasNuevas = await query(`
+      SELECT COUNT(DISTINCT m.causa_id) as total
+      FROM movimientos m
+      INNER JOIN causas c ON m.causa_id = c.id
+      WHERE m.fecha_parsed IS NOT NULL
+      AND m.fecha_parsed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      AND (c.fecha_ultimo_scraping IS NULL OR m.fecha_parsed > c.fecha_ultimo_scraping)
+    `);
+    stats.causas_con_movimientos_nuevos = causasNuevas[0]?.total || 0;
+
+    // Total PDFs
+    const totalPdfs = await query('SELECT COUNT(*) as total FROM pdfs');
+    stats.total_pdfs = totalPdfs[0]?.total || 0;
+
+    // PDFs pendientes de descarga
+    const pdfsPendientes = await query(`
+      SELECT COUNT(*) as total 
+      FROM movimientos 
+      WHERE tiene_pdf = 1 AND pdf_descargado = 0
+    `);
+    stats.pdfs_pendientes_descarga = pdfsPendientes[0]?.total || 0;
+
+    // Causas sin scraping
+    const sinScraping = await query(`
+      SELECT COUNT(*) as total 
+      FROM causas 
+      WHERE fecha_ultimo_scraping IS NULL OR scraping_exitoso = 0
+    `);
+    stats.causas_sin_scraping = sinScraping[0]?.total || 0;
+
+    // Último scraping
+    const ultimoScraping = await query(`
+      SELECT MAX(fecha_ultimo_scraping) as ultimo 
+      FROM causas 
+      WHERE fecha_ultimo_scraping IS NOT NULL
+    `);
+    stats.ultimo_scraping = ultimoScraping[0]?.ultimo || null;
+
+    return stats;
+  } catch (error) {
+    console.error('Error obteniendo estadísticas de abogados:', error);
+    // Retornar stats con valores por defecto en caso de error
+    return stats;
+  }
+}
+
+/**
+ * Detecta movimientos nuevos en una causa (desde el último scraping)
+ */
+async function detectarMovimientosNuevos(rit) {
+  try {
+    const causa = await getCausaByRit(rit);
+    if (!causa) return { tieneNuevos: false, movimientos: [], error: 'Causa no encontrada' };
+
+    // Obtener todos los movimientos de la causa
+    const movimientos = await getMovimientosByCausa(causa.id);
+    
+    // Si no hay fecha de último scraping, considerar todos como nuevos
+    if (!causa.fecha_ultimo_scraping) {
+      return { tieneNuevos: movimientos.length > 0, movimientos, totalMovimientos: movimientos.length };
+    }
+
+    // Filtrar movimientos más recientes que el último scraping
+    const fechaUltimoScraping = new Date(causa.fecha_ultimo_scraping);
+    const movimientosNuevos = movimientos.filter(mov => {
+      if (!mov.fecha_parsed) return false;
+      try {
+        const fechaMov = new Date(mov.fecha_parsed);
+        return !isNaN(fechaMov.getTime()) && fechaMov > fechaUltimoScraping;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    return {
+      tieneNuevos: movimientosNuevos.length > 0,
+      movimientos: movimientosNuevos,
+      totalMovimientos: movimientos.length,
+      fechaUltimoScraping: causa.fecha_ultimo_scraping
+    };
+  } catch (error) {
+    console.error(`Error detectando movimientos nuevos para ${rit}:`, error);
+    return { tieneNuevos: false, movimientos: [], error: error.message };
+  }
+}
+
+/**
+ * Obtiene todas las causas con movimientos nuevos
+ */
+async function getCausasConMovimientosNuevos() {
+  try {
+    const causas = await query(`
+      SELECT DISTINCT c.*
+      FROM causas c
+      INNER JOIN movimientos m ON c.id = m.causa_id
+      WHERE m.fecha_parsed IS NOT NULL
+      AND (c.fecha_ultimo_scraping IS NULL OR m.fecha_parsed > c.fecha_ultimo_scraping)
+      AND m.fecha_parsed >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      ORDER BY m.fecha_parsed DESC
+    `);
+
+    const causasConDetalle = [];
+    for (const causa of causas) {
+      try {
+        const deteccion = await detectarMovimientosNuevos(causa.rit);
+        if (deteccion.tieneNuevos && !deteccion.error) {
+          causasConDetalle.push({
+            causa: {
+              rit: causa.rit,
+              caratulado: causa.caratulado,
+              tribunal_nombre: causa.tribunal_nombre,
+              estado: causa.estado,
+              etapa: causa.etapa
+            },
+            movimientosNuevos: deteccion.movimientos,
+            totalNuevos: deteccion.movimientos.length
+          });
+        }
+      } catch (error) {
+        console.error(`Error procesando causa ${causa.rit}:`, error);
+        // Continuar con la siguiente causa
+      }
+    }
+
+    return causasConDetalle;
+  } catch (error) {
+    console.error('Error obteniendo causas con movimientos nuevos:', error);
+    return [];
+  }
+}
+
 module.exports = {
   // Conexión
   getPool,
@@ -818,5 +1006,8 @@ module.exports = {
   listarCausas,
   
   // Utilidades
-  getEstadisticas
+  getEstadisticas,
+  getEstadisticasAbogados,
+  detectarMovimientosNuevos,
+  getCausasConMovimientosNuevos
 };

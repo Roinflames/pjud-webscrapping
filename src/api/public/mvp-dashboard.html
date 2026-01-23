@@ -94,6 +94,16 @@
         .badge-warning { background: #fef3c7; color: #92400e; }
         .badge-info { background: #dbeafe; color: #1e40af; }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .filters-panel {
             background: white;
             border-radius: 8px;
@@ -112,30 +122,60 @@
     </div>
 
     <div class="container">
-        <!-- Estadísticas -->
+        <!-- Estadísticas para Abogados -->
         <div class="row" id="statsContainer">
             <div class="col-md-3">
                 <div class="stat-card success">
                     <div class="stat-label">Total Causas</div>
                     <div class="stat-value" id="statTotal">-</div>
+                    <small class="text-muted" id="statTotalDetalle"></small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card info">
-                    <div class="stat-label">Causas Válidas</div>
-                    <div class="stat-value" id="statValidas">-</div>
+                    <div class="stat-label">En Trámite</div>
+                    <div class="stat-value" id="statEnTramite">-</div>
+                    <small class="text-muted">Activas</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card warning">
-                    <div class="stat-label">Resultados</div>
-                    <div class="stat-value" id="statResultados">-</div>
+                    <div class="stat-label">Movimientos Nuevos</div>
+                    <div class="stat-value" id="statMovimientosNuevos">-</div>
+                    <small class="text-muted" id="statMovimientosNuevosDetalle">Últimos 7 días</small>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card danger">
-                    <div class="stat-label">Límite Diario</div>
-                    <div class="stat-value" id="statLimite">-</div>
+                    <div class="stat-label">PDFs Pendientes</div>
+                    <div class="stat-value" id="statPdfsPendientes">-</div>
+                    <small class="text-muted">Por descargar</small>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3" id="statsContainer2">
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #8b5cf6;">
+                    <div class="stat-label">Movimientos (7 días)</div>
+                    <div class="stat-value" id="statMovs7d" style="color: #8b5cf6;">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #06b6d4;">
+                    <div class="stat-label">Movimientos (30 días)</div>
+                    <div class="stat-value" id="statMovs30d" style="color: #06b6d4;">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #f59e0b;">
+                    <div class="stat-label">Causas Sin Scraping</div>
+                    <div class="stat-value" id="statSinScraping" style="color: #f59e0b;">-</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #10b981;">
+                    <div class="stat-label">Total PDFs</div>
+                    <div class="stat-value" id="statTotalPdfs" style="color: #10b981;">-</div>
                 </div>
             </div>
         </div>
@@ -199,6 +239,9 @@
                     </button>
                     <button class="btn btn-warning btn-action" onclick="mostrarFiltros()">
                         <i class="fa fa-filter"></i> Filtrar Causas
+                    </button>
+                    <button class="btn btn-info btn-action" onclick="verificarTodasLasCausas()">
+                        <i class="fa fa-bell"></i> Verificar Movimientos Nuevos
                     </button>
                     <a href="/demo" class="btn btn-secondary btn-action" target="_blank">
                         <i class="fa fa-eye"></i> Ver Demo
@@ -438,17 +481,22 @@
                     <td>${causa.abogado_id || '-'}</td>
                     <td>${estadoBadge}</td>
                     <td>
-                        ${causa.tieneMovimientos ? `
-                            <button class="btn btn-sm btn-success" onclick="verMovimientos('${causa.rit}')" title="Ver movimientos">
-                                <i class="fa fa-list"></i> Movimientos
-                            </button>
-                        ` : causa.valida ? `
-                            <button class="btn btn-sm btn-primary" onclick="ejecutarScraping('${causa.rit}')" title="Ejecutar scraping">
-                                <i class="fa fa-play"></i> Procesar
-                            </button>
-                        ` : `
-                            <span class="text-muted small">Datos incompletos</span>
-                        `}
+                        <div class="btn-group" role="group">
+                            ${causa.tieneMovimientos ? `
+                                <button class="btn btn-sm btn-success" onclick="verMovimientos('${causa.rit}')" title="Ver movimientos">
+                                    <i class="fa fa-list"></i>
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="verificarMovimientosNuevos('${causa.rit}')" title="Verificar movimientos nuevos">
+                                    <i class="fa fa-bell"></i>
+                                </button>
+                            ` : causa.valida ? `
+                                <button class="btn btn-sm btn-primary" onclick="ejecutarScraping('${causa.rit}')" title="Ejecutar scraping">
+                                    <i class="fa fa-play"></i> Procesar
+                                </button>
+                            ` : `
+                                <span class="text-muted small">Datos incompletos</span>
+                            `}
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(row);

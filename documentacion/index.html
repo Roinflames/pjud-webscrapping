@@ -441,6 +441,8 @@
             <button class="nav-tab active" data-section="quick">⚡ Acceso Rápido</button>
             <button class="nav-tab" data-section="scraping">🕷️ Scraping</button>
             <button class="nav-tab" data-section="frontend">🖥️ Frontend</button>
+            <button class="nav-tab" data-section="dashboard">📊 Dashboard</button>
+            <button class="nav-tab" data-section="api">🔌 API REST</button>
             <button class="nav-tab" data-section="servidor">🌐 Servidor</button>
             <button class="nav-tab" data-section="database">🗄️ Base de Datos</button>
             <button class="nav-tab" data-section="git">🔀 Git & Versiones</button>
@@ -541,6 +543,86 @@
                                 <td>Tabla movimientos actualizada con campos de cuaderno</td>
                                 <td>Almacenar información de cuadernos en BD</td>
                             </tr>
+                            <tr>
+                                <td><code>src/api/public/demo.html</code></td>
+                                <td>Modal con pestañas (eBook, Demanda, Historia, Estados)</td>
+                                <td>Estructura igual al PJUD con secciones separadas</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/public/demo.html</code></td>
+                                <td>Paleta de colores institucionales (azul marino, rojo, crema)</td>
+                                <td>Estilo profesional y formal</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/public/demo.html</code></td>
+                                <td>"Actuación Receptor" se muestra en rojo en trámite</td>
+                                <td>Destacar movimientos importantes para abogados</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/public/mvp-dashboard.html</code></td>
+                                <td>Dashboard funcional con estadísticas para abogados</td>
+                                <td>Métricas relevantes: causas, movimientos, PDFs pendientes</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/dashboard-api.js</code></td>
+                                <td>API de dashboard con endpoints de estadísticas</td>
+                                <td>Proveer datos para el dashboard</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/database/db-mariadb.js</code></td>
+                                <td>Funciones: getEstadisticasAbogados, detectarMovimientosNuevos</td>
+                                <td>Detección de movimientos nuevos y estadísticas</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/utils/email.js</code></td>
+                                <td>Módulo de notificaciones por email</td>
+                                <td>Enviar emails cuando hay movimientos nuevos</td>
+                            </tr>
+                            <tr>
+                                <td><code>package.json</code></td>
+                                <td>Agregado nodemailer para envío de emails</td>
+                                <td>Soporte para notificaciones automáticas</td>
+                            </tr>
+                            <tr>
+                                <td><code>docs/CONFIGURACION_EMAIL.md</code></td>
+                                <td>Documentación de configuración SMTP</td>
+                                <td>Guía para configurar envío de emails</td>
+                            </tr>
+                            <tr>
+                                <td><code>docs/ERRORES_CORREGIDOS.md</code></td>
+                                <td>Documentación de errores corregidos</td>
+                                <td>Lista de errores identificados y solucionados</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/causas-api.js</code></td>
+                                <td>Nuevo router REST para endpoints de causas</td>
+                                <td>API REST para consultar causas desde BD</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/movimientos-api.js</code></td>
+                                <td>Nuevo router REST para endpoints de movimientos</td>
+                                <td>API REST para consultar movimientos desde BD</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/pdfs-api.js</code></td>
+                                <td>Nuevo router REST para endpoints de PDFs</td>
+                                <td>API REST para consultar PDFs desde BD</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/server.js</code></td>
+                                <td>Registro de nuevos routers REST (causas, movimientos, pdfs)</td>
+                                <td>Integración de endpoints REST en servidor principal</td>
+                            </tr>
+                            <tr>
+                                <td><code>docs/API_REST.md</code></td>
+                                <td>Documentación completa de API REST</td>
+                                <td>Guía con todos los endpoints, ejemplos curl y Postman</td>
+                            </tr>
+                            <tr>
+                                <td><code>docs/postman_collection.json</code></td>
+                                <td>Colección Postman lista para importar</td>
+                                <td>Facilita pruebas de endpoints desde Postman</td>
+                            </tr>
                         </tbody>
                     </table>
 
@@ -632,7 +714,7 @@
                             <tr>
                                 <td><a href="http://localhost:3000/mvp" target="_blank" style="color: var(--primary);">localhost:3000/mvp</a></td>
                                 <td><strong>Dashboard MVP</strong></td>
-                                <td>Panel de control con estadísticas y métricas del sistema.</td>
+                                <td>Panel de control funcional con estadísticas para abogados: causas en trámite, movimientos nuevos, PDFs pendientes, y sistema de notificaciones por email.</td>
                             </tr>
                             <tr>
                                 <td><a href="http://localhost:3000/" target="_blank" style="color: var(--primary);">localhost:3000/</a></td>
@@ -781,7 +863,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Trámite</strong></td>
-                                <td>Tipo de trámite realizado</td>
+                                <td>Tipo de trámite realizado. <strong style="color: #c62828;">"Actuación Receptor" se muestra en rojo</strong> para destacar su importancia</td>
                             </tr>
                             <tr>
                                 <td><strong>Descripción</strong></td>
@@ -960,6 +1042,338 @@ npm run api:start</code>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Dashboard -->
+        <section class="section" id="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📊</span> Dashboard Funcional para Abogados</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        Dashboard completo con estadísticas relevantes para abogados y sistema de notificaciones automáticas por email.
+                    </p>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📈 Métricas Principales:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--success);">
+                            <h5 style="color: var(--success); margin-bottom: 8px;">Total Causas</h5>
+                            <p style="margin: 0; font-size: 0.9rem;">Cantidad total de causas en el sistema con desglose de terminadas</p>
+                        </div>
+                        <div style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--info);">
+                            <h5 style="color: var(--info); margin-bottom: 8px;">Causas en Trámite</h5>
+                            <p style="margin: 0; font-size: 0.9rem;">Causas activas actualmente en proceso</p>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--warning);">
+                            <h5 style="color: var(--warning); margin-bottom: 8px;">Movimientos Nuevos</h5>
+                            <p style="margin: 0; font-size: 0.9rem;">Causas con movimientos nuevos en los últimos 7 días</p>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--danger);">
+                            <h5 style="color: var(--danger); margin-bottom: 8px;">PDFs Pendientes</h5>
+                            <p style="margin: 0; font-size: 0.9rem;">PDFs que aún no se han descargado</p>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📊 Métricas Secundarias:</h4>
+                    <ul style="list-style: disc; padding-left: 25px; line-height: 1.8;">
+                        <li><strong>Movimientos últimos 7 días:</strong> Actividad reciente del sistema</li>
+                        <li><strong>Movimientos últimos 30 días:</strong> Actividad del último mes</li>
+                        <li><strong>Causas sin scraping:</strong> Causas que requieren procesamiento</li>
+                        <li><strong>Total PDFs:</strong> Documentos descargados y almacenados</li>
+                    </ul>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔔 Sistema de Notificaciones por Email:</h4>
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 10px; font-size: 0.9rem;">
+                            El sistema detecta automáticamente movimientos nuevos en el PJUD y envía notificaciones por email a los clientes.
+                        </p>
+                        <ul style="list-style: disc; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Detección automática:</strong> Compara movimientos con fecha de último scraping</li>
+                            <li><strong>Email HTML:</strong> Plantilla profesional con información de la causa</li>
+                            <li><strong>Links directos:</strong> Enlaces al detalle completo de la causa</li>
+                            <li><strong>Configuración SMTP:</strong> Soporta Gmail, Outlook, SendGrid, etc.</li>
+                        </ul>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔧 Endpoints API:</h4>
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Obtener estadísticas</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/dashboard/estadisticas</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/dashboard/estadisticas')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Retorna todas las estadísticas relevantes para abogados en formato JSON.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Causas con movimientos nuevos</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/dashboard/movimientos-nuevos</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/dashboard/movimientos-nuevos')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista todas las causas que tienen movimientos nuevos desde el último scraping.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Verificar y notificar movimientos</span>
+                            <span class="command-badge api">POST</span>
+                        </div>
+                        <div class="command-code">
+                            <code>POST /api/dashboard/verificar-movimientos/:rit</code>
+                            <button class="copy-btn" onclick="copyCommand('curl -X POST http://localhost:3000/api/dashboard/verificar-movimientos/C-571-2018 -H \"Content-Type: application/json\" -d \'{\"email_cliente\":\"cliente@ejemplo.com\",\"nombre_cliente\":\"Juan Pérez\"}\'')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Verifica movimientos nuevos en una causa específica y envía email de notificación si los hay.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Verificar todas las causas</span>
+                            <span class="command-badge api">POST</span>
+                        </div>
+                        <div class="command-code">
+                            <code>POST /api/dashboard/verificar-todas</code>
+                            <button class="copy-btn" onclick="copyCommand('curl -X POST http://localhost:3000/api/dashboard/verificar-todas')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Verifica todas las causas y envía notificaciones por email de movimientos nuevos.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">⚙️ Configuración de Email:</h4>
+                    <p style="margin-bottom: 10px; color: var(--text-secondary);">
+                        Para habilitar el envío de emails, configura las variables SMTP en tu archivo <code>.env</code>:
+                    </p>
+                    <div style="background: var(--bg-code); padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-bottom: 15px;">
+                        <code>
+SMTP_HOST=smtp.gmail.com<br>
+SMTP_PORT=587<br>
+SMTP_USER=tu-email@gmail.com<br>
+SMTP_PASS=tu-contraseña<br>
+SMTP_FROM=noreply@tudominio.com<br>
+APP_URL=http://localhost:3000
+                        </code>
+                    </div>
+                    <p style="margin-top: 15px; font-size: 0.85rem; color: var(--text-secondary);">
+                        📖 Ver documentación completa en <code>docs/CONFIGURACION_EMAIL.md</code>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🎨</span> Características Visuales</h3>
+                </div>
+                <div class="card-body">
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🎨 Paleta de Colores Institucionales:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #1a237e; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>Azul Marino</strong><br>
+                            <small>#1a237e</small>
+                        </div>
+                        <div style="background: #c62828; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <strong>Rojo</strong><br>
+                            <small>#c62828</small>
+                        </div>
+                        <div style="background: #f5e6d3; color: #5d4037; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e8d5b7;">
+                            <strong>Crema Otoñal</strong><br>
+                            <small>#f5e6d3</small>
+                        </div>
+                        <div style="background: #ffffff; color: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e0e0e0;">
+                            <strong>Blanco</strong><br>
+                            <small>#ffffff</small>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔴 Destacado Especial:</h4>
+                    <p style="margin-bottom: 10px; color: var(--text-secondary);">
+                        Los movimientos con trámite <strong>"Actuación Receptor"</strong> se muestran automáticamente en <span style="color: #c62828; font-weight: 600;">rojo y negrita</span> para destacar su importancia.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: API REST -->
+        <section class="section" id="api">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🔌</span> API REST - Consumo de Datos</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        API REST completa para consumir datos desde la base de datos. Todos los endpoints son públicos y retornan JSON.
+                    </p>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📋 Endpoints de Causas:</h4>
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Listar causas</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/causas?limit=50&offset=0&estado=EN_TRAMITE</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/causas?limit=10')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista todas las causas con paginación y filtros opcionales (estado, tribunal, tiene_movimientos, tiene_pdfs).
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Obtener causa por RIT</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/causas/:rit</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/causas/C-571-2018')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene información completa de una causa específica por su RIT.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Causa completa con movimientos y PDFs</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/causas/:rit/completa</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/causas/C-571-2018/completa')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Retorna causa completa con movimientos, PDFs en base64, cuadernos y eBook.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Movimientos de una causa</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/causas/:rit/movimientos?limit=20&etapa=Ingreso</code>
+                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/causas/C-571-2018/movimientos?limit=10\"')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene movimientos de una causa con filtros opcionales (etapa, tiene_pdf).
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📋 Endpoints de Movimientos:</h4>
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Listar movimientos</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/movimientos?rit=C-571-2018&tiene_pdf=true&limit=50</code>
+                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/movimientos?rit=C-571-2018&limit=10\"')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista movimientos con filtros: rit, etapa, tiene_pdf, fecha_desde, fecha_hasta, cuaderno.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Obtener movimiento por ID</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/movimientos/:id</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/movimientos/1')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene un movimiento específico por su ID en la base de datos.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📋 Endpoints de PDFs:</h4>
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Listar PDFs</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/pdfs?rit=C-571-2018&tipo=PRINCIPAL</code>
+                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/pdfs?rit=C-571-2018\"')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Lista PDFs con filtros: rit, tipo (PRINCIPAL/ANEXO), movimiento_id.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Descargar PDF</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/pdf/:id</code>
+                            <button class="copy-btn" onclick="copyCommand('curl -O http://localhost:3000/api/pdf/1')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Descarga un PDF como archivo binario. Usa <code>-O</code> en curl para guardar con nombre original.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">PDF en Base64</span>
+                            <span class="command-badge api">GET</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/pdf/:id/base64</code>
+                            <button class="copy-btn" onclick="copyCommand('curl http://localhost:3000/api/pdf/1/base64')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene un PDF en formato base64 (JSON) para uso en frontend.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📚 Documentación Completa:</h4>
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 10px; font-size: 0.9rem;">
+                            <strong>📖 Ver documentación completa:</strong> <code>docs/API_REST.md</code>
+                        </p>
+                        <p style="margin: 0 0 10px; font-size: 0.9rem;">
+                            <strong>📮 Colección Postman:</strong> <code>docs/postman_collection.json</code>
+                        </p>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">
+                            Importa el archivo JSON en Postman para tener todos los endpoints listos para probar.
+                        </p>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">💡 Ejemplos de Uso:</h4>
+                    <div style="background: var(--bg-code); padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-bottom: 15px;">
+                        <code>
+# Obtener todas las causas en trámite<br>
+curl "http://localhost:3000/api/causas?estado=EN_TRAMITE&limit=10"<br><br>
+# Obtener movimientos con PDF de una causa<br>
+curl "http://localhost:3000/api/movimientos?rit=C-571-2018&tiene_pdf=true"<br><br>
+# Obtener estadísticas<br>
+curl http://localhost:3000/api/dashboard/estadisticas<br><br>
+# Descargar PDF<br>
+curl -o documento.pdf http://localhost:3000/api/pdf/1
+                        </code>
+                    </div>
                 </div>
             </div>
         </section>

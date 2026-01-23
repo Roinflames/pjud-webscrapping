@@ -12,44 +12,57 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ============================================
-           COLORIMETRÍA PERSONALIZADA
-           (Basada en PJUD pero con nuestros colores)
+           COLORIMETRÍA INSTITUCIONAL
+           Azul Marino, Rojo, Blanco y Crema Otoñal
            ============================================ */
         :root {
-            /* Colores principales */
-            --primary: #4f46e5;          /* Indigo - Principal */
-            --primary-dark: #3730a3;     /* Indigo oscuro */
-            --primary-light: #818cf8;    /* Indigo claro */
-            --secondary: #0ea5e9;        /* Cyan - Secundario */
-            --secondary-dark: #0284c7;
+            /* Colores principales institucionales */
+            --primary: #1a237e;          /* Azul marino oscuro */
+            --primary-dark: #0d47a1;     /* Azul marino muy oscuro */
+            --primary-light: #1565c0;    /* Azul marino claro */
+            --primary-accent: #1976d2;   /* Azul marino medio */
+            
+            --secondary: #c62828;        /* Rojo institucional */
+            --secondary-dark: #b71c1c;   /* Rojo oscuro */
+            --secondary-light: #d32f2f;  /* Rojo claro */
+            
+            /* Colores crema otoñal */
+            --cream-light: #f5e6d3;      /* Crema muy claro */
+            --cream: #e8d5b7;            /* Crema medio */
+            --cream-dark: #d4a574;       /* Crema oscuro */
+            --cream-accent: #c9a961;     /* Crema acento */
             
             /* Estados */
-            --success: #10b981;          /* Emerald */
-            --warning: #f59e0b;          /* Amber */
-            --danger: #ef4444;           /* Red */
-            --info: #06b6d4;             /* Cyan */
+            --success: #2e7d32;          /* Verde oscuro */
+            --warning: #f57c00;          /* Naranja */
+            --danger: #c62828;           /* Rojo (igual que secondary) */
+            --info: #1565c0;              /* Azul marino claro */
             
             /* Fondos */
-            --bg-page: #f8fafc;          /* Slate 50 */
-            --bg-card: #ffffff;
-            --bg-header: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-            --bg-sidebar: #1e1b4b;       /* Indigo 950 */
+            --bg-page: #faf8f5;          /* Crema muy claro (fondo página) */
+            --bg-card: #ffffff;          /* Blanco puro */
+            --bg-header: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
+            --bg-sidebar: #1a237e;       /* Azul marino */
+            --bg-cream: #f5e6d3;         /* Crema claro para fondos */
+            --bg-cream-light: #faf8f5;   /* Crema muy claro */
             
             /* Textos */
-            --text-primary: #1e293b;     /* Slate 800 */
-            --text-secondary: #64748b;   /* Slate 500 */
-            --text-muted: #94a3b8;       /* Slate 400 */
-            --text-light: #f8fafc;
+            --text-primary: #1a1a1a;     /* Negro suave */
+            --text-secondary: #424242;    /* Gris oscuro */
+            --text-muted: #757575;       /* Gris medio */
+            --text-light: #ffffff;       /* Blanco */
+            --text-on-cream: #5d4037;    /* Marrón para texto sobre crema */
             
             /* Bordes */
-            --border-color: #e2e8f0;     /* Slate 200 */
-            --border-light: #f1f5f9;     /* Slate 100 */
+            --border-color: #e0e0e0;     /* Gris claro */
+            --border-light: #f5f5f5;     /* Gris muy claro */
+            --border-cream: #e8d5b7;     /* Crema para bordes */
             
             /* Sombras */
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --shadow-sm: 0 1px 2px 0 rgba(26, 35, 126, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(26, 35, 126, 0.15);
+            --shadow-lg: 0 10px 15px -3px rgba(26, 35, 126, 0.2);
+            --shadow-xl: 0 20px 25px -5px rgba(26, 35, 126, 0.25);
         }
 
         * {
@@ -61,13 +74,15 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg-page);
+            background-image: linear-gradient(to bottom, var(--cream-light) 0%, var(--bg-page) 100%);
             color: var(--text-primary);
             font-size: 14px;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         /* ============================================
-           HEADER - Estilo PJUD adaptado
+           HEADER - Estilo Institucional
            ============================================ */
         .pjud-header {
             background: var(--bg-header);
@@ -77,12 +92,14 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            border-bottom: 3px solid var(--secondary);
         }
 
         .header-top {
-            background: rgba(0,0,0,0.15);
+            background: rgba(198, 40, 40, 0.2);  /* Rojo translúcido */
             padding: 8px 0;
             font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .header-top .container {
@@ -116,6 +133,7 @@
             align-items: center;
             justify-content: center;
             font-size: 24px;
+            border: 2px solid rgba(255,255,255,0.3);
         }
 
         .logo-text h1 {
@@ -138,13 +156,14 @@
         }
 
         .user-badge {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.2);
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 13px;
             display: flex;
             align-items: center;
             gap: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
         /* ============================================
@@ -193,7 +212,7 @@
            BREADCRUMB - Estilo PJUD
            ============================================ */
         .pjud-breadcrumb {
-            background: var(--bg-card);
+            background: var(--cream-light);
             padding: 12px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -202,6 +221,7 @@
             align-items: center;
             gap: 10px;
             font-size: 13px;
+            border-left: 4px solid var(--primary);
         }
 
         .pjud-breadcrumb a {
@@ -218,7 +238,7 @@
         }
 
         /* ============================================
-           FORMULARIO DE BÚSQUEDA - Estilo PJUD
+           FORMULARIO DE BÚSQUEDA - Estilo Institucional
            ============================================ */
         .search-card {
             background: var(--bg-card);
@@ -226,15 +246,17 @@
             box-shadow: var(--shadow-md);
             overflow: hidden;
             margin-bottom: 25px;
+            border: 1px solid var(--border-cream);
         }
 
         .search-card-header {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid var(--secondary);
         }
 
         .search-card-header h3 {
@@ -319,10 +341,12 @@
         .btn-pjud-primary {
             background: var(--primary);
             color: white;
+            border: 1px solid var(--primary-dark);
         }
 
         .btn-pjud-primary:hover {
             background: var(--primary-dark);
+            border-color: var(--primary);
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
         }
@@ -338,7 +362,7 @@
         }
 
         /* ============================================
-           TABLA DE RESULTADOS - Estilo PJUD
+           TABLA DE RESULTADOS - Estilo Institucional
            ============================================ */
         .results-card {
             background: var(--bg-card);
@@ -346,15 +370,17 @@
             box-shadow: var(--shadow-md);
             overflow: hidden;
             margin-bottom: 25px;
+            border: 1px solid var(--border-cream);
         }
 
         .results-card-header {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid var(--secondary);
         }
 
         .results-card-header h3 {
@@ -460,16 +486,16 @@
 
         /* Icono verde - eBook/Carpeta */
         .action-btn.btn-ebook {
-            background: #10b981;
+            background: var(--secondary);
             color: white;
         }
 
         .action-btn.btn-ebook:hover {
-            background: #059669;
+            background: var(--secondary-dark);
             transform: scale(1.1);
         }
 
-        /* Badges de estado */
+        /* Badges de estado - Colores institucionales */
         .status-badge {
             display: inline-block;
             padding: 4px 10px;
@@ -481,18 +507,21 @@
         }
 
         .status-badge.en-tramite {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: var(--cream);
+            color: var(--primary);
+            border: 1px solid var(--primary-light);
         }
 
         .status-badge.terminada {
-            background: #dcfce7;
-            color: #166534;
+            background: var(--cream-dark);
+            color: var(--secondary-dark);
+            border: 1px solid var(--secondary);
         }
 
         .status-badge.suspendida {
-            background: #fef3c7;
-            color: #92400e;
+            background: var(--cream-accent);
+            color: var(--text-on-cream);
+            border: 1px solid var(--cream-dark);
         }
 
         /* ============================================
@@ -505,9 +534,10 @@
         }
 
         .modal-pjud .modal-header {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
+            border-bottom: 3px solid var(--secondary);
             padding: 15px 20px;
         }
 
@@ -528,6 +558,42 @@
             overflow-y: auto;
         }
 
+        /* Pestañas dentro del modal */
+        .pjud-tabs {
+            background: var(--cream-light);
+            border-bottom: 3px solid var(--primary) !important;
+        }
+
+        .pjud-tabs .nav-link {
+            color: var(--text-secondary);
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pjud-tabs .nav-link:hover {
+            color: var(--primary);
+            background: var(--cream);
+        }
+
+        .pjud-tabs .nav-link.active {
+            color: var(--primary);
+            background: white;
+            border-bottom: 3px solid var(--secondary);
+            font-weight: 600;
+        }
+
+        .pjud-tabs .nav-link i {
+            margin-right: 6px;
+        }
+
+        .tab-content {
+            min-height: 300px;
+        }
+
         /* Sección de información en modal */
         .detail-section {
             padding: 20px;
@@ -546,6 +612,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            border-bottom: 2px solid var(--cream);
+            padding-bottom: 8px;
         }
 
         .detail-grid {
@@ -601,7 +669,7 @@
         }
 
         .movements-table tbody tr:hover {
-            background: rgba(79, 70, 229, 0.03);
+            background: var(--cream-light);
         }
 
         .folio-badge {
@@ -757,7 +825,7 @@
     <header class="pjud-header">
         <div class="header-top">
             <div class="container">
-                <span><i class="fas fa-phone-alt"></i> Soporte: +56 2 1234 5678</span>
+                <span><i class="fas fa-phone-alt"></i> Soporte: Comunidad Virtual Limitada 2026 - +56 9 8509 1252</span>
                 <span><i class="fas fa-clock"></i> Última actualización: <span id="lastUpdate"></span></span>
             </div>
         </div>
@@ -908,7 +976,7 @@
 
         <!-- Causas de Ejemplo (datos guardados) -->
         <div class="results-card">
-            <div class="results-card-header" style="background: #10b981;">
+            <div class="results-card-header" style="background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);">
                 <h3><i class="fas fa-database"></i> Causas Guardadas en Sistema</h3>
                 <span class="results-badge" id="savedCount">2 causa(s)</span>
             </div>
@@ -946,8 +1014,8 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <!-- Información General -->
-                    <div class="detail-section">
+                    <!-- Información General (siempre visible) -->
+                    <div class="detail-section" style="border-bottom: 2px solid var(--border-color);">
                         <h5><i class="fas fa-info-circle"></i> Información General</h5>
                         <div class="detail-grid">
                             <div class="detail-item">
@@ -969,94 +1037,141 @@
                         </div>
                     </div>
 
-                    <!-- Estado Actual -->
-                    <div class="detail-section">
-                        <h5><i class="fas fa-flag"></i> Estado Actual</h5>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">Estado</span>
-                                <span class="detail-value" id="detailEstado">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Etapa</span>
-                                <span class="detail-value" id="detailEtapa">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Último Movimiento</span>
-                                <span class="detail-value" id="detailUltimoMov">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Cuadernos</span>
-                                <span class="detail-value" id="detailCuadernos">1 cuaderno</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Pestañas estilo PJUD -->
+                    <ul class="nav nav-tabs pjud-tabs" role="tablist" style="border-bottom: 2px solid var(--primary); margin: 0; padding: 0 20px;">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-ebook" data-toggle="tab" href="#panel-ebook" role="tab">
+                                <i class="fas fa-book"></i> eBook
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-demanda" data-toggle="tab" href="#panel-demanda" role="tab">
+                                <i class="fas fa-gavel"></i> Demanda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-historia" data-toggle="tab" href="#panel-historia" role="tab">
+                                <i class="fas fa-history"></i> Historia Causa Cuaderno
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-estados" data-toggle="tab" href="#panel-estados" role="tab">
+                                <i class="fas fa-flag"></i> Estados de la Demanda
+                            </a>
+                        </li>
+                    </ul>
 
-                    <!-- Documentos -->
-                    <div class="detail-section">
-                        <h5><i class="fas fa-file-pdf"></i> Documentos Disponibles</h5>
-                        <div class="action-icons" style="gap: 15px; flex-wrap: wrap;">
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <button class="action-btn btn-ebook" title="Ver eBook/Carpeta" id="btnVerEbook" style="display: none;">
-                                    <i class="fas fa-eye"></i> Ver eBook
-                                </button>
-                                <button class="action-btn btn-ebook" title="Descargar eBook/Carpeta" id="btnEbook" style="display: none;">
-                                    <i class="fas fa-download"></i> Descargar eBook
-                                </button>
+                    <!-- Contenido de las pestañas -->
+                    <div class="tab-content" style="padding: 20px;">
+                        <!-- Pestaña: eBook -->
+                        <div class="tab-pane fade show active" id="panel-ebook" role="tabpanel">
+                            <div class="detail-section" style="border: none; padding: 0;">
+                                <h5><i class="fas fa-book"></i> eBook / Carpeta Digital</h5>
+                                <p class="text-muted small mb-3">Descarga el eBook completo de la causa con todos los documentos.</p>
+                                <div class="action-icons" style="gap: 15px; flex-wrap: wrap;">
+                                    <button class="action-btn btn-ebook" title="Ver eBook/Carpeta" id="btnVerEbook" style="display: none;">
+                                        <i class="fas fa-eye"></i> Ver eBook
+                                    </button>
+                                    <button class="action-btn btn-ebook" title="Descargar eBook/Carpeta" id="btnEbook" style="display: none;">
+                                        <i class="fas fa-download"></i> Descargar eBook
+                                    </button>
+                                    <span style="font-size: 13px; color: var(--text-secondary); margin-left: 10px;">
+                                        <span id="detailPdfsCount">0</span> PDF(s) disponibles en movimientos
+                                    </span>
+                                </div>
                             </div>
-                            <span style="font-size: 13px; color: var(--text-secondary);">
-                                <span id="detailPdfsCount">0</span> PDF(s) disponibles
-                            </span>
                         </div>
-                    </div>
 
-                    <!-- Movimientos (misma info que /movimientos) -->
-                    <div class="detail-section" style="padding-bottom: 0;">
-                        <h5><i class="fas fa-list"></i> Historial de Movimientos Procesales</h5>
-                        <p class="text-muted small mb-2">Misma estructura que la pestaña Movimientos: Folio, Documentos, Fecha, Etapa, Trámite, Descripción, Foja.</p>
-                    </div>
-                    <div class="detail-section" id="cuadernoSection" style="display: none;">
-                        <label class="detail-label">Cuaderno</label>
-                        <select class="form-control-pjud" id="filterCuaderno" style="max-width: 280px;">
-                            <option value="">Todos los cuadernos</option>
-                        </select>
-                    </div>
-                    <div class="detail-section" style="padding-top: 0;">
-                        <div class="table-filters" style="margin-bottom: 12px;">
-                            <input type="text" class="filter-input" id="filterFecha" placeholder="🔍 Fecha...">
-                            <input type="text" class="filter-input" id="filterDescripcion" placeholder="🔍 Descripción...">
-                            <select class="filter-input" id="filterEtapa">
-                                <option value="">Todas las etapas</option>
-                            </select>
-                        </div>
-                        <div class="table-wrapper" style="max-height: 420px; overflow: auto;">
-                            <table class="movements-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 60px;">Folio</th>
-                                        <th style="width: 100px;">Documentos</th>
-                                        <th style="width: 95px;">Fecha</th>
-                                        <th style="width: 100px;">Etapa</th>
-                                        <th style="width: 110px;">Trámite</th>
-                                        <th>Descripción del Trámite</th>
-                                        <th style="width: 60px;">Foja</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="movimientosBody"></tbody>
-                            </table>
-                        </div>
-                        <div class="pagination-controls" style="padding: 12px; border-top: 1px solid var(--border-color); margin-top: 0;">
-                            <div class="pagination-info" id="paginationInfo">Mostrando 0 movimientos</div>
-                            <div class="pagination-buttons">
-                                <button type="button" class="pagination-btn" id="btnPrevMov">← Anterior</button>
-                                <span class="mx-2" id="paginaMovText">Pág. 1</span>
-                                <button type="button" class="pagination-btn" id="btnNextMov">Siguiente →</button>
+                        <!-- Pestaña: Demanda -->
+                        <div class="tab-pane fade" id="panel-demanda" role="tabpanel">
+                            <div class="detail-section" style="border: none; padding: 0;">
+                                <h5><i class="fas fa-gavel"></i> Demanda</h5>
+                                <p class="text-muted small mb-3">Documento inicial de la demanda y documentos relacionados.</p>
+                                <div id="demandaContent">
+                                    <p class="text-muted">Cargando información de la demanda...</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="stats-bar" style="padding: 10px 0 0; border-top: 1px solid var(--border-light);">
-                            <div><span class="stat-label">Total</span> <span class="stat-value" id="statTotalMov">0</span></div>
-                            <div><span class="stat-label">Con docs</span> <span class="stat-value" id="statConDocs">0</span></div>
-                            <div><span class="stat-label">PDFs</span> <span class="stat-value" id="statPdfs">0</span></div>
+
+                        <!-- Pestaña: Historia Causa Cuaderno -->
+                        <div class="tab-pane fade" id="panel-historia" role="tabpanel">
+                            <div class="detail-section" style="border: none; padding: 0;">
+                                <h5><i class="fas fa-history"></i> Historia Causa Cuaderno</h5>
+                                <p class="text-muted small mb-2">Historial completo de movimientos procesales por cuaderno.</p>
+                                <div id="cuadernoSection" style="display: none; margin-bottom: 15px;">
+                                    <label class="detail-label">Cuaderno</label>
+                                    <select class="form-control-pjud" id="filterCuaderno" style="max-width: 280px;">
+                                        <option value="">Todos los cuadernos</option>
+                                    </select>
+                                </div>
+                                <div class="table-filters" style="margin-bottom: 12px;">
+                                    <input type="text" class="filter-input" id="filterFecha" placeholder="🔍 Fecha...">
+                                    <input type="text" class="filter-input" id="filterDescripcion" placeholder="🔍 Descripción...">
+                                    <select class="filter-input" id="filterEtapa">
+                                        <option value="">Todas las etapas</option>
+                                    </select>
+                                </div>
+                                <div class="table-wrapper" style="max-height: 420px; overflow: auto;">
+                                    <table class="movements-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 60px;">Folio</th>
+                                                <th style="width: 100px;">Documentos</th>
+                                                <th style="width: 95px;">Fecha</th>
+                                                <th style="width: 100px;">Etapa</th>
+                                                <th style="width: 110px;">Trámite</th>
+                                                <th>Descripción del Trámite</th>
+                                                <th style="width: 60px;">Foja</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="movimientosBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination-controls" style="padding: 12px; border-top: 1px solid var(--border-color); margin-top: 0;">
+                                    <div class="pagination-info" id="paginationInfo">Mostrando 0 movimientos</div>
+                                    <div class="pagination-buttons">
+                                        <button type="button" class="pagination-btn" id="btnPrevMov">← Anterior</button>
+                                        <span class="mx-2" id="paginaMovText">Pág. 1</span>
+                                        <button type="button" class="pagination-btn" id="btnNextMov">Siguiente →</button>
+                                    </div>
+                                </div>
+                                <div class="stats-bar" style="padding: 10px 0 0; border-top: 1px solid var(--border-light);">
+                                    <div><span class="stat-label">Total</span> <span class="stat-value" id="statTotalMov">0</span></div>
+                                    <div><span class="stat-label">Con docs</span> <span class="stat-value" id="statConDocs">0</span></div>
+                                    <div><span class="stat-label">PDFs</span> <span class="stat-value" id="statPdfs">0</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pestaña: Estados de la Demanda -->
+                        <div class="tab-pane fade" id="panel-estados" role="tabpanel">
+                            <div class="detail-section" style="border: none; padding: 0;">
+                                <h5><i class="fas fa-flag"></i> Estados de la Demanda</h5>
+                                <p class="text-muted small mb-3">Estados específicos del proceso de demanda (diferente del historial de movimientos).</p>
+                                <div id="estadosContent">
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Estado Actual</span>
+                                            <span class="detail-value" id="detailEstado">-</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Etapa</span>
+                                            <span class="detail-value" id="detailEtapa">-</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Último Movimiento</span>
+                                            <span class="detail-value" id="detailUltimoMov">-</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Cuadernos</span>
+                                            <span class="detail-value" id="detailCuadernos">1 cuaderno</span>
+                                        </div>
+                                    </div>
+                                    <div id="estadosList" style="margin-top: 20px;">
+                                        <!-- Lista de estados se cargará aquí -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1069,7 +1184,8 @@
         <p>
             <i class="fas fa-shield-alt"></i> Sistema de Consulta de Causas | 
             Desarrollado para integración con PJUD | 
-            &copy; 2024-2026
+            Soporte: Comunidad Virtual Limitada 2026 - +56 9 8509 1252 | 
+            &copy; 2026
         </p>
     </footer>
 
@@ -1519,6 +1635,14 @@
                 const foja = mov.foja ?? '-';
                 const hasAzul = mov.tiene_pdf_azul ?? !!mov.pdf_azul;
                 const hasRojo = mov.tiene_pdf_rojo ?? !!mov.pdf_rojo;
+                
+                // Detectar si es "Actuación Receptor" para mostrar en rojo
+                const esActuacionReceptor = tramite && tramite.toLowerCase().includes('actuación receptor');
+                const tramiteStyle = esActuacionReceptor ? 'style="color: #c62828; font-weight: 600;"' : '';
+                const tramiteHTML = esActuacionReceptor 
+                    ? `<span ${tramiteStyle}>${tramite}</span>` 
+                    : tramite;
+                
                 return `
                 <tr data-id-pagina="${mov.id_pagina || ''}" data-id-cuaderno="${mov.id_cuaderno || ''}">
                     <td><span class="folio-badge">${folio}</span></td>
@@ -1545,7 +1669,7 @@
                     </td>
                     <td>${fecha}</td>
                     <td>${etapa ? `<span class="etapa-tag">${etapa}</span>` : ''}</td>
-                    <td>${tramite}</td>
+                    <td>${tramiteHTML}</td>
                     <td><div class="truncate" title="${desc}">${desc}</div></td>
                     <td style="text-align:center;color:var(--text-muted);">${foja}</td>
                 </tr>`;
@@ -1603,6 +1727,11 @@
             if (!causa) return;
 
             causaActual = causa;
+            
+            // Obtener cuadernos primero (antes de usarlos)
+            const cuadernos = causa.cuadernos || [];
+            
+            // Mapear movimientos incluyendo PDFs
             modalMovimientos = (causa.movimientos || []).map(m => ({
                 ...m,
                 fecha: m.fecha ?? m.fec_tramite,
@@ -1612,7 +1741,12 @@
                 foja: m.foja,
                 id_pagina: m.id_pagina,
                 id_cuaderno: m.id_cuaderno,
-                cuaderno_nombre: m.cuaderno_nombre
+                cuaderno_nombre: m.cuaderno_nombre,
+                // Asegurar que los PDFs se incluyan
+                pdf_azul: m.pdf_azul,
+                pdf_rojo: m.pdf_rojo,
+                tiene_pdf_azul: m.tiene_pdf_azul ?? !!m.pdf_azul,
+                tiene_pdf_rojo: m.tiene_pdf_rojo ?? !!m.pdf_rojo
             }));
 
             document.getElementById('modalRit').textContent = causa.rit;
@@ -1643,7 +1777,6 @@
 
             const cuadernoSection = document.getElementById('cuadernoSection');
             const selCuaderno = document.getElementById('filterCuaderno');
-            const cuadernos = causa.cuadernos || [];
             // Mostrar selector solo si hay más de 1 cuaderno
             if (cuadernos.length > 1) {
                 cuadernoSection.style.display = 'block';
@@ -1673,7 +1806,91 @@
                 btnVerEbook.style.display = 'none';
             }
 
+            // Cargar contenido de pestañas
+            cargarContenidoDemanda(causa);
+            cargarContenidoEstados(causa);
+
+            // Activar primera pestaña (eBook)
+            $('.pjud-tabs .nav-link').first().tab('show');
+
             $('#modalDetalle').modal('show');
+        }
+
+        // Cargar contenido de la pestaña "Demanda"
+        function cargarContenidoDemanda(causa) {
+            const demandaContent = document.getElementById('demandaContent');
+            if (!demandaContent) return;
+
+            // Buscar movimientos relacionados con la demanda (primeros movimientos o movimientos con "demanda" en descripción)
+            const movimientosDemanda = (causa.movimientos || []).filter(m => {
+                const desc = (m.descripcion || m.desc_tramite || '').toLowerCase();
+                return desc.includes('demanda') || desc.includes('ingreso') || m.indice <= 3;
+            }).slice(0, 5); // Primeros 5 movimientos relacionados
+
+            if (movimientosDemanda.length === 0) {
+                demandaContent.innerHTML = '<p class="text-muted">No se encontraron movimientos relacionados con la demanda.</p>';
+                return;
+            }
+
+            let html = '<div class="table-wrapper" style="max-height: 400px; overflow: auto;">';
+            html += '<table class="movements-table">';
+            html += '<thead><tr><th>Folio</th><th>Fecha</th><th>Etapa</th><th>Trámite</th><th>Descripción</th><th>Documentos</th></tr></thead>';
+            html += '<tbody>';
+
+            movimientosDemanda.forEach((mov, idx) => {
+                const hasAzul = mov.tiene_pdf_azul ?? !!mov.pdf_azul;
+                const hasRojo = mov.tiene_pdf_rojo ?? !!mov.pdf_rojo;
+                const tramite = mov.tramite ?? mov.tipo_movimiento ?? '';
+                const esActuacionReceptor = tramite && tramite.toLowerCase().includes('actuación receptor');
+                const tramiteHTML = esActuacionReceptor 
+                    ? `<span style="color: #c62828; font-weight: 600;">${tramite}</span>` 
+                    : tramite;
+                
+                html += `<tr>
+                    <td><span class="folio-badge">${mov.folio || mov.indice || '-'}</span></td>
+                    <td>${mov.fecha || '-'}</td>
+                    <td>${mov.etapa || '-'}</td>
+                    <td>${tramiteHTML || '-'}</td>
+                    <td>${mov.descripcion || mov.desc_tramite || '-'}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            ${hasAzul ? `<button class="action-btn btn-pdf-blue" title="Ver PDF Principal" onclick="verPDF('${causa.rit}', ${causa.movimientos.indexOf(mov)}, 'azul')" style="width:24px;height:24px;font-size:11px;padding:0;"><i class="fas fa-file-pdf"></i></button>` : ''}
+                            ${hasRojo ? `<button class="action-btn btn-pdf-red" title="Ver PDF Anexo" onclick="verPDF('${causa.rit}', ${causa.movimientos.indexOf(mov)}, 'rojo')" style="width:24px;height:24px;font-size:11px;padding:0;"><i class="fas fa-file-pdf"></i></button>` : ''}
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            demandaContent.innerHTML = html;
+        }
+
+        // Cargar contenido de la pestaña "Estados de la Demanda"
+        function cargarContenidoEstados(causa) {
+            const estadosList = document.getElementById('estadosList');
+            if (!estadosList) return;
+
+            // Obtener estados únicos de los movimientos (diferente de historia)
+            const estadosUnicos = [...new Set((causa.movimientos || []).map(m => m.etapa).filter(Boolean))];
+            
+            let html = '<div class="info-grid" style="margin-top: 15px;">';
+            
+            estadosUnicos.forEach((estado, idx) => {
+                const movimientosEstado = causa.movimientos.filter(m => m.etapa === estado);
+                const ultimoEstado = movimientosEstado[movimientosEstado.length - 1];
+                
+                html += `<div class="info-card" style="padding: 15px; border-left: 4px solid var(--primary);">
+                    <h6 style="color: var(--primary); margin-bottom: 10px;">${estado}</h6>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        <div><strong>Movimientos:</strong> ${movimientosEstado.length}</div>
+                        ${ultimoEstado ? `<div><strong>Último:</strong> ${ultimoEstado.fecha || '-'}</div>` : ''}
+                        ${ultimoEstado ? `<div><strong>Descripción:</strong> ${(ultimoEstado.descripcion || ultimoEstado.desc_tramite || '-').substring(0, 80)}...</div>` : ''}
+                    </div>
+                </div>`;
+            });
+
+            html += '</div>';
+            estadosList.innerHTML = estadosUnicos.length > 0 ? html : '<p class="text-muted">No hay estados registrados.</p>';
         }
 
         function setupModalFiltersAndPagination() {
@@ -1984,9 +2201,15 @@
                                 let pdfAzul = mov.pdf_azul;
                                 let pdfRojo = mov.pdf_rojo;
                                 
-                                // Si pdf_azul es un objeto con base64, usarlo directamente
+                                // Si pdf_azul es un objeto con base64, preservarlo tal cual
                                 if (pdfAzul && typeof pdfAzul === 'object' && pdfAzul.base64) {
-                                    // Ya tiene base64, está bien
+                                    // Ya tiene base64, preservar objeto completo
+                                    pdfAzul = {
+                                        nombre: pdfAzul.nombre || `${data.rit}_mov_${mov.folio || mov.indice}_azul.pdf`,
+                                        base64: pdfAzul.base64,
+                                        tipo: pdfAzul.tipo || 'application/pdf',
+                                        tamaño_kb: pdfAzul.tamaño_kb || null
+                                    };
                                 } else if (pdfAzul && typeof pdfAzul === 'string') {
                                     // Es solo un nombre, buscar en data.pdfs
                                     const pdfData = data.pdfs?.[pdfAzul];
@@ -2002,11 +2225,19 @@
                                         base64: data.pdfs?.[mov.pdf_principal] || null,
                                         tipo: 'application/pdf'
                                     };
+                                } else {
+                                    pdfAzul = null;
                                 }
                                 
                                 // Mismo proceso para pdf_rojo
                                 if (pdfRojo && typeof pdfRojo === 'object' && pdfRojo.base64) {
-                                    // Ya tiene base64
+                                    // Ya tiene base64, preservar objeto completo
+                                    pdfRojo = {
+                                        nombre: pdfRojo.nombre || `${data.rit}_mov_${mov.folio || mov.indice}_rojo.pdf`,
+                                        base64: pdfRojo.base64,
+                                        tipo: pdfRojo.tipo || 'application/pdf',
+                                        tamaño_kb: pdfRojo.tamaño_kb || null
+                                    };
                                 } else if (pdfRojo && typeof pdfRojo === 'string') {
                                     const pdfData = data.pdfs?.[pdfRojo];
                                     if (pdfData && typeof pdfData === 'string') {
@@ -2020,6 +2251,8 @@
                                         base64: data.pdfs?.[mov.pdf_anexo] || null,
                                         tipo: 'application/pdf'
                                     };
+                                } else {
+                                    pdfRojo = null;
                                 }
 
                                 return {

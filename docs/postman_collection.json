@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "PJUD Scraping API",
+    "description": "Colección de endpoints para la API REST del sistema de scraping PJUD",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Causas",
+      "item": [
+        {
+          "name": "Listar Causas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas"],
+              "query": [
+                {"key": "limit", "value": "50"},
+                {"key": "offset", "value": "0"},
+                {"key": "estado", "value": "", "disabled": true},
+                {"key": "tiene_movimientos", "value": "", "disabled": true},
+                {"key": "tiene_pdfs", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Causa por RIT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas/C-571-2018",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas", "C-571-2018"]
+            }
+          }
+        },
+        {
+          "name": "Causa Completa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas/C-571-2018/completa",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas", "C-571-2018", "completa"]
+            }
+          }
+        },
+        {
+          "name": "Movimientos de Causa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas/C-571-2018/movimientos?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas", "C-571-2018", "movimientos"],
+              "query": [
+                {"key": "limit", "value": "20"},
+                {"key": "etapa", "value": "", "disabled": true},
+                {"key": "tiene_pdf", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "PDFs de Causa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas/C-571-2018/pdfs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas", "C-571-2018", "pdfs"]
+            }
+          }
+        },
+        {
+          "name": "eBook de Causa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/causas/C-571-2018/ebook",
+              "host": ["{{base_url}}"],
+              "path": ["api", "causas", "C-571-2018", "ebook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movimientos",
+      "item": [
+        {
+          "name": "Listar Movimientos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimientos?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimientos"],
+              "query": [
+                {"key": "limit", "value": "50"},
+                {"key": "rit", "value": "", "disabled": true},
+                {"key": "etapa", "value": "", "disabled": true},
+                {"key": "tiene_pdf", "value": "", "disabled": true},
+                {"key": "fecha_desde", "value": "", "disabled": true},
+                {"key": "fecha_hasta", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Movimiento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimientos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimientos", "1"]
+            }
+          }
+        },
+        {
+          "name": "PDFs de Movimiento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/movimientos/1/pdfs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "movimientos", "1", "pdfs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "PDFs",
+      "item": [
+        {
+          "name": "Listar PDFs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pdfs?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pdfs"],
+              "query": [
+                {"key": "limit", "value": "50"},
+                {"key": "rit", "value": "", "disabled": true},
+                {"key": "tipo", "value": "", "disabled": true},
+                {"key": "movimiento_id", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Metadata de PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pdfs/1/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pdfs", "1", "metadata"]
+            }
+          }
+        },
+        {
+          "name": "Descargar PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pdf/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pdf", "1"]
+            }
+          }
+        },
+        {
+          "name": "PDF en Base64",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pdf/1/base64",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pdf", "1", "base64"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Estadísticas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/estadisticas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "estadisticas"]
+            }
+          }
+        },
+        {
+          "name": "Movimientos Nuevos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/movimientos-nuevos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "movimientos-nuevos"]
+            }
+          }
+        },
+        {
+          "name": "Verificar Movimientos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email_cliente\": \"cliente@ejemplo.com\",\n  \"nombre_cliente\": \"Juan Pérez\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/verificar-movimientos/C-571-2018",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "verificar-movimientos", "C-571-2018"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,55 +1,56 @@
 {
-  "descripcion": "5 causas de prueba con datos completos para testing",
+  "descripcion": "Causas de prueba para el scraper - tienen documentos y movimientos confirmados",
+  "fecha_actualizacion": "2026-01-23",
   "causas": [
     {
-      "rit": "3030-2017",
+      "rit": "571-2018",
       "tipoCausa": "C",
       "competencia": "3",
-      "corte": "30",
-      "tribunal": "61",
-      "caratulado": "CCAF LOS ANDES/SÁNCHEZ",
-      "tribunal_nombre": "3º Juzgado Civil de Viña del Mar",
-      "corte_nombre": "C.A. de Valparaíso"
+      "corte": "46",
+      "tribunal": "196",
+      "tribunal_nombre": "Juzgado de Letras de Cañete",
+      "corte_nombre": "C.A. de Concepción",
+      "caratulado": "PROMOTORA CMR FALABELLA S.A/VALENZUELA"
     },
     {
-      "rit": "27311-2019",
+      "rit": "5212-2020",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "91",
+      "tribunal": "345",
+      "tribunal_nombre": "3º Juzgado Civil de San Miguel",
+      "corte_nombre": "C.A. de San Miguel",
+      "caratulado": "BANCO DE CRÉDITO E INVERSIONES/DÍAZ"
+    },
+    {
+      "rit": "8234-2020",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "90",
+      "tribunal": "265",
+      "tribunal_nombre": "7º Juzgado Civil de Santiago",
+      "corte_nombre": "C.A. de Santiago",
+      "caratulado": "BANCO DEL ESTADO DE CHILE/CÁCERES"
+    },
+    {
+      "rit": "3943-2020",
+      "tipoCausa": "C",
+      "competencia": "3",
+      "corte": "91",
+      "tribunal": "388",
+      "tribunal_nombre": "Juzgado de Letras de Peñaflor",
+      "corte_nombre": "C.A. de San Miguel",
+      "caratulado": "CAT ADMINISTRADORA DE TARJETA S.A./RUBILAR"
+    },
+    {
+      "rit": "3443-2020",
       "tipoCausa": "C",
       "competencia": "3",
       "corte": "11",
-      "tribunal": "11",
-      "caratulado": "BANCO CHILE/ROMERO",
-      "tribunal_nombre": "3º Juzgado de Letras de Iquique",
-      "corte_nombre": "C.A. de Iquique"
-    },
-    {
-      "rit": "571-2019",
-      "tipoCausa": "C",
-      "competencia": "3",
-      "corte": "40",
-      "tribunal": "124",
-      "caratulado": "CAJA DE COMPENSACION DE ASIGNACION FAMILIAR",
-      "tribunal_nombre": "3º Juzgado de Letras de Talca",
-      "corte_nombre": "C.A. de Talca"
-    },
-    {
-      "rit": "9473-2019",
-      "tipoCausa": "C",
-      "competencia": "3",
-      "corte": "20",
-      "tribunal": "31",
-      "caratulado": "BANCO FALABELLA/AROS",
-      "tribunal_nombre": "1º Juzgado de Letras de Copiapó",
-      "corte_nombre": "C.A. de Copiapó"
-    },
-    {
-      "rit": "16322-2017",
-      "tipoCausa": "C",
-      "competencia": "3",
-      "corte": "20",
-      "tribunal": "36",
-      "caratulado": "BANCO DE CRÉDITO E INVERSIONES",
-      "tribunal_nombre": "1º Juzgado de Letras de Vallenar",
-      "corte_nombre": "C.A. de Copiapó"
+      "tribunal": "10",
+      "tribunal_nombre": "2º Juzgado de Letras de Iquique",
+      "corte_nombre": "C.A. de Iquique",
+      "caratulado": "BANCO DE CRÉDITO E INVERSIONES/ULLOA"
     }
   ]
 }

@@ -985,16 +985,25 @@
                                 <span class="detail-label">Último Movimiento</span>
                                 <span class="detail-value" id="detailUltimoMov">-</span>
                             </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Cuadernos</span>
+                                <span class="detail-value" id="detailCuadernos">1 cuaderno</span>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Documentos -->
                     <div class="detail-section">
                         <h5><i class="fas fa-file-pdf"></i> Documentos Disponibles</h5>
-                        <div class="action-icons" style="gap: 15px;">
-                            <button class="action-btn btn-ebook" title="Descargar eBook/Carpeta" id="btnEbook">
-                                <i class="fas fa-book"></i>
-                            </button>
+                        <div class="action-icons" style="gap: 15px; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button class="action-btn btn-ebook" title="Ver eBook/Carpeta" id="btnVerEbook" style="display: none;">
+                                    <i class="fas fa-eye"></i> Ver eBook
+                                </button>
+                                <button class="action-btn btn-ebook" title="Descargar eBook/Carpeta" id="btnEbook" style="display: none;">
+                                    <i class="fas fa-download"></i> Descargar eBook
+                                </button>
+                            </div>
                             <span style="font-size: 13px; color: var(--text-secondary);">
                                 <span id="detailPdfsCount">0</span> PDF(s) disponibles
                             </span>
@@ -1077,18 +1086,74 @@
          * @param {string} base64String - El string base64 del PDF
          * @param {string} nombreArchivo - Nombre del archivo a descargar
          */
+        /**
+         * Limpia el string base64 removiendo prefijos data: si existen
+         * @param {string} base64String - String base64 (puede tener prefijo data:)
+         * @returns {string} - String base64 limpio
+         */
+        function limpiarBase64(base64String) {
+            if (!base64String) return null;
+            
+            // Si tiene prefijo data:application/pdf;base64, removerlo
+            if (base64String.includes(',')) {
+                return base64String.split(',')[1];
+            }
+            
+            // Si tiene prefijo data:application/pdf;base64 sin coma, removerlo
+            if (base64String.startsWith('data:')) {
+                const parts = base64String.split(';base64');
+                if (parts.length > 1) {
+                    return parts[1];
+                }
+            }
+            
+            return base64String;
+        }
+
         function descargarPDFBase64(base64String, nombreArchivo) {
             try {
+                if (!base64String) {
+                    mostrarNotificacion('❌ No hay contenido PDF disponible', 'error');
+                    return;
+                }
+
+                // Limpiar base64 (remover prefijos data: si existen)
+                const base64Limpio = limpiarBase64(base64String);
+                if (!base64Limpio) {
+                    mostrarNotificacion('❌ Contenido base64 inválido', 'error');
+                    return;
+                }
+
                 // Decodificar base64 a bytes
-                const byteCharacters = atob(base64String);
-                const byteNumbers = new Array(byteCharacters.length);
+                let byteCharacters;
+                try {
+                    byteCharacters = atob(base64Limpio);
+                } catch (e) {
+                    console.error('Error decodificando base64:', e);
+                    mostrarNotificacion('❌ Error: El contenido base64 no es válido', 'error');
+                    return;
+                }
                 
+                const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
                     byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'application/pdf' });
+                
+                // Verificar que el blob tiene contenido válido (magic number %PDF)
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const magicNumber = String.fromCharCode(uint8Array[0], uint8Array[1], uint8Array[2], uint8Array[3]);
+                    
+                    if (magicNumber !== '%PDF') {
+                        console.warn('⚠️ El contenido decodificado no parece ser un PDF válido');
+                    }
+                };
+                reader.readAsArrayBuffer(blob);
                 
                 // Crear enlace de descarga
                 const url = URL.createObjectURL(blob);
@@ -1103,31 +1168,73 @@
                 mostrarNotificacion(`✅ Descargado: ${nombreArchivo}`, 'success');
             } catch (error) {
                 console.error('Error al decodificar PDF:', error);
-                mostrarNotificacion('❌ Error al descargar el PDF', 'error');
+                mostrarNotificacion('❌ Error al descargar el PDF: ' + error.message, 'error');
             }
         }
         
         /**
-         * Abre un PDF base64 en una nueva pestaña
+         * Abre un PDF base64 en una nueva ventana/iframe
          * @param {string} base64String - El string base64 del PDF
+         * @param {string} nombreArchivo - Nombre del archivo
          */
-        function abrirPDFBase64(base64String) {
+        function verPDFBase64(base64String, nombreArchivo) {
             try {
-                const byteCharacters = atob(base64String);
+                if (!base64String) {
+                    mostrarNotificacion('❌ No hay contenido PDF disponible', 'error');
+                    return;
+                }
+
+                // Limpiar base64 (remover prefijos data: si existen)
+                const base64Limpio = limpiarBase64(base64String);
+                if (!base64Limpio) {
+                    mostrarNotificacion('❌ Contenido base64 inválido', 'error');
+                    return;
+                }
+
+                let byteCharacters;
+                try {
+                    byteCharacters = atob(base64Limpio);
+                } catch (e) {
+                    console.error('Error decodificando base64:', e);
+                    mostrarNotificacion('❌ Error: El contenido base64 no es válido', 'error');
+                    return;
+                }
+
                 const byteNumbers = new Array(byteCharacters.length);
-                
                 for (let i = 0; i < byteCharacters.length; i++) {
                     byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
-                
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 
-                window.open(url, '_blank');
+                // Abrir en nueva ventana con iframe
+                const ventanaPDF = window.open('', '_blank');
+                if (ventanaPDF) {
+                    ventanaPDF.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                            <head>
+                                <title>${nombreArchivo || 'PDF'}</title>
+                                <style>
+                                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                                    body { overflow: hidden; }
+                                    iframe { width: 100vw; height: 100vh; border: none; }
+                                </style>
+                            </head>
+                            <body>
+                                <iframe src="${url}"></iframe>
+                            </body>
+                        </html>
+                    `);
+                    ventanaPDF.document.close();
+                } else {
+                    // Si no se puede abrir ventana (popup bloqueado), descargar
+                    descargarPDFBase64(base64String, nombreArchivo);
+                }
             } catch (error) {
                 console.error('Error al abrir PDF:', error);
-                mostrarNotificacion('❌ Error al abrir el PDF', 'error');
+                mostrarNotificacion('❌ Error al abrir el PDF: ' + error.message, 'error');
             }
         }
         
@@ -1416,10 +1523,24 @@
                 <tr data-id-pagina="${mov.id_pagina || ''}" data-id-cuaderno="${mov.id_cuaderno || ''}">
                     <td><span class="folio-badge">${folio}</span></td>
                     <td>
-                        <div class="documentos-cell">
-                            ${hasAzul ? `<button class="action-btn btn-pdf-blue" title="PDF Principal" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'azul')"><i class="fas fa-file-pdf"></i></button>` : ''}
-                            ${hasRojo ? `<button class="action-btn btn-pdf-red" title="PDF Anexo" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'rojo')"><i class="fas fa-file-pdf"></i></button>` : ''}
-                            ${!hasAzul && !hasRojo ? '<span style="color:#999;font-size:11px;">Sin documentos</span>' : ''}
+                        <div class="documentos-cell" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                            ${hasAzul ? `
+                                <button class="action-btn btn-pdf-blue" title="Ver PDF Principal (Azul)" style="width:24px;height:24px;font-size:11px;padding:0;" onclick="verPDF('${cause.rit}', ${i}, 'azul')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn btn-pdf-blue" title="Descargar PDF Principal (Azul)" style="width:24px;height:24px;font-size:11px;padding:0;" onclick="descargarPDF('${cause.rit}', ${i}, 'azul')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            ` : ''}
+                            ${hasRojo ? `
+                                <button class="action-btn btn-pdf-red" title="Ver PDF Anexo (Rojo)" style="width:24px;height:24px;font-size:11px;padding:0;" onclick="verPDF('${cause.rit}', ${i}, 'rojo')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn btn-pdf-red" title="Descargar PDF Anexo (Rojo)" style="width:24px;height:24px;font-size:11px;padding:0;" onclick="descargarPDF('${cause.rit}', ${i}, 'rojo')">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            ` : ''}
+                            ${!hasAzul && !hasRojo ? '<span style="color:#999;font-size:11px;">-</span>' : ''}
                         </div>
                     </td>
                     <td>${fecha}</td>
@@ -1508,6 +1629,13 @@
             document.getElementById('detailEtapa').textContent = last?.etapa || last?.etapa_codigo || '-';
             document.getElementById('detailUltimoMov').textContent = last?.fecha || last?.fec_tramite || '-';
             document.getElementById('detailPdfsCount').textContent = causa.totalPdfs ?? 0;
+            
+            // Mostrar información de cuadernos
+            const numCuadernos = cuadernos.length || 1;
+            const cuadernoText = numCuadernos === 1 
+                ? '1 cuaderno (Principal)' 
+                : `${numCuadernos} cuadernos`;
+            document.getElementById('detailCuadernos').textContent = cuadernoText;
 
             const etapas = [...new Set(modalMovimientos.map(m => m.etapa).filter(Boolean))].sort();
             const selEtapa = document.getElementById('filterEtapa');
@@ -1516,10 +1644,11 @@
             const cuadernoSection = document.getElementById('cuadernoSection');
             const selCuaderno = document.getElementById('filterCuaderno');
             const cuadernos = causa.cuadernos || [];
-            if (cuadernos.length > 0) {
+            // Mostrar selector solo si hay más de 1 cuaderno
+            if (cuadernos.length > 1) {
                 cuadernoSection.style.display = 'block';
                 selCuaderno.innerHTML = '<option value="">Todos los cuadernos</option>' +
-                    cuadernos.map(c => `<option value="${c.id_cuaderno}">${c.nombre}</option>`).join('');
+                    cuadernos.map(c => `<option value="${c.id_cuaderno}">${c.nombre} (${c.movimientos?.length || 0})</option>`).join('');
             } else {
                 cuadernoSection.style.display = 'none';
                 selCuaderno.innerHTML = '<option value="">Todos los cuadernos</option>';
@@ -1531,8 +1660,18 @@
             renderModalMovimientos();
 
             const btnEbook = document.getElementById('btnEbook');
-            btnEbook.style.display = causa.tieneEbook ? 'flex' : 'none';
-            btnEbook.onclick = () => descargarEbook(causa.rit);
+            const btnVerEbook = document.getElementById('btnVerEbook');
+            const tieneEbook = causa.tieneEbook && causa.ebook;
+            
+            if (tieneEbook) {
+                btnEbook.style.display = 'flex';
+                btnVerEbook.style.display = 'flex';
+                btnEbook.onclick = () => descargarEbook(causa.rit);
+                btnVerEbook.onclick = () => verEbook(causa.rit);
+            } else {
+                btnEbook.style.display = 'none';
+                btnVerEbook.style.display = 'none';
+            }
 
             $('#modalDetalle').modal('show');
         }
@@ -1579,15 +1718,66 @@
 
             if (pdfData.base64) {
                 // Tiene base64, descargar directamente
-                descargarPDFBase64(pdfData.base64, pdfData.nombre);
+                // Asegurarse de que base64 es un string
+                const base64Content = typeof pdfData.base64 === 'string' ? pdfData.base64 : String(pdfData.base64);
+                const nombre = pdfData.nombre || `${rit}_mov_${mov.folio || movIndex}_${tipo}.pdf`;
+                descargarPDFBase64(base64Content, nombre);
+            } else if (pdfData.nombre) {
+                // No tiene base64 pero tiene nombre, intentar cargar desde servidor
+                mostrarNotificacion('📄 Cargando PDF desde servidor...', 'info');
+                fetch(`/api/scraping/pdf/${rit}/${pdfData.nombre}`)
+                    .then(res => {
+                        if (res.ok) return res.blob();
+                        throw new Error('PDF no encontrado');
+                    })
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = pdfData.nombre;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        mostrarNotificacion(`✅ Descargado: ${pdfData.nombre}`, 'success');
+                    })
+                    .catch(() => {
+                        mostrarNotificacion(`❌ No se pudo descargar: ${pdfData.nombre}`, 'error');
+                    });
             } else {
-                // No tiene base64, simular descarga o mostrar mensaje
-                mostrarNotificacion(`📄 PDF: ${pdfData.nombre} (pendiente de descarga desde PJUD)`, 'info');
-                
-                // En producción, aquí se haría la llamada a la API para obtener el PDF
-                // fetch(`/api/scraping/pdf/${rit}/${pdfData.nombre}`)
-                //     .then(res => res.blob())
-                //     .then(blob => { ... })
+                mostrarNotificacion(`📄 PDF ${tipo} no disponible`, 'warning');
+            }
+        }
+
+        /**
+         * Abre un PDF de un movimiento en una nueva ventana
+         * @param {string} rit - RIT de la causa
+         * @param {number} index - Índice del movimiento
+         * @param {string} tipo - 'azul' o 'rojo'
+         */
+        function verPDF(rit, index, tipo) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa || !causa.movimientos || !causa.movimientos[index]) {
+                mostrarNotificacion('❌ Movimiento no encontrado', 'error');
+                return;
+            }
+
+            const mov = causa.movimientos[index];
+            const pdfData = tipo === 'azul' ? mov.pdf_azul : mov.pdf_rojo;
+            
+            if (!pdfData) {
+                mostrarNotificacion(`❌ No hay PDF ${tipo} disponible`, 'error');
+                return;
+            }
+
+            if (pdfData.base64) {
+                // Asegurarse de que base64 es un string
+                const base64Content = typeof pdfData.base64 === 'string' ? pdfData.base64 : String(pdfData.base64);
+                const nombre = pdfData.nombre || `${rit}_mov_${mov.folio || index}_${tipo}.pdf`;
+                verPDFBase64(base64Content, nombre);
+            } else if (pdfData.nombre) {
+                // Abrir desde servidor
+                window.open(`/api/scraping/pdf/${rit}/${pdfData.nombre}`, '_blank');
+            } else {
+                mostrarNotificacion(`📄 PDF ${tipo} no disponible`, 'warning');
             }
         }
 
@@ -1602,14 +1792,18 @@
                 return;
             }
 
-            if (causa.ebook.base64) {
+            if (causa.ebook && causa.ebook.base64) {
                 // Tiene base64, descargar directamente
-                descargarPDFBase64(causa.ebook.base64, causa.ebook.nombre || `${rit}_ebook.pdf`);
-            } else if (causa.ebook.ruta) {
-                // Tiene ruta pero no base64, intentar cargar desde servidor
+                const nombre = causa.ebook.nombre || `${rit}_ebook.pdf`;
+                descargarPDFBase64(causa.ebook.base64, nombre);
+            } else if (causa.ebook && causa.ebook.nombre) {
+                // Tiene nombre pero no base64, intentar cargar desde servidor
                 mostrarNotificacion('📚 Cargando eBook desde servidor...', 'info');
                 fetch(`/api/scraping/pdf/${rit}/${causa.ebook.nombre}`)
-                    .then(res => res.blob())
+                    .then(res => {
+                        if (res.ok) return res.blob();
+                        throw new Error('eBook no encontrado');
+                    })
                     .then(blob => {
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
@@ -1623,7 +1817,27 @@
                         mostrarNotificacion(`❌ No se pudo descargar el eBook`, 'error');
                     });
             } else {
-                mostrarNotificacion(`📚 eBook: ${causa.ebook.nombre || 'pendiente'} (pendiente de descarga desde PJUD)`, 'info');
+                mostrarNotificacion(`📚 eBook no disponible para ${rit}`, 'warning');
+            }
+        }
+
+        /**
+         * Abre el eBook en una nueva ventana
+         */
+        function verEbook(rit) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa || !causa.ebook) {
+                mostrarNotificacion('❌ eBook no disponible', 'error');
+                return;
+            }
+
+            if (causa.ebook.base64) {
+                const nombre = causa.ebook.nombre || `${rit}_ebook.pdf`;
+                verPDFBase64(causa.ebook.base64, nombre);
+            } else if (causa.ebook.nombre) {
+                window.open(`/api/scraping/pdf/${rit}/${causa.ebook.nombre}`, '_blank');
+            } else {
+                mostrarNotificacion('📚 eBook no disponible', 'warning');
             }
         }
 
@@ -1704,56 +1918,167 @@
 
         /**
          * Carga los datos de causas desde los archivos JSON generados por el scraping
+         * Busca automáticamente todos los archivos disponibles
          */
         async function cargarCausasDesdeJSON() {
             try {
-                // Lista de archivos JSON a cargar (generados por el scraping)
-                const archivosJSON = [
-                    '/api/scraping/resultado/C-3030-2017',
-                    '/api/scraping/resultado/C-571-2019'
-                ];
+                mostrarNotificacion('🔄 Cargando causas desde archivos JSON...', 'info');
                 
+                // Primero intentar listar todos los RITs disponibles desde la API
+                let ritsDisponibles = [];
+                try {
+                    const listResponse = await fetch('/api/scraping/listar', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (listResponse.ok) {
+                        const listData = await listResponse.json();
+                        ritsDisponibles = (listData.rits || []).map(r => r.rit || r).filter(Boolean);
+                        console.log(`📋 Encontrados ${ritsDisponibles.length} RITs desde API`);
+                    }
+                } catch (e) {
+                    console.log('⚠️ No se pudo obtener lista de RITs desde API:', e.message);
+                }
+
+                // Si no hay lista, usar lista por defecto de causas de prueba (con datos en BD)
+                if (ritsDisponibles.length === 0) {
+                    ritsDisponibles = ['C-571-2018', 'C-8234-2020', 'C-3443-2020'];
+                    console.log('📋 Usando lista por defecto de causas de prueba (con PDFs en BD)');
+                }
+
                 const causasCargadas = [];
-                
-                for (const archivo of archivosJSON) {
+                let cargadas = 0;
+                let errores = 0;
+
+                // Cargar cada RIT disponible
+                for (const rit of ritsDisponibles) {
                     try {
-                        const response = await fetch(archivo);
+                        const response = await fetch(`/api/scraping/resultado/${rit}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
                         if (response.ok) {
-                            const data = await response.json();
+                            const apiData = await response.json();
+                            const data = apiData.resultado || apiData;
                             
-                            // Transformar datos del formato del scraper al formato del frontend
-                            const movs = (data.movimientos || []).map(mov => ({
-                                folio: mov.folio || mov.indice,
-                                fecha: mov.fecha || mov.fec_tramite || '-',
-                                etapa: mov.etapa || mov.etapa_codigo || 'TRAMITACION',
-                                tramite: mov.tramite || mov.tipo_movimiento,
-                                descripcion: mov.descripcion || mov.desc_tramite || mov.tipo_movimiento || '-',
-                                foja: mov.foja,
-                                id_pagina: mov.id_pagina,
-                                id_cuaderno: mov.id_cuaderno,
-                                cuaderno_nombre: mov.cuaderno_nombre,
-                                pdf_azul: mov.pdf_azul || null,
-                                pdf_rojo: mov.pdf_rojo || null,
-                                tiene_pdf_azul: mov.tiene_pdf_azul || false,
-                                tiene_pdf_rojo: mov.tiene_pdf_rojo || false
-                            }));
+                            if (!data || !data.rit) {
+                                console.warn(`⚠️ ${rit}: Datos incompletos`, data);
+                                continue;
+                            }
+
+                            console.log(`📦 Cargando ${rit}:`, {
+                                total_movimientos: data.movimientos?.length || 0,
+                                fuente: apiData.fuente || 'unknown'
+                            });
+
+                            // Transformar datos del formato del scraper/BD al formato del frontend
+                            const movs = (data.movimientos || []).map(mov => {
+                                // Extraer PDFs base64 del movimiento
+                                let pdfAzul = mov.pdf_azul;
+                                let pdfRojo = mov.pdf_rojo;
+                                
+                                // Si pdf_azul es un objeto con base64, usarlo directamente
+                                if (pdfAzul && typeof pdfAzul === 'object' && pdfAzul.base64) {
+                                    // Ya tiene base64, está bien
+                                } else if (pdfAzul && typeof pdfAzul === 'string') {
+                                    // Es solo un nombre, buscar en data.pdfs
+                                    const pdfData = data.pdfs?.[pdfAzul];
+                                    if (pdfData && typeof pdfData === 'string') {
+                                        pdfAzul = { nombre: pdfAzul, base64: pdfData, tipo: 'application/pdf' };
+                                    } else {
+                                        pdfAzul = { nombre: pdfAzul, base64: null, tipo: 'application/pdf' };
+                                    }
+                                } else if (mov.pdf_principal) {
+                                    // Fallback a pdf_principal
+                                    pdfAzul = {
+                                        nombre: mov.pdf_principal_nombre || mov.pdf_principal,
+                                        base64: data.pdfs?.[mov.pdf_principal] || null,
+                                        tipo: 'application/pdf'
+                                    };
+                                }
+                                
+                                // Mismo proceso para pdf_rojo
+                                if (pdfRojo && typeof pdfRojo === 'object' && pdfRojo.base64) {
+                                    // Ya tiene base64
+                                } else if (pdfRojo && typeof pdfRojo === 'string') {
+                                    const pdfData = data.pdfs?.[pdfRojo];
+                                    if (pdfData && typeof pdfData === 'string') {
+                                        pdfRojo = { nombre: pdfRojo, base64: pdfData, tipo: 'application/pdf' };
+                                    } else {
+                                        pdfRojo = { nombre: pdfRojo, base64: null, tipo: 'application/pdf' };
+                                    }
+                                } else if (mov.pdf_anexo) {
+                                    pdfRojo = {
+                                        nombre: mov.pdf_anexo_nombre || mov.pdf_anexo,
+                                        base64: data.pdfs?.[mov.pdf_anexo] || null,
+                                        tipo: 'application/pdf'
+                                    };
+                                }
+
+                                return {
+                                    folio: mov.folio || mov.indice,
+                                    fecha: mov.fecha || mov.fec_tramite || '-',
+                                    etapa: mov.etapa || mov.etapa_codigo || 'TRAMITACION',
+                                    tramite: mov.tramite || mov.tipo_movimiento,
+                                    descripcion: mov.descripcion || mov.desc_tramite || mov.tipo_movimiento || '-',
+                                    foja: mov.foja,
+                                    id_pagina: mov.id_pagina,
+                                    id_cuaderno: mov.id_cuaderno,
+                                    cuaderno_nombre: mov.cuaderno_nombre,
+                                    pdf_azul: pdfAzul,
+                                    pdf_rojo: pdfRojo,
+                                    tiene_pdf_azul: !!(pdfAzul && (pdfAzul.base64 || pdfAzul.nombre)),
+                                    tiene_pdf_rojo: !!(pdfRojo && (pdfRojo.base64 || pdfRojo.nombre))
+                                };
+                            });
+
+                            // Extraer eBook (pdf_ebook)
+                            const ebook = data.ebook || data.pdf_ebook || null;
+                            const ebookData = ebook ? {
+                                nombre: ebook.nombre || `${data.rit}_ebook.pdf`,
+                                base64: ebook.base64 || ebook.base64_content || null,
+                                tipo: ebook.tipo || 'application/pdf',
+                                tamaño_kb: ebook.tamaño_kb || (ebook.base64 ? Math.round(ebook.base64.length / 1024) : null)
+                            } : null;
+
                             const causa = {
-                                rit: data.rit || data.cabecera?.rit,
-                                caratulado: data.cabecera?.caratulado || '-',
-                                tribunal: data.cabecera?.juzgado || '-',
-                                fechaIngreso: data.cabecera?.fecha_ingreso || '-',
-                                estado: data.estado_actual?.estado || 'EN_TRAMITE',
+                                rit: data.rit || data.cabecera?.rit || rit,
+                                caratulado: data.cabecera?.caratulado || data.caratulado || '-',
+                                tribunal: data.cabecera?.juzgado || data.tribunal || '-',
+                                fechaIngreso: data.cabecera?.fecha_ingreso || data.fecha_ingreso || '-',
+                                estado: data.estado_actual?.estado || data.estado || 'EN_TRAMITE',
                                 movimientos: movs,
                                 totalPdfs: movs.filter(m => m.tiene_pdf_azul || m.tiene_pdf_rojo).length,
-                                tieneEbook: !!data.ebook,
-                                ebook: data.ebook || null,
+                                tieneEbook: !!ebookData,
+                                ebook: ebookData,
                                 cuadernos: data.cuadernos || null
                             };
                             
+                            console.log(`✅ ${rit} cargada:`, {
+                                movimientos: movs.length,
+                                pdfs: causa.totalPdfs,
+                                ebook: causa.tieneEbook,
+                                fuente: apiData.fuente || 'unknown'
+                            });
+                            
                             causasCargadas.push(causa);
+                            cargadas++;
+                        } else if (response.status === 401) {
+                            console.warn(`⚠️ ${rit}: Requiere autenticación`);
+                        } else {
+                            console.warn(`⚠️ ${rit}: ${response.status} - ${response.statusText}`);
+                            errores++;
                         }
                     } catch (error) {
-                        console.warn(`No se pudo cargar ${archivo}:`, error.message);
+                        console.warn(`❌ Error cargando ${rit}:`, error.message);
+                        errores++;
                     }
                 }
                 
@@ -1766,10 +2091,15 @@
                     causasGuardadas.push(...causasCargadas, ...causasEstaticas);
                     
                     renderizarCausasGuardadas();
-                    console.log(`✅ Cargadas ${causasCargadas.length} causas desde JSON`);
+                    console.log(`✅ Cargadas ${cargadas} causas desde JSON (${errores} errores)`);
+                    mostrarNotificacion(`✅ Cargadas ${cargadas} causas con datos reales y PDFs base64`, 'success');
+                } else {
+                    console.log('⚠️ No se pudieron cargar causas desde JSON, usando datos estáticos');
+                    mostrarNotificacion('⚠️ Usando datos de ejemplo (no se encontraron datos reales). Ejecuta el scraping primero.', 'warning');
                 }
             } catch (error) {
-                console.log('Usando datos estáticos (no se pudieron cargar JSON):', error.message);
+                console.error('Error cargando causas:', error);
+                mostrarNotificacion('❌ Error cargando datos: ' + error.message, 'error');
             }
         }
 
@@ -1792,10 +2122,18 @@
 
         // Inicializar
         $(document).ready(function() {
+            // Mostrar loading inicial
+            const loading = document.getElementById('loadingOverlay');
+            if (loading) loading.classList.add('active');
+            
+            // Renderizar con datos estáticos primero
             renderizarCausasGuardadas();
             setupModalFiltersAndPagination();
-            cargarCausasDesdeJSON(); // Cargar datos reales desde JSON
-            // cargarCausasDesdeAPI(); // Descomentar en producción
+            
+            // Cargar datos reales en segundo plano
+            cargarCausasDesdeJSON().finally(() => {
+                if (loading) loading.classList.remove('active');
+            });
         });
     </script>
 </body>

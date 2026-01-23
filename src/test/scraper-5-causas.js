@@ -25,6 +25,7 @@ const { downloadEbook } = require('../ebook');
 const { hayCuaderno, extraerCuadernosYMovimientos, seleccionarCuaderno, obtenerOpcionesCuaderno } = require('../cuadernos');
 const { saveErrorEvidence } = require('../utils');
 const { processTableData, exportStructuredJSON } = require('../dataProcessor');
+const { upsertCausa, upsertMovimiento, registrarPdf, registrarEbook, getCausaByRit, query } = require('../database/db-mariadb');
 
 // Configuración
 const CONFIG_PATH = path.resolve(__dirname, '../config/causas_test.json');
@@ -380,6 +381,116 @@ async function descargarEbook(page, context, rit, outputDir) {
 }
 
 /**
+ * Guarda los datos en la base de datos MariaDB
+ */
+async function guardarEnBaseDatos(rit, causa, resultado, datosProcesados) {
+  try {
+    const ritClean = rit.replace(/[^a-zA-Z0-9]/g, '_');
+    
+    // 1. Guardar/actualizar causa
+    const causaData = {
+      rit: rit,
+      tipo_causa: causa.tipoCausa || 'C',
+      rol: rit.split('-')[0]?.replace(/[^0-9]/g, '') || '',
+      anio: parseInt(rit.split('-')[1]) || new Date().getFullYear(),
+      competencia_id: causa.competencia || null,
+      competencia_nombre: null,
+      corte_id: causa.corte || null,
+      corte_nombre: causa.corte_nombre || null,
+      tribunal_id: causa.tribunal || null,
+      tribunal_nombre: causa.tribunal_nombre || null,
+      caratulado: datosProcesados.cabecera?.caratulado || causa.caratulado || null,
+      fecha_ingreso: datosProcesados.cabecera?.fecha_ingreso || null,
+      estado: datosProcesados.estado_actual?.estado || 'EN_TRAMITE',
+      etapa: datosProcesados.estado_actual?.etapa || null,
+      estado_descripcion: datosProcesados.estado_actual?.descripcion || null,
+      total_movimientos: resultado.movimientos.length,
+      total_pdfs: resultado.pdfs?.descargados || 0,
+      fecha_ultimo_scraping: new Date(),
+      scraping_exitoso: resultado.success ? 1 : 0,
+      error_scraping: resultado.errores.length > 0 ? JSON.stringify(resultado.errores) : null
+    };
+
+    await upsertCausa(causaData);
+    const causaDb = await getCausaByRit(rit);
+    const causaId = causaDb.id;
+
+    // 2. Guardar movimientos y crear mapeo indice -> movimiento_id
+    const movimientoIds = {}; // Mapeo: indice -> movimiento_id
+    for (const mov of resultado.movimientos) {
+      // Preparar movimiento con rit
+      const movConRit = { ...mov, rit: rit };
+      const result = await upsertMovimiento(movConRit, causaId);
+      
+      // Obtener el ID del movimiento (insertId si es nuevo, o buscar por causa_id + indice)
+      let movimientoId = result.insertId;
+      if (!movimientoId) {
+        // Si no hay insertId, es un UPDATE, buscar el ID existente
+        const movDb = await query(
+          'SELECT id FROM movimientos WHERE causa_id = ? AND indice = ?',
+          [causaId, mov.indice || mov.folio]
+        );
+        movimientoId = movDb[0]?.id || null;
+      }
+      
+      if (movimientoId) {
+        const key = mov.indice || mov.folio || String(movimientoId);
+        movimientoIds[key] = movimientoId;
+      }
+    }
+
+    // 3. Guardar PDFs con base64
+    const pdfMapping = resultado.pdfs?.pdfMapping || {};
+    for (const [indice, pdfData] of Object.entries(pdfMapping)) {
+      const movimientoId = movimientoIds[indice] || null;
+      
+      // PDF Azul (Principal)
+      if (pdfData.azul_base64) {
+        await registrarPdf(causaId, movimientoId, rit, {
+          tipo: 'PRINCIPAL',
+          nombre_archivo: pdfData.azul_nombre || `${ritClean}_mov_${indice}_azul.pdf`,
+          ruta_relativa: pdfData.azul || null,
+          tamano_bytes: null,
+          base64: pdfData.azul_base64,
+          descargado: true,
+          fecha_descarga: new Date()
+        });
+      }
+
+      // PDF Rojo (Anexo)
+      if (pdfData.rojo_base64) {
+        await registrarPdf(causaId, movimientoId, rit, {
+          tipo: 'ANEXO',
+          nombre_archivo: pdfData.rojo_nombre || `${ritClean}_mov_${indice}_rojo.pdf`,
+          ruta_relativa: pdfData.rojo || null,
+          tamano_bytes: null,
+          base64: pdfData.rojo_base64,
+          descargado: true,
+          fecha_descarga: new Date()
+        });
+      }
+    }
+
+    // 4. Guardar eBook con base64 (pdf_ebook)
+    if (resultado.ebook && resultado.ebook.base64) {
+      await registrarEbook(causaId, rit, {
+        nombre_archivo: resultado.ebook.nombre || `${ritClean}_ebook.pdf`,
+        ruta_relativa: resultado.ebook.ruta || null,
+        tamano_bytes: resultado.ebook.tamaño_kb ? resultado.ebook.tamaño_kb * 1024 : null,
+        base64: resultado.ebook.base64,
+        descargado: true,
+        fecha_descarga: new Date()
+      });
+    }
+
+    return { causaId, movimientosGuardados: resultado.movimientos.length };
+  } catch (error) {
+    console.error(`Error guardando en BD para ${rit}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Procesa una causa individual
  */
 async function procesarCausa(causa, session, errorRegistry, options = {}) {
@@ -440,6 +551,26 @@ async function procesarCausa(causa, session, errorRegistry, options = {}) {
     if (useCuadernos) {
       // 4a. Extraer cuadernos y movimientos (dropdown)
       console.log('📍 Paso 4: Cuadernos detectados. Extrayendo por cuaderno...');
+      console.log('   🔍 DEBUG: Verificando estado del modal...');
+      const modalState = await page.evaluate(() => {
+        const modals = ['#modalDetalleCivil', '#modalDetalleLaboral', '.modal.show'];
+        for (const sel of modals) {
+          const m = document.querySelector(sel);
+          if (m) {
+            const tables = m.querySelectorAll('table');
+            return {
+              selector: sel,
+              visible: m.style.display !== 'none',
+              tables: tables.length,
+              firstTableRows: tables[0] ? tables[0].querySelectorAll('tbody tr').length : 0,
+              firstTableCols: tables[0]?.querySelector('tbody tr')?.querySelectorAll('td').length || 0
+            };
+          }
+        }
+        return { selector: 'none', visible: false, tables: 0, firstTableRows: 0, firstTableCols: 0 };
+      });
+      console.log('   🔍 DEBUG: Modal state:', JSON.stringify(modalState));
+      
       const { cuadernos, todosLosMovimientos } = await extraerCuadernosYMovimientos(page, rit);
       console.log(`   ✅ ${cuadernos.length} cuaderno(s), ${todosLosMovimientos.length} movimientos totales`);
 
@@ -506,17 +637,78 @@ async function procesarCausa(causa, session, errorRegistry, options = {}) {
     } else {
       // 4b. Sin cuadernos: tabla única
       console.log('📍 Paso 4: Extrayendo tabla de movimientos...');
+      
+      // DEBUG: Verificar estado del modal antes de extraer
+      console.log('   🔍 DEBUG: Verificando estado del modal...');
+      const modalState = await page.evaluate(() => {
+        const modals = ['#modalDetalleCivil', '#modalDetalleLaboral', '.modal.show', '.modal[style*="display: block"]'];
+        for (const sel of modals) {
+          const m = document.querySelector(sel);
+          if (m) {
+            const tables = m.querySelectorAll('table');
+            const firstTable = tables[0];
+            const firstRow = firstTable?.querySelector('tbody tr');
+            const cols = firstRow ? [...firstRow.querySelectorAll('td')].map(td => td.innerText.trim().substring(0, 20)) : [];
+            return {
+              selector: sel,
+              visible: m.style.display !== 'none' && m.classList.contains('show'),
+              tables: tables.length,
+              firstTableRows: firstTable ? firstTable.querySelectorAll('tbody tr').length : 0,
+              firstTableCols: cols.length,
+              sampleCols: cols.slice(0, 5)
+            };
+          }
+        }
+        // Si no hay modal, mostrar todas las tablas en la página
+        const allTables = document.querySelectorAll('table.table tbody tr');
+        return { 
+          selector: 'no-modal', 
+          visible: false, 
+          allTableRows: allTables.length,
+          firstRowCols: allTables[0] ? allTables[0].querySelectorAll('td').length : 0
+        };
+      });
+      console.log('   🔍 DEBUG: Modal state:', JSON.stringify(modalState));
+      
       try {
         rows = await extractTableAsArray(page);
       } catch (e) {
         rows = await extractTable(page);
       }
       console.log(`   ✅ Extraídas ${rows.length} filas`);
+      
+      // DEBUG: Mostrar estructura de la primera fila si existe
+      if (rows.length > 0) {
+        const firstRow = rows[0];
+        console.log('   🔍 DEBUG: Primera fila extraída:', {
+          textoLength: firstRow.texto?.length || 0,
+          texto: firstRow.texto?.slice(0, 5) || [],
+          datosLimpios: firstRow.datos_limpios ? {
+            folio: firstRow.datos_limpios.folio,
+            etapa: firstRow.datos_limpios.etapa,
+            tramite: firstRow.datos_limpios.tramite
+          } : 'N/A'
+        });
+      }
 
       console.log('📍 Paso 5: Procesando datos...');
+      console.log(`   📊 Filas extraídas: ${rows.length}`);
       const pdfMapping = {};
       datosProcesados = processTableData(rows, rit, pdfMapping);
       resultado.movimientos = datosProcesados.movimientos;
+      console.log(`   📊 Movimientos procesados: ${resultado.movimientos.length}`);
+      
+      if (resultado.movimientos.length === 0 && rows.length > 0) {
+        console.warn(`   ⚠️ ADVERTENCIA: Se extrajeron ${rows.length} filas pero 0 movimientos procesados`);
+        console.warn(`   💡 Revisando estructura de datos...`);
+        if (rows.length > 0) {
+          console.warn(`   📋 Primera fila:`, {
+            tipo: Array.isArray(rows[0]) ? 'array' : typeof rows[0],
+            tieneTexto: !Array.isArray(rows[0]) && rows[0].texto ? rows[0].texto.length : 'N/A',
+            texto0: !Array.isArray(rows[0]) && rows[0].texto ? rows[0].texto[0] : (Array.isArray(rows[0]) ? rows[0][0] : 'N/A')
+          });
+        }
+      }
 
       if (!options.skipPdfs) {
         console.log('📍 Paso 5b: Descargando PDFs y convirtiendo a base64...');
@@ -554,6 +746,13 @@ async function procesarCausa(causa, session, errorRegistry, options = {}) {
       etapas_clasificadas: resultado.etapas,
       pdfs_info: resultado.pdfs || { pdfMapping: {}, descargados: 0, errores: 0 },
       ebook: resultado.ebook,
+      pdf_ebook: resultado.ebook ? {
+        rit: rit,
+        nombre: resultado.ebook.nombre,
+        base64: resultado.ebook.base64,
+        tipo: resultado.ebook.tipo || 'application/pdf',
+        tamaño_kb: resultado.ebook.tamaño_kb
+      } : null,
       cuadernos: resultado.cuadernos || null,
       procesado_en: new Date().toISOString()
     };
@@ -562,6 +761,23 @@ async function procesarCausa(causa, session, errorRegistry, options = {}) {
     const jsonPath = path.join(OUTPUT_DIR, `movimientos_${ritClean}.json`);
     fs.writeFileSync(jsonPath, JSON.stringify(exportData, null, 2), 'utf-8');
     console.log(`   ✅ Exportado: movimientos_${ritClean}.json`);
+
+    // 10. Guardar en base de datos MariaDB
+    if (process.env.DB_HOST && !options.skipDatabase) {
+      console.log('📍 Paso 10: Guardando en base de datos MariaDB...');
+      try {
+        await guardarEnBaseDatos(rit, causa, resultado, datosProcesados);
+        console.log('   ✅ Datos guardados en base de datos');
+      } catch (dbError) {
+        console.warn(`   ⚠️ Error guardando en BD: ${dbError.message}`);
+        resultado.errores.push({
+          tipo: 'DATABASE_ERROR',
+          mensaje: dbError.message
+        });
+      }
+    } else {
+      console.log('   ⏭️ Saltando guardado en BD (DB_HOST no configurado o --skip-database)');
+    }
 
     // Marcar como exitoso
     resultado.success = true;
@@ -606,6 +822,7 @@ async function main() {
   const causaEspecifica = args.find(a => a.startsWith('--causa='))?.split('=')[1];
   const skipPdfs = args.includes('--skip-pdfs');
   const skipEbook = args.includes('--skip-ebook');
+  const skipDatabase = args.includes('--skip-database');
 
   console.log('\n' + '='.repeat(60));
   console.log('🚀 SCRAPER DE 5 CAUSAS DE PRUEBA');
@@ -614,6 +831,7 @@ async function main() {
   if (isDryRun) console.log('⚠️ Modo DRY-RUN: No se realizarán cambios');
   if (skipPdfs) console.log('⚠️ Skip PDFs activado');
   if (skipEbook) console.log('⚠️ Skip eBook activado');
+  if (skipDatabase) console.log('⚠️ Skip Base de Datos activado');
 
   // Cargar causas de prueba
   if (!fs.existsSync(CONFIG_PATH)) {
@@ -662,7 +880,7 @@ async function main() {
       const causa = causas[i];
       console.log(`\n[${i + 1}/${causas.length}]`);
       
-      const resultado = await procesarCausa(causa, session, errorRegistry, { skipPdfs, skipEbook });
+      const resultado = await procesarCausa(causa, session, errorRegistry, { skipPdfs, skipEbook, skipDatabase });
       resultados.push(resultado);
 
       // Esperar entre causas

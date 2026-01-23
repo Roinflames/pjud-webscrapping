@@ -206,43 +206,76 @@ function extractMovimientos(rows) {
       limpios = row.datos_limpios || {};
     }
     
-    // Detectar si es una fila de movimiento (tiene índice numérico en primera posición)
-    if (texto.length >= 7 && /^\d+$/.test(String(texto[0]))) {
+    // Detectar si es una fila de movimiento
+    // El formato del PJUD es: Folio | Doc | Anexo | Etapa | Trámite | Desc. Trámite | Fec. Trámite | Foja | Georref
+    // texto[0] = Folio (puede ser número o texto)
+    // texto[1] = Doc (puede tener "Descargar" o estar vacío)
+    // texto[2] = Anexo (puede tener "Descargar" o estar vacío)
+    // texto[3] = Etapa
+    // texto[4] = Trámite
+    // texto[5] = Desc. Trámite
+    // texto[6] = Fec. Trámite
+    // texto[7] = Foja
+    // texto[8] = Georref
+    
+    // Detectar fila de movimiento: debe tener al menos folio y descripción de trámite
+    const tieneFolio = texto[0] && texto[0].trim() !== '';
+    const tieneDescripcion = texto[5] && texto[5].trim() !== '';
+    const tieneEtapa = texto[3] && texto[3].trim() !== '';
+    
+    if (texto.length >= 6 && (tieneFolio && (tieneDescripcion || tieneEtapa))) {
       // Si es formato simple, extraer datos del array directamente
       if (Array.isArray(row)) {
         limpios = {
-          indice: texto[0],
-          etapa: texto[3] || texto[4] || '',
-          tramite: texto[4] || texto[5] || '',
-          desc_tramite: texto[5] || texto[6] || '',
-          fec_tramite: texto[6] || texto[7] || '',
-          foja: texto[7] || texto[8] || '',
-          folio: texto[0]
+          indice: texto[0] ? (parseInt(texto[0]) || texto[0]) : null,
+          etapa: texto[3] || '',
+          tramite: texto[4] || '',
+          desc_tramite: texto[5] || '',
+          fec_tramite: texto[6] || '',
+          foja: texto[7] || '',
+          folio: texto[0] || null
         };
       }
       
-      const tienePDF = texto[1] && (texto[1].includes('Descargar') || texto[1].includes('Documento'));
+      // El folio puede ser numérico o texto, usarlo como índice si es número, sino usar el índice de la fila
+      const folioNum = parseInt(texto[0]);
+      const indice = !isNaN(folioNum) ? folioNum : (movimientos.length + 1);
+      
+      const tienePDF = (texto[1] && (texto[1].includes('Descargar') || texto[1].includes('Documento'))) ||
+                       (texto[2] && (texto[2].includes('Descargar') || texto[2].includes('Documento'))) ||
+                       pdfs.length > 0;
       
       const movimiento = {
-        indice: parseInt(texto[0]) || null,
-        anexo: limpios.anexo,
-        etapa: limpios.etapa || texto[3] || texto[4] || '',
-        tramite: limpios.tramite || texto[4] || texto[5] || '',
-        desc_tramite: limpios.desc_tramite || texto[5] || texto[6] || '',
-        fec_tramite: limpios.fec_tramite || texto[6] || texto[7] || '',
-        foja: limpios.foja || texto[7] || texto[8] || '',
-        georref: limpios.georref,
-        tipo_movimiento: limpios.etapa || texto[4] || texto[5] || '', 
-        descripcion: limpios.desc_tramite || texto[5] || texto[6] || '',
-        fecha: limpios.fec_tramite || texto[6] || texto[7] || '',
-        folio: limpios.folio || texto[0],
-        tiene_pdf: tienePDF || pdfs.length > 0,
-        pdfs: pdfs
+        indice: indice,
+        anexo: limpios.anexo || texto[2] || null,
+        etapa: limpios.etapa || texto[3] || '',
+        tramite: limpios.tramite || texto[4] || '',
+        desc_tramite: limpios.desc_tramite || texto[5] || '',
+        fec_tramite: limpios.fec_tramite || texto[6] || '',
+        foja: limpios.foja || texto[7] || '',
+        georref: limpios.georref || texto[8] || null,
+        tipo_movimiento: limpios.tramite || texto[4] || texto[3] || '', 
+        descripcion: limpios.desc_tramite || texto[5] || '',
+        fecha: limpios.fec_tramite || texto[6] || '',
+        folio: limpios.folio || texto[0] || String(indice),
+        tiene_pdf: tienePDF,
+        pdfs: pdfs,
+        raw_data: row // Guardar datos raw para debugging
       };
 
-      // Validar que tenga datos mínimos (al menos índice y alguna descripción)
-      if (movimiento.indice && (movimiento.desc_tramite || movimiento.descripcion)) {
+      // Validar que tenga datos mínimos (al menos folio y alguna descripción o etapa)
+      // También aceptar si tiene trámite aunque no tenga descripción
+      if (movimiento.folio && (movimiento.desc_tramite || movimiento.descripcion || movimiento.etapa || movimiento.tramite)) {
         movimientos.push(movimiento);
+      } else {
+        // Debug: mostrar qué fila no se procesó
+        console.warn(`⚠️ Fila no procesada como movimiento:`, {
+          folio: texto[0],
+          tieneDescripcion: !!texto[5],
+          tieneEtapa: !!texto[3],
+          tieneTramite: !!texto[4],
+          textoLength: texto.length
+        });
       }
     }
   }

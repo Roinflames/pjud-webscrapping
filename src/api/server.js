@@ -82,10 +82,200 @@ function cargarTribunales() {
 // Cargar datos al iniciar
 cargarTribunales();
 
+// Importar funciones de base de datos para PDFs
+let dbMariadb = null;
+try {
+  dbMariadb = require('../database/db-mariadb');
+  console.log('✅ Módulo de base de datos MariaDB cargado');
+} catch (error) {
+  console.warn('⚠️ Módulo de base de datos MariaDB no disponible:', error.message);
+}
+
 // Rutas de scraping (sin autenticación para ejecutar, con autenticación para consultar)
 app.use('/api/scraping', scrapingRouter);
 app.use('/api/mvp', mvpRouter);
 app.use('/api/erp', erpRouter);
+
+// ============================================
+// ENDPOINTS DE PDFs DESDE BASE DE DATOS
+// ============================================
+
+/**
+ * GET /api/pdf/causa/:rit
+ * Obtiene todos los PDFs de una causa desde la BD
+ */
+app.get('/api/pdf/causa/:rit', async (req, res) => {
+  if (!dbMariadb) {
+    return res.status(503).json({ error: 'Base de datos no disponible' });
+  }
+
+  try {
+    const rit = req.params.rit;
+    const causa = await dbMariadb.getCausaByRit(rit);
+    
+    if (!causa) {
+      return res.status(404).json({ error: 'Causa no encontrada', rit });
+    }
+
+    const pdfs = await dbMariadb.getPdfsByCausa(causa.id);
+    const ebook = await dbMariadb.getEbookByCausa(causa.id);
+
+    // No enviar el base64 completo en el listado, solo metadata
+    const pdfsInfo = pdfs.map(p => ({
+      id: p.id,
+      movimiento_id: p.movimiento_id,
+      tipo: p.tipo,
+      nombre_archivo: p.nombre_archivo,
+      descargado: p.descargado,
+      fecha_descarga: p.fecha_descarga,
+      tiene_contenido: !!p.base64_content,
+      tamano_bytes: p.tamano_base64_bytes
+    }));
+
+    res.json({
+      rit,
+      causa_id: causa.id,
+      total_pdfs: pdfs.length,
+      tiene_ebook: !!ebook,
+      pdfs: pdfsInfo,
+      ebook: ebook ? {
+        id: ebook.id,
+        nombre_archivo: ebook.nombre_archivo,
+        tiene_contenido: !!ebook.base64_content,
+        tamano_bytes: ebook.tamano_base64_bytes
+      } : null
+    });
+  } catch (error) {
+    console.error('Error obteniendo PDFs:', error);
+    res.status(500).json({ error: 'Error obteniendo PDFs', message: error.message });
+  }
+});
+
+/**
+ * GET /api/pdf/:id
+ * Obtiene un PDF específico por su ID (devuelve el archivo PDF)
+ */
+app.get('/api/pdf/:id', async (req, res) => {
+  if (!dbMariadb) {
+    return res.status(503).json({ error: 'Base de datos no disponible' });
+  }
+
+  try {
+    const pdfId = req.params.id;
+    const [pdf] = await dbMariadb.query('SELECT * FROM pdfs WHERE id = ?', [pdfId]);
+    
+    if (!pdf) {
+      return res.status(404).json({ error: 'PDF no encontrado', id: pdfId });
+    }
+
+    if (!pdf.base64_content) {
+      return res.status(404).json({ error: 'PDF sin contenido', id: pdfId });
+    }
+
+    const pdfBuffer = Buffer.from(pdf.base64_content, 'base64');
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${pdf.nombre_archivo}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error obteniendo PDF:', error);
+    res.status(500).json({ error: 'Error obteniendo PDF', message: error.message });
+  }
+});
+
+/**
+ * GET /api/pdf/:id/base64
+ * Obtiene un PDF específico en formato base64 (para frontend)
+ */
+app.get('/api/pdf/:id/base64', async (req, res) => {
+  if (!dbMariadb) {
+    return res.status(503).json({ error: 'Base de datos no disponible' });
+  }
+
+  try {
+    const pdfId = req.params.id;
+    const [pdf] = await dbMariadb.query('SELECT * FROM pdfs WHERE id = ?', [pdfId]);
+    
+    if (!pdf) {
+      return res.status(404).json({ error: 'PDF no encontrado', id: pdfId });
+    }
+
+    if (!pdf.base64_content) {
+      return res.status(404).json({ error: 'PDF sin contenido', id: pdfId });
+    }
+
+    res.json({
+      id: pdf.id,
+      nombre: pdf.nombre_archivo,
+      tipo: pdf.tipo,
+      base64: pdf.base64_content,
+      content_type: 'application/pdf'
+    });
+  } catch (error) {
+    console.error('Error obteniendo PDF base64:', error);
+    res.status(500).json({ error: 'Error obteniendo PDF', message: error.message });
+  }
+});
+
+/**
+ * GET /api/pdf/ebook/:rit
+ * Obtiene el eBook de una causa
+ */
+app.get('/api/pdf/ebook/:rit', async (req, res) => {
+  if (!dbMariadb) {
+    return res.status(503).json({ error: 'Base de datos no disponible' });
+  }
+
+  try {
+    const rit = req.params.rit;
+    const causa = await dbMariadb.getCausaByRit(rit);
+    
+    if (!causa) {
+      return res.status(404).json({ error: 'Causa no encontrada', rit });
+    }
+
+    const ebook = await dbMariadb.getEbookByCausa(causa.id);
+    
+    if (!ebook || !ebook.base64_content) {
+      return res.status(404).json({ error: 'eBook no encontrado o sin contenido', rit });
+    }
+
+    const pdfBuffer = Buffer.from(ebook.base64_content, 'base64');
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${ebook.nombre_archivo}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error obteniendo eBook:', error);
+    res.status(500).json({ error: 'Error obteniendo eBook', message: error.message });
+  }
+});
+
+/**
+ * GET /api/causa/:rit/completa
+ * Obtiene la causa completa con movimientos y PDFs desde la BD
+ */
+app.get('/api/causa/:rit/completa', async (req, res) => {
+  if (!dbMariadb) {
+    return res.status(503).json({ error: 'Base de datos no disponible' });
+  }
+
+  try {
+    const rit = req.params.rit;
+    const causaCompleta = await dbMariadb.getCausaCompleta(rit);
+    
+    if (!causaCompleta) {
+      return res.status(404).json({ error: 'Causa no encontrada', rit });
+    }
+
+    res.json(causaCompleta);
+  } catch (error) {
+    console.error('Error obteniendo causa completa:', error);
+    res.status(500).json({ error: 'Error obteniendo causa', message: error.message });
+  }
+});
 
 /**
  * Health check

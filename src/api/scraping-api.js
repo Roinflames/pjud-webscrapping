@@ -3,8 +3,8 @@
  * 
  * Endpoints:
  *   POST /api/scraping/ejecutar - Ejecuta scraping con datos recibidos
- *   GET  /api/scraping/resultado/:rit - Obtiene resultado por RIT (requiere autenticación)
- *   GET  /api/scraping/listar - Lista todos los RITs procesados (requiere autenticación)
+ *   GET  /api/scraping/resultado/:rit - Obtiene resultado por RIT (PÚBLICO - sin autenticación)
+ *   GET  /api/scraping/listar - Lista todos los RITs procesados (PÚBLICO - sin autenticación)
  *   DELETE /api/scraping/resultado/:rit - Elimina un resultado (requiere autenticación)
  */
 
@@ -81,25 +81,46 @@ router.post('/ejecutar', async (req, res) => {
 /**
  * GET /api/scraping/resultado/:rit
  * Obtiene resultado completo de scraping (incluye PDFs en base64)
- * Requiere autenticación
+ * PÚBLICO: No requiere autenticación para facilitar uso en frontend
+ * Primero busca en BD, luego en archivos JSON
  */
-router.get('/resultado/:rit', middlewareAuth, (req, res) => {
+router.get('/resultado/:rit', async (req, res) => {
   try {
     const { rit } = req.params;
     
+    // 1. Intentar obtener desde base de datos
+    try {
+      const { getCausaCompleta } = require('../database/db-mariadb');
+      const causaBD = await getCausaCompleta(rit);
+      
+      if (causaBD && causaBD.movimientos && causaBD.movimientos.length > 0) {
+        console.log(`✅ Datos obtenidos desde BD para ${rit}: ${causaBD.movimientos.length} movimientos`);
+        return res.json({
+          success: true,
+          resultado: causaBD,
+          fuente: 'database'
+        });
+      }
+    } catch (dbError) {
+      console.warn(`⚠️ Error consultando BD para ${rit}:`, dbError.message);
+      // Continuar con búsqueda en archivos
+    }
+    
+    // 2. Si no está en BD, buscar en archivos JSON
     const resultado = obtenerResultado(rit);
     
     if (!resultado) {
       return res.status(404).json({
         error: 'Resultado no encontrado',
         mensaje: `No se encontró resultado para el RIT: ${rit}`,
-        sugerencia: 'Ejecuta primero el scraping usando POST /api/scraping/ejecutar'
+        sugerencia: 'Ejecuta primero el scraping usando POST /api/scraping/ejecutar o node src/test/scraper-5-causas.js'
       });
     }
     
     res.json({
       success: true,
-      resultado
+      resultado,
+      fuente: 'files'
     });
     
   } catch (error) {
@@ -114,16 +135,49 @@ router.get('/resultado/:rit', middlewareAuth, (req, res) => {
 /**
  * GET /api/scraping/listar
  * Lista todos los RITs procesados
- * Requiere autenticación
+ * PÚBLICO: No requiere autenticación para facilitar uso en frontend
+ * Primero busca en BD, luego en archivos JSON
  */
-router.get('/listar', middlewareAuth, (req, res) => {
+router.get('/listar', async (req, res) => {
   try {
-    const rits = listarRITs();
+    // 1. Intentar obtener desde base de datos
+    let ritsBD = [];
+    try {
+      const { listarCausas } = require('../database/db-mariadb');
+      const causas = await listarCausas();
+      ritsBD = causas.map(c => ({
+        rit: c.rit,
+        fecha_scraping: c.fecha_scraping,
+        total_movimientos: c.total_movimientos || 0,
+        total_pdfs: c.total_pdfs || 0
+      }));
+    } catch (dbError) {
+      console.warn('⚠️ Error consultando BD:', dbError.message);
+    }
+    
+    // 2. También buscar en archivos JSON
+    const ritsFiles = listarRITs();
+    
+    // 3. Combinar y deduplicar (priorizar BD)
+    const ritsMap = new Map();
+    
+    // Primero agregar desde archivos
+    ritsFiles.forEach(r => {
+      ritsMap.set(r.rit, r);
+    });
+    
+    // Luego agregar/sobrescribir con datos de BD
+    ritsBD.forEach(r => {
+      ritsMap.set(r.rit, r);
+    });
+    
+    const rits = Array.from(ritsMap.values());
     
     res.json({
       success: true,
       total: rits.length,
-      rits
+      rits,
+      fuente: ritsBD.length > 0 ? 'database' : 'files'
     });
     
   } catch (error) {
@@ -212,48 +266,101 @@ router.get('/pdf/:rit/*', (req, res) => {
       nombreArchivo += '.pdf';
     }
     
-    // Buscar el archivo en outputs
+    // 1. Buscar el archivo físico en outputs
     const outputsDir = path.resolve(__dirname, '../outputs');
     const filePath = path.join(outputsDir, nombreArchivo);
     
-    // Verificar que el archivo existe
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        error: 'PDF no encontrado',
-        mensaje: `No se encontró el archivo: ${nombreArchivo}`,
-        ruta_buscada: filePath,
-        sugerencia: 'Verifica que el scraping se haya ejecutado correctamente'
-      });
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      if (stats.size > 0) {
+        const fileBuffer = fs.readFileSync(filePath);
+        if (fileBuffer.slice(0, 4).toString() === '%PDF') {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+          res.setHeader('Content-Length', stats.size);
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          return res.send(fileBuffer);
+        }
+      }
     }
     
-    // Verificar que es un PDF válido
-    const stats = fs.statSync(filePath);
-    if (stats.size === 0) {
-      return res.status(404).json({
-        error: 'PDF vacío',
-        mensaje: `El archivo ${nombreArchivo} está vacío`
-      });
+    // 2. Si no está en archivo físico, buscar en base64 del resultado JSON
+    const { obtenerResultado } = require('./storage');
+    const resultado = obtenerResultado(rit);
+    
+    if (resultado) {
+      // Buscar en pdfs (objeto con nombres de archivo)
+      if (resultado.pdfs && resultado.pdfs[nombreArchivo]) {
+        const base64Content = resultado.pdfs[nombreArchivo];
+        if (typeof base64Content === 'string') {
+          try {
+            const fileBuffer = Buffer.from(base64Content, 'base64');
+            if (fileBuffer.slice(0, 4).toString() === '%PDF') {
+              res.setHeader('Content-Type', 'application/pdf');
+              res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+              res.setHeader('Content-Length', fileBuffer.length);
+              res.setHeader('Cache-Control', 'public, max-age=3600');
+              return res.send(fileBuffer);
+            }
+          } catch (e) {
+            console.warn(`Error decodificando base64 para ${nombreArchivo}:`, e.message);
+          }
+        }
+      }
+      
+      // Buscar en movimientos (pdf_azul, pdf_rojo)
+      if (resultado.movimientos && Array.isArray(resultado.movimientos)) {
+        for (const mov of resultado.movimientos) {
+          if (mov.pdf_azul && mov.pdf_azul.nombre === nombreArchivo && mov.pdf_azul.base64) {
+            try {
+              const fileBuffer = Buffer.from(mov.pdf_azul.base64, 'base64');
+              res.setHeader('Content-Type', 'application/pdf');
+              res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+              res.setHeader('Content-Length', fileBuffer.length);
+              res.setHeader('Cache-Control', 'public, max-age=3600');
+              return res.send(fileBuffer);
+            } catch (e) {
+              console.warn(`Error decodificando base64 de movimiento:`, e.message);
+            }
+          }
+          if (mov.pdf_rojo && mov.pdf_rojo.nombre === nombreArchivo && mov.pdf_rojo.base64) {
+            try {
+              const fileBuffer = Buffer.from(mov.pdf_rojo.base64, 'base64');
+              res.setHeader('Content-Type', 'application/pdf');
+              res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+              res.setHeader('Content-Length', fileBuffer.length);
+              res.setHeader('Cache-Control', 'public, max-age=3600');
+              return res.send(fileBuffer);
+            } catch (e) {
+              console.warn(`Error decodificando base64 de movimiento:`, e.message);
+            }
+          }
+        }
+      }
+      
+      // Buscar eBook (pdf_ebook)
+      const ebook = resultado.ebook || resultado.pdf_ebook;
+      if (ebook && (ebook.nombre === nombreArchivo || nombreArchivo.includes('ebook')) && ebook.base64) {
+        try {
+          const fileBuffer = Buffer.from(ebook.base64, 'base64');
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `inline; filename="${ebook.nombre || nombreArchivo}"`);
+          res.setHeader('Content-Length', fileBuffer.length);
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+          return res.send(fileBuffer);
+        } catch (e) {
+          console.warn(`Error decodificando base64 de eBook:`, e.message);
+        }
+      }
     }
     
-    // Leer el archivo
-    const fileBuffer = fs.readFileSync(filePath);
-    
-    // Verificar que es un PDF (magic number: %PDF)
-    if (fileBuffer.slice(0, 4).toString() !== '%PDF') {
-      return res.status(400).json({
-        error: 'Archivo no es un PDF válido',
-        mensaje: `El archivo ${nombreArchivo} no es un PDF válido`
-      });
-    }
-    
-    // Configurar headers para que el navegador muestre el PDF
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
-    res.setHeader('Content-Length', stats.size);
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache por 1 hora
-    
-    // Enviar el PDF
-    res.send(fileBuffer);
+    // No se encontró en ningún lugar
+    return res.status(404).json({
+      error: 'PDF no encontrado',
+      mensaje: `No se encontró el archivo: ${nombreArchivo}`,
+      ruta_buscada: filePath,
+      sugerencia: 'Verifica que el scraping se haya ejecutado correctamente y que el PDF tenga base64'
+    });
     
   } catch (error) {
     console.error('Error sirviendo PDF:', error);

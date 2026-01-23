@@ -11,15 +11,22 @@
 
 require('dotenv').config();
 const mysql = require('mysql2/promise');
+const fs = require('fs');
 
 // Configuración desde variables de entorno
+// Para XAMPP en Mac, usar socket en lugar de TCP si está disponible
+const XAMPP_SOCKET = '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
+const useSocket = fs.existsSync(XAMPP_SOCKET) && !process.env.DB_HOST;
+
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
+  ...(useSocket ? { socketPath: XAMPP_SOCKET } : {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306')
+  }),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'pjud_scraping',
-  charset: 'utf8',
+  charset: 'utf8mb4',
   connectTimeout: 10000,
   // Pool configuration
   waitForConnections: true,
@@ -217,8 +224,9 @@ async function upsertMovimiento(movimiento, causaId) {
       etapa, etapa_codigo,
       tramite, descripcion, fecha, fecha_parsed, foja, folio,
       tiene_pdf, pdf_principal, pdf_anexo, pdf_descargado,
+      id_cuaderno, cuaderno_nombre, id_pagina,
       raw_data
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       etapa = VALUES(etapa),
       etapa_codigo = VALUES(etapa_codigo),
@@ -232,11 +240,21 @@ async function upsertMovimiento(movimiento, causaId) {
       pdf_principal = VALUES(pdf_principal),
       pdf_anexo = VALUES(pdf_anexo),
       pdf_descargado = VALUES(pdf_descargado),
+      id_cuaderno = VALUES(id_cuaderno),
+      cuaderno_nombre = VALUES(cuaderno_nombre),
+      id_pagina = VALUES(id_pagina),
       raw_data = VALUES(raw_data),
       updated_at = CURRENT_TIMESTAMP
   `;
 
-  const fechaParsed = parseFecha(movimiento.fecha);
+  // Obtener la fecha y asegurar que no exceda el límite de la columna
+  let fechaStr = movimiento.fecha || movimiento.fec_tramite || null;
+  if (fechaStr && fechaStr.length > 20) {
+    // Truncar a los primeros 20 caracteres (DD/MM/YYYY tiene 10)
+    fechaStr = fechaStr.substring(0, 20);
+  }
+  
+  const fechaParsed = parseFecha(fechaStr);
 
   const params = [
     causaId,
@@ -244,9 +262,9 @@ async function upsertMovimiento(movimiento, causaId) {
     movimiento.indice,
     movimiento.etapa || movimiento.tipo_movimiento || null,
     movimiento.etapa_codigo || null,
-    movimiento.tramite || null,
-    movimiento.descripcion || movimiento.desc_tramite || null,
-    movimiento.fecha || movimiento.fec_tramite || null,
+    (movimiento.tramite || '').substring(0, 255) || null,
+    (movimiento.descripcion || movimiento.desc_tramite || '').substring(0, 500) || null,
+    fechaStr,
     fechaParsed,
     movimiento.foja || null,
     movimiento.folio || null,
@@ -254,6 +272,9 @@ async function upsertMovimiento(movimiento, causaId) {
     movimiento.pdf_principal || null,
     movimiento.pdf_anexo || null,
     movimiento.pdf_descargado ? 1 : 0,
+    movimiento.id_cuaderno || '1',
+    movimiento.cuaderno_nombre || 'Principal',
+    movimiento.id_pagina || null,
     JSON.stringify(movimiento.raw_data || movimiento)
   ];
 
@@ -469,23 +490,29 @@ async function marcarExito(rit, totalMovimientos, totalPdfs) {
 // ============================================
 
 /**
- * Registra un PDF descargado
+ * Registra un PDF descargado con contenido base64
  */
 async function registrarPdf(causaId, movimientoId, rit, datos) {
   const sql = `
     INSERT INTO pdfs (
       causa_id, movimiento_id, rit,
       tipo, nombre_archivo, ruta_relativa, tamano_bytes, hash_md5,
+      base64_content, tamano_base64_bytes,
       descargado, fecha_descarga, error_descarga
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       ruta_relativa = VALUES(ruta_relativa),
       tamano_bytes = VALUES(tamano_bytes),
       hash_md5 = VALUES(hash_md5),
+      base64_content = VALUES(base64_content),
+      tamano_base64_bytes = VALUES(tamano_base64_bytes),
       descargado = VALUES(descargado),
       fecha_descarga = VALUES(fecha_descarga),
       error_descarga = VALUES(error_descarga)
   `;
+
+  const base64Content = datos.base64 || datos.base64_content || null;
+  const tamanoBase64 = base64Content ? Buffer.byteLength(base64Content, 'utf8') : null;
 
   return await query(sql, [
     causaId,
@@ -496,6 +523,8 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
     datos.ruta_relativa || null,
     datos.tamano_bytes || null,
     datos.hash_md5 || null,
+    base64Content,
+    tamanoBase64,
     datos.descargado ? 1 : 0,
     datos.fecha_descarga ? new Date(datos.fecha_descarga) : null,
     datos.error_descarga || null
@@ -503,20 +532,28 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
 }
 
 /**
- * Registra un eBook descargado
+ * Registra un eBook descargado con contenido base64 (pdf_ebook)
  */
 async function registrarEbook(causaId, rit, datos) {
   const sql = `
-    INSERT INTO ebooks (causa_id, rit, nombre_archivo, ruta_relativa, tamano_bytes, descargado, fecha_descarga, error_descarga)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO ebooks (
+      causa_id, rit, nombre_archivo, ruta_relativa, tamano_bytes,
+      base64_content, tamano_base64_bytes,
+      descargado, fecha_descarga, error_descarga
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       nombre_archivo = VALUES(nombre_archivo),
       ruta_relativa = VALUES(ruta_relativa),
       tamano_bytes = VALUES(tamano_bytes),
+      base64_content = VALUES(base64_content),
+      tamano_base64_bytes = VALUES(tamano_base64_bytes),
       descargado = VALUES(descargado),
       fecha_descarga = VALUES(fecha_descarga),
       error_descarga = VALUES(error_descarga)
   `;
+
+  const base64Content = datos.base64 || datos.base64_content || null;
+  const tamanoBase64 = base64Content ? Buffer.byteLength(base64Content, 'utf8') : null;
 
   return await query(sql, [
     causaId,
@@ -524,6 +561,8 @@ async function registrarEbook(causaId, rit, datos) {
     datos.nombre_archivo,
     datos.ruta_relativa || null,
     datos.tamano_bytes || null,
+    base64Content,
+    tamanoBase64,
     datos.descargado ? 1 : 0,
     datos.fecha_descarga ? new Date(datos.fecha_descarga) : null,
     datos.error_descarga || null
@@ -556,6 +595,171 @@ async function testConnection() {
   } catch (error) {
     return { success: false, message: error.message, code: error.code };
   }
+}
+
+/**
+ * Obtiene PDFs de un movimiento
+ */
+async function getPdfsByMovimiento(movimientoId) {
+  return await query(
+    'SELECT * FROM pdfs WHERE movimiento_id = ? ORDER BY tipo, fecha_descarga',
+    [movimientoId]
+  );
+}
+
+/**
+ * Obtiene PDFs de una causa
+ */
+async function getPdfsByCausa(causaId) {
+  return await query(
+    'SELECT * FROM pdfs WHERE causa_id = ? ORDER BY movimiento_id, tipo, fecha_descarga',
+    [causaId]
+  );
+}
+
+/**
+ * Obtiene eBook de una causa
+ */
+async function getEbookByCausa(causaId) {
+  const rows = await query(
+    'SELECT * FROM ebooks WHERE causa_id = ? ORDER BY fecha_descarga DESC LIMIT 1',
+    [causaId]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Obtiene causa completa con movimientos y PDFs desde la BD
+ */
+async function getCausaCompleta(rit) {
+  const causa = await getCausaByRit(rit);
+  if (!causa) return null;
+
+  // Obtener movimientos
+  const movimientos = await getMovimientosByCausa(causa.id);
+  
+  // Obtener PDFs de la causa
+  const pdfsCausa = await getPdfsByCausa(causa.id);
+  
+  // Obtener eBook
+  const ebook = await getEbookByCausa(causa.id);
+
+  // Asociar PDFs a movimientos
+  const movimientosConPdfs = movimientos.map(mov => {
+    const pdfsMov = pdfsCausa.filter(p => p.movimiento_id === mov.id);
+    
+    // Separar PDFs por tipo (PRINCIPAL = azul, ANEXO = rojo)
+    const pdfAzul = pdfsMov.find(p => p.tipo === 'PRINCIPAL');
+    const pdfRojo = pdfsMov.find(p => p.tipo === 'ANEXO');
+    
+    return {
+      ...mov,
+      id_pagina: mov.id_pagina || `p-${mov.id_cuaderno || 1}-${mov.indice}`,
+      id_cuaderno: mov.id_cuaderno || '1',
+      cuaderno_nombre: mov.cuaderno_nombre || 'Principal',
+      pdf_azul: pdfAzul ? {
+        nombre: pdfAzul.nombre_archivo,
+        base64: pdfAzul.base64_content,
+        tipo: 'application/pdf',
+        tamaño_kb: pdfAzul.tamano_base64_bytes ? Math.round(pdfAzul.tamano_base64_bytes / 1024) : null
+      } : null,
+      pdf_rojo: pdfRojo ? {
+        nombre: pdfRojo.nombre_archivo,
+        base64: pdfRojo.base64_content,
+        tipo: 'application/pdf',
+        tamaño_kb: pdfRojo.tamano_base64_bytes ? Math.round(pdfRojo.tamano_base64_bytes / 1024) : null
+      } : null,
+      tiene_pdf_azul: !!pdfAzul,
+      tiene_pdf_rojo: !!pdfRojo
+    };
+  });
+
+  // Agrupar movimientos por cuaderno
+  const cuadernosMap = {};
+  movimientosConPdfs.forEach(mov => {
+    const idCuaderno = mov.id_cuaderno || '1';
+    if (!cuadernosMap[idCuaderno]) {
+      cuadernosMap[idCuaderno] = {
+        id_cuaderno: idCuaderno,
+        nombre: mov.cuaderno_nombre || 'Principal',
+        movimientos: []
+      };
+    }
+    cuadernosMap[idCuaderno].movimientos.push(mov);
+  });
+  const cuadernos = Object.values(cuadernosMap);
+
+  // Helper para convertir fecha de forma segura
+  const formatearFecha = (fecha) => {
+    if (!fecha) return null;
+    try {
+      const d = new Date(fecha);
+      return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const formatearFechaCompleta = (fecha) => {
+    if (!fecha) return null;
+    try {
+      const d = new Date(fecha);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    } catch (e) {
+      return null;
+    }
+  };
+
+  return {
+    rit: causa.rit,
+    cabecera: {
+      rit: causa.rit,
+      caratulado: causa.caratulado,
+      juzgado: causa.tribunal_nombre,
+      fecha_ingreso: formatearFecha(causa.fecha_ingreso)
+    },
+    estado_actual: {
+      estado: causa.estado,
+      etapa: causa.etapa,
+      descripcion: causa.estado_descripcion
+    },
+    movimientos: movimientosConPdfs,
+    cuadernos: cuadernos,
+    total_movimientos: movimientosConPdfs.length,
+    total_cuadernos: cuadernos.length,
+    total_pdfs: pdfsCausa.length,
+    ebook: ebook ? {
+      nombre: ebook.nombre_archivo,
+      base64: ebook.base64_content,
+      tipo: 'application/pdf',
+      tamaño_kb: ebook.tamano_base64_bytes ? Math.round(ebook.tamano_base64_bytes / 1024) : null
+    } : null,
+    pdf_ebook: ebook ? {
+      rit: causa.rit,
+      nombre: ebook.nombre_archivo,
+      base64: ebook.base64_content,
+      tipo: 'application/pdf',
+      tamaño_kb: ebook.tamano_base64_bytes ? Math.round(ebook.tamano_base64_bytes / 1024) : null
+    } : null,
+    fecha_scraping: formatearFechaCompleta(causa.fecha_ultimo_scraping)
+  };
+}
+
+/**
+ * Lista todas las causas con información básica
+ */
+async function listarCausas() {
+  const causas = await getAllCausas({ limit: 1000 });
+  return causas.map(c => ({
+    rit: c.rit,
+    caratulado: c.caratulado,
+    tribunal: c.tribunal_nombre,
+    fecha_ingreso: c.fecha_ingreso,
+    estado: c.estado,
+    total_movimientos: c.total_movimientos || 0,
+    total_pdfs: c.total_pdfs || 0,
+    fecha_scraping: c.fecha_ultimo_scraping ? new Date(c.fecha_ultimo_scraping).toISOString() : null
+  }));
 }
 
 /**
@@ -605,6 +809,13 @@ module.exports = {
   // PDFs
   registrarPdf,
   registrarEbook,
+  getPdfsByMovimiento,
+  getPdfsByCausa,
+  getEbookByCausa,
+  
+  // Funciones completas
+  getCausaCompleta,
+  listarCausas,
   
   // Utilidades
   getEstadisticas

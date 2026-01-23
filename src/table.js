@@ -34,16 +34,56 @@ async function extractTable(page) {
 
 // ==========================================
 // Versión completa (PDFs + FORMS reales)
+// IMPORTANTE: Prioriza la tabla dentro del modal de detalle
 // ==========================================
 
 async function extractTableAsArray(page) {
-  await page.waitForSelector(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
-    { timeout: 15000 }
-  );
+  // Selectores ordenados por prioridad: modal de detalle primero
+  const MODAL_SELECTORS = [
+    '#modalDetalleCivil table.table tbody tr',
+    '#modalDetalleLaboral table.table tbody tr',
+    '.modal.show table.table tbody tr',
+    '.modal[style*="display: block"] table.table tbody tr',
+    '#tablaHistoria tbody tr',
+    '.modal-body table tbody tr'
+  ];
+  
+  const FALLBACK_SELECTOR = 'table.table.table-bordered.table-striped.table-hover tbody tr';
+  
+  // Intentar encontrar la tabla dentro del modal primero
+  let selector = null;
+  
+  for (const modalSelector of MODAL_SELECTORS) {
+    try {
+      const rows = await page.$$(modalSelector);
+      if (rows.length > 0) {
+        // Verificar que tiene suficientes columnas (la tabla de detalle tiene 9)
+        const firstRowCols = await page.$$eval(modalSelector, trs => {
+          if (trs.length === 0) return 0;
+          return trs[0].querySelectorAll('td').length;
+        });
+        
+        if (firstRowCols >= 6) { // Mínimo 6 columnas para ser tabla de detalle
+          selector = modalSelector;
+          console.log(`   🎯 Selector de tabla: ${modalSelector} (${rows.length} filas, ${firstRowCols} columnas)`);
+          break;
+        }
+      }
+    } catch (e) {
+      continue;
+    }
+  }
+  
+  // Si no encontramos tabla en modal, usar fallback
+  if (!selector) {
+    selector = FALLBACK_SELECTOR;
+    console.log(`   ⚠️ Usando selector fallback: ${selector}`);
+  }
+  
+  await page.waitForSelector(selector, { timeout: 15000 }).catch(() => {});
 
   return await page.$$eval(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
+    selector,
     trs =>
       trs.map((tr, rowIndex) => {
         const tds = [...tr.querySelectorAll('td')];

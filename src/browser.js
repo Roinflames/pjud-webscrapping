@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium, firefox } = require('playwright');
 
 // User agents rotativos para evitar detección
 const USER_AGENTS = [
@@ -16,10 +16,40 @@ function getRandomUserAgent() {
 async function startBrowser(url, options = {}) {
   const { headless = true, slowMo = 100 } = options;
   
-  const browser = await chromium.launch({ 
-    headless: headless, // Modo headless configurable
-    slowMo: slowMo // Delay entre acciones configurable
-  });
+  // Usar Firefox por defecto (mejor para reCAPTCHA v3)
+  // Chromium tiene problemas con reCAPTCHA v3 en modo headless
+  const useFirefox = process.env.USE_FIREFOX !== 'false';
+  
+  let browser;
+  
+  if (useFirefox) {
+    console.log('🦊 Usando Firefox...');
+    browser = await firefox.launch({
+      headless: headless,
+      slowMo: slowMo
+    });
+  } else {
+    const launchOptions = {
+      headless: headless,
+      slowMo: slowMo,
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--window-size=1920,1080'
+      ]
+    };
+    
+    // En modo no-headless, agregar configuraciones adicionales
+    if (!headless) {
+      launchOptions.args.push('--start-maximized');
+    }
+    
+    browser = await chromium.launch(launchOptions);
+  }
   
   // Rotar user agent para evitar detección
   const userAgent = getRandomUserAgent();

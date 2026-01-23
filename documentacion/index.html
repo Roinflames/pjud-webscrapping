@@ -422,7 +422,10 @@
         <div class="header-content">
             <h1>📚 PJUD Web Scrapping</h1>
             <p>Documentación de Comandos y Guía de Uso</p>
-            <div class="warning-badge">⚠️ CARPETA PROTEGIDA - NO BORRAR</div>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+                <div class="warning-badge">⚠️ CARPETA PROTEGIDA - NO BORRAR</div>
+                <div class="warning-badge" style="background: var(--secondary); animation: none;">🦊 Firefox + 🗄️ MariaDB</div>
+            </div>
         </div>
     </header>
 
@@ -436,9 +439,9 @@
         <!-- Navigation -->
         <nav class="nav-tabs">
             <button class="nav-tab active" data-section="quick">⚡ Acceso Rápido</button>
+            <button class="nav-tab" data-section="scraping">🕷️ Scraping</button>
             <button class="nav-tab" data-section="frontend">🖥️ Frontend</button>
             <button class="nav-tab" data-section="servidor">🌐 Servidor</button>
-            <button class="nav-tab" data-section="scraping">🕷️ Scraping</button>
             <button class="nav-tab" data-section="database">🗄️ Base de Datos</button>
             <button class="nav-tab" data-section="git">🔀 Git & Versiones</button>
             <button class="nav-tab" data-section="testing">🧪 Testing</button>
@@ -448,6 +451,112 @@
 
         <!-- Section: Quick Access -->
         <section class="section active" id="quick">
+            <!-- Estado Actual del Proyecto -->
+            <div class="card" style="border: 2px solid var(--secondary); margin-bottom: 30px;">
+                <div class="card-header" style="background: rgba(16, 185, 129, 0.2);">
+                    <h3><span class="icon" style="background: var(--secondary);">📊</span> Estado Actual del Proyecto</h3>
+                    <span class="status success">✅ Funcionando</span>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                        <div style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">🦊 Navegador</h4>
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <strong>Firefox</strong> (por defecto)<br>
+                                <span style="color: var(--text-secondary);">Chromium tenía problemas con reCAPTCHA v3</span>
+                            </p>
+                        </div>
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--secondary);">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">📄 PDFs</h4>
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <strong>Base64 automático</strong><br>
+                                <span style="color: var(--text-secondary);">Se descargan y convierten automáticamente</span>
+                            </p>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--warning);">
+                            <h4 style="color: var(--warning); margin-bottom: 10px;">⏱️ Tiempo Modal</h4>
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <strong>30 segundos</strong> de espera<br>
+                                <span style="color: var(--text-secondary);">PJUD tarda 10-15s en cargar detalle</span>
+                            </p>
+                        </div>
+                        <div style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">🗄️ Base de Datos</h4>
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <strong>MariaDB/XAMPP</strong><br>
+                                <span style="color: var(--text-secondary);">Socket: /Applications/XAMPP/.../mysql.sock</span>
+                            </p>
+                        </div>
+                        <div style="background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #8b5cf6;">
+                            <h4 style="color: #8b5cf6; margin-bottom: 10px;">📚 Cuadernos</h4>
+                            <p style="margin: 0; font-size: 0.9rem;">
+                                <strong>Separación automática</strong><br>
+                                <span style="color: var(--text-secondary);">Detecta y agrupa movimientos por cuaderno</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4 style="color: var(--text-primary); margin: 20px 0 15px;">🔄 Últimos Cambios (23 Enero 2026)</h4>
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>Archivo</th>
+                                <th>Cambio</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>src/browser.js</code></td>
+                                <td>Firefox como navegador por defecto</td>
+                                <td>Chromium falla con reCAPTCHA v3 en headless</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/form.js</code></td>
+                                <td>Espera de modal aumentada a 30 segundos</td>
+                                <td>PJUD tarda 10-15s en cargar el detalle de causa</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/config/causas_test.json</code></td>
+                                <td>Nuevas causas de prueba actualizadas</td>
+                                <td>Causas confirmadas con movimientos y PDFs</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/database/db-mariadb.js</code></td>
+                                <td>Truncamiento de campos largos</td>
+                                <td>Evitar error "Data too long for column"</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/database/db-mariadb.js</code></td>
+                                <td>Campos de cuaderno agregados (id_cuaderno, cuaderno_nombre, id_pagina)</td>
+                                <td>Soporte para separación de movimientos por cuaderno</td>
+                            </tr>
+                            <tr>
+                                <td><code>src/api/public/demo.html</code></td>
+                                <td>Selector de cuadernos en modal de detalle</td>
+                                <td>Filtrar movimientos por cuaderno igual que en PJUD</td>
+                            </tr>
+                            <tr>
+                                <td><code>database/schema_mariadb_5.5.sql</code></td>
+                                <td>Tabla movimientos actualizada con campos de cuaderno</td>
+                                <td>Almacenar información de cuadernos en BD</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4 style="color: var(--text-primary); margin: 20px 0 15px;">✅ Última Ejecución Exitosa</h4>
+                    <div style="background: var(--bg-code); padding: 15px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;">
+                        <div style="color: var(--secondary);">📊 Causa: C-571-2018</div>
+                        <div style="margin-top: 8px;">
+                            <span style="color: #10b981;">✅ 29 movimientos extraídos</span><br>
+                            <span style="color: #10b981;">✅ 38 PDFs descargados</span><br>
+                            <span style="color: #10b981;">✅ ~3MB convertidos a base64</span><br>
+                            <span style="color: #10b981;">✅ Guardado en BD exitoso</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <h2 style="margin-bottom: 20px; color: var(--text-secondary);">Comandos más usados</h2>
             
             <div class="quick-actions">
@@ -475,10 +584,10 @@
                     <code>npm install</code>
                 </div>
 
-                <div class="quick-action" onclick="copyCommand('npx playwright install chromium')">
-                    <h4>🎭 Instalar Playwright</h4>
-                    <p>Instala el navegador para scraping</p>
-                    <code>npx playwright install chromium</code>
+                <div class="quick-action" onclick="copyCommand('npx playwright install firefox')">
+                    <h4>🦊 Instalar Firefox (Playwright)</h4>
+                    <p>Navegador requerido para scraping (mejor con reCAPTCHA)</p>
+                    <code>npx playwright install firefox</code>
                 </div>
 
                 <div class="quick-action" onclick="copyCommand('npm run scrape:masivo')">
@@ -563,7 +672,24 @@
                         <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
                             ✅ <strong>Modal de detalle</strong> - Información completa de la causa y movimientos
                         </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                            ✅ <strong>Selector de cuadernos</strong> - Filtra movimientos por cuaderno (igual que en PJUD)
+                        </li>
                     </ul>
+
+                    <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h4 style="color: #8b5cf6; margin-bottom: 10px;">📚 Funcionalidad de Cuadernos</h4>
+                        <p style="margin: 0 0 10px; font-size: 0.9rem;">
+                            El sistema detecta automáticamente si una causa tiene múltiples cuadernos (como en el PJUD) y permite filtrar los movimientos por cuaderno.
+                        </p>
+                        <ul style="list-style: disc; padding-left: 20px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Detección automática:</strong> El scraper identifica cuadernos usando el dropdown/select del modal PJUD</li>
+                            <li><strong>Almacenamiento:</strong> Cada movimiento guarda <code>id_cuaderno</code>, <code>cuaderno_nombre</code> e <code>id_pagina</code></li>
+                            <li><strong>Selector en frontend:</strong> Aparece automáticamente cuando hay más de 1 cuaderno</li>
+                            <li><strong>Filtrado:</strong> Permite ver movimientos de un cuaderno específico o todos</li>
+                            <li><strong>Indicador:</strong> Muestra la cantidad de cuadernos en el modal de detalle</li>
+                        </ul>
+                    </div>
 
                     <h4 style="margin: 20px 0 10px; color: var(--primary);">Iconos de Acción:</h4>
                     <table class="info-table">
@@ -892,6 +1018,42 @@ npm run api:start</code>
 
         <!-- Section: Scraping -->
         <section class="section" id="scraping">
+            <!-- Nota importante sobre Firefox -->
+            <div class="card" style="border: 2px solid var(--warning); margin-bottom: 20px;">
+                <div class="card-header" style="background: rgba(245, 158, 11, 0.2);">
+                    <h3><span class="icon" style="background: var(--warning);">⚠️</span> Importante: Configuración del Navegador</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 8px;">
+                            <h4 style="color: var(--secondary); margin-bottom: 10px;">🦊 Firefox (Recomendado)</h4>
+                            <ul style="list-style: disc; padding-left: 20px; margin: 0; line-height: 1.8;">
+                                <li><strong>Por defecto</strong> en el scraper</li>
+                                <li>Funciona bien con reCAPTCHA v3</li>
+                                <li>Carga correctamente el modal de detalle</li>
+                                <li>Instalar: <code>npx playwright install firefox</code></li>
+                            </ul>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px;">
+                            <h4 style="color: var(--danger); margin-bottom: 10px;">❌ Chromium (Problemas)</h4>
+                            <ul style="list-style: disc; padding-left: 20px; margin: 0; line-height: 1.8;">
+                                <li>reCAPTCHA v3 falla en modo headless</li>
+                                <li>El modal de detalle no carga contenido</li>
+                                <li>0 movimientos extraídos</li>
+                                <li>Para forzar: <code>USE_FIREFOX=false</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <p style="margin: 0; font-size: 0.9rem;">
+                            <strong>📋 Explicación:</strong> El PJUD usa <strong>reCAPTCHA v3</strong> para proteger el acceso al detalle de causas. 
+                            La función <code>detalleCausaCivil()</code> obtiene un token de Google antes de hacer la petición AJAX al servidor. 
+                            Chromium en modo headless es detectado como bot y no genera tokens válidos, dejando el modal vacío.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3><span class="icon">🕷️</span> Comandos de Scraping</h3>
@@ -908,7 +1070,26 @@ npm run api:start</code>
                         </div>
                         <div class="description">
                             Ejecuta el scraping de las 5 causas configuradas en <code>src/config/causas_test.json</code>. 
-                            Descarga movimientos, PDFs y eBooks.
+                            Descarga movimientos, PDFs y eBooks. <strong>Los PDFs y eBooks se convierten automáticamente a base64</strong> y se guardan tanto en JSON como en la base de datos MariaDB (si está configurada).
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Opciones del scraper-5-causas</span>
+                            <span class="command-badge node">node</span>
+                        </div>
+                        <div class="command-code">
+                            <code>node src/test/scraper-5-causas.js [--skip-pdfs] [--skip-ebook] [--skip-database] [--causa=RIT]</code>
+                            <button class="copy-btn" onclick="copyCommand('node src/test/scraper-5-causas.js [--skip-pdfs] [--skip-ebook] [--skip-database] [--causa=RIT]')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            <ul style="list-style: disc; padding-left: 20px; margin-top: 10px;">
+                                <li><code>--skip-pdfs</code>: Omite la descarga de PDFs</li>
+                                <li><code>--skip-ebook</code>: Omite la descarga del eBook</li>
+                                <li><code>--skip-database</code>: Omite el guardado en base de datos (solo guarda JSON)</li>
+                                <li><code>--causa=RIT</code>: Procesa solo una causa específica (ej: <code>--causa=C-3030-2017</code>)</li>
+                            </ul>
                         </div>
                     </div>
 
@@ -923,6 +1104,20 @@ npm run api:start</code>
                         </div>
                         <div class="description">
                             Simula el scraping sin conectarse al PJUD. Útil para probar la configuración.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Scraping de una causa específica</span>
+                            <span class="command-badge node">node</span>
+                        </div>
+                        <div class="command-code">
+                            <code>node src/test/scraper-5-causas.js --causa=C-571-2018</code>
+                            <button class="copy-btn" onclick="copyCommand('node src/test/scraper-5-causas.js --causa=C-571-2018')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Ejecuta el scraping solo para la causa especificada. Usa el formato <code>--causa=TIPO-ROL-AÑO</code>.
                         </div>
                     </div>
 
@@ -969,10 +1164,161 @@ npm run api:start</code>
                     </div>
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">📋</span> Causas de Prueba Configuradas</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Archivo: <code>src/config/causas_test.json</code> - Causas verificadas con movimientos y PDFs disponibles.
+                    </p>
+                    <table class="info-table">
+                        <thead>
+                            <tr>
+                                <th>RIT</th>
+                                <th>Tribunal</th>
+                                <th>Caratulado</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>C-571-2018</code></td>
+                                <td>Juzgado de Letras de Cañete</td>
+                                <td>PROMOTORA CMR FALABELLA S.A/VALENZUELA</td>
+                                <td><span class="status success">✅ Verificado</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>C-5212-2020</code></td>
+                                <td>3º Juzgado Civil de San Miguel</td>
+                                <td>BANCO DE CRÉDITO E INVERSIONES/DÍAZ</td>
+                                <td><span class="status warning">⚠️ Pendiente</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>C-8234-2020</code></td>
+                                <td>7º Juzgado Civil de Santiago</td>
+                                <td>BANCO DEL ESTADO DE CHILE/CÁCERES</td>
+                                <td><span class="status success">✅ Verificado</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>C-3943-2020</code></td>
+                                <td>Juzgado de Letras de Peñaflor</td>
+                                <td>CAT ADMINISTRADORA DE TARJETA S.A./RUBILAR</td>
+                                <td><span class="status warning">⚠️ Pendiente</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>C-3443-2020</code></td>
+                                <td>2º Juzgado de Letras de Iquique</td>
+                                <td>BANCO DE CRÉDITO E INVERSIONES/ULLOA</td>
+                                <td><span class="status success">✅ Verificado</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 15px; font-size: 0.85rem; color: var(--text-secondary);">
+                        <strong>Nota:</strong> Las causas marcadas como "Pendiente" pueden no encontrarse en PJUD o tener un formato diferente. 
+                        Actualiza el archivo JSON con nuevas causas si es necesario.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🔄</span> Proceso de Scraping con Base64</h3>
+                </div>
+                <div class="card-body">
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h4 style="color: var(--primary); margin-bottom: 15px;">📋 Flujo Completo del Scraping</h4>
+                        <ol style="list-style: decimal; padding-left: 25px; margin: 0; line-height: 1.8;">
+                            <li><strong>Navegación:</strong> Accede al formulario de consulta de causas en PJUD</li>
+                            <li><strong>Búsqueda:</strong> Llena el formulario con los datos de la causa (RIT, tipo, competencia, corte, tribunal)</li>
+                            <li><strong>Extracción:</strong> Abre el detalle y extrae movimientos (con soporte para cuadernos si existen)</li>
+                            <li><strong>Descarga PDFs:</strong> Descarga todos los PDFs de movimientos (azul/principal y rojo/anexo)</li>
+                            <li><strong>Conversión Base64:</strong> Cada PDF descargado se convierte automáticamente a string base64</li>
+                            <li><strong>Descarga eBook:</strong> Descarga el eBook completo de la causa (si existe)</li>
+                            <li><strong>Conversión eBook:</strong> El eBook se convierte a base64 y se identifica como <code>pdf_ebook</code> por RIT</li>
+                            <li><strong>Guardado JSON:</strong> Se guarda en <code>movimientos_{RIT}.json</code> con:
+                                <ul style="list-style: disc; padding-left: 20px; margin-top: 8px;">
+                                    <li>Movimientos con <code>pdf_azul</code> y <code>pdf_rojo</code> (objetos con <code>nombre</code>, <code>base64</code>, <code>tipo</code>)</li>
+                                    <li>Campo <code>pdf_ebook</code> a nivel de causa (identificado por RIT)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Guardado BD:</strong> Si <code>DB_HOST</code> está configurado, guarda automáticamente en MariaDB:
+                                <ul style="list-style: disc; padding-left: 20px; margin-top: 8px;">
+                                    <li>Causa en tabla <code>causas</code></li>
+                                    <li>Movimientos en tabla <code>movimientos</code></li>
+                                    <li>PDFs en tabla <code>pdfs</code> con <code>base64_content</code> (LONGTEXT)</li>
+                                    <li>eBook en tabla <code>ebooks</code> con <code>base64_content</code> (LONGTEXT), identificado por RIT</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--secondary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h4 style="color: var(--secondary); margin-bottom: 15px;">✅ Características del Sistema Base64</h4>
+                        <ul style="list-style: disc; padding-left: 20px; margin: 0; line-height: 1.8;">
+                            <li><strong>Conversión automática:</strong> Todos los PDFs y eBooks se convierten a base64 durante la descarga</li>
+                            <li><strong>Doble almacenamiento:</strong> Se guarda tanto en JSON (para portabilidad) como en BD (para consulta)</li>
+                            <li><strong>Identificación por RIT:</strong> El <code>pdf_ebook</code> se identifica únicamente por el RIT de la causa</li>
+                            <li><strong>Asociación PDFs-Movimientos:</strong> Los PDFs se asocian correctamente a sus movimientos mediante <code>movimiento_id</code></li>
+                            <li><strong>Compatibilidad MariaDB 5.5:</strong> Usa LONGTEXT para almacenar base64 (no JSON nativo)</li>
+                            <li><strong>Tracking de tamaño:</strong> Guarda <code>tamano_base64_bytes</code> para monitoreo</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 15px; border-radius: 6px;">
+                        <h4 style="color: var(--warning); margin-bottom: 15px;">⚠️ Configuración Requerida</h4>
+                        <p style="margin: 0 0 10px 0; line-height: 1.6;">
+                            Para que el guardado automático en base de datos funcione, configura las siguientes variables en tu archivo <code>.env</code>:
+                        </p>
+                        <div class="command-code" style="margin-top: 10px;">
+                            <code>DB_HOST=localhost
+DB_PORT=3306
+DB_USER=tu_usuario
+DB_PASSWORD=tu_password
+DB_NAME=pjud_scraping</code>
+                        </div>
+                        <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                            Si <code>DB_HOST</code> no está configurado, el scraper solo guardará en JSON. Usa <code>--skip-database</code> para omitir el guardado en BD incluso si está configurado.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Section: Database -->
         <section class="section" id="database">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon">🗄️</span> Información de Base de Datos</h3>
+                </div>
+                <div class="card-body">
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">📋 Versión del Sistema</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 8px 0;"><strong>Linux:</strong> CentOS Linux release 7.9.2009</li>
+                            <li style="margin: 8px 0;"><strong>MariaDB:</strong> Ver 15.1 Distrib 5.5.68-MariaDB</li>
+                            <li style="margin: 8px 0;"><strong>Apache:</strong> Apache/2.4.6 (CentOS)</li>
+                            <li style="margin: 8px 0;"><strong>PHP:</strong> PHP 7.4.33</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--secondary); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <h4 style="color: var(--secondary); margin-bottom: 10px;">💾 Almacenamiento Base64</h4>
+                        <p style="margin: 0; line-height: 1.6;">
+                            Los PDFs y eBooks descargados durante el scraping se convierten automáticamente a <strong>base64</strong> y se almacenan en:
+                        </p>
+                        <ul style="list-style: disc; padding-left: 20px; margin-top: 10px;">
+                            <li><strong>JSON:</strong> En el archivo <code>movimientos_{RIT}.json</code> dentro de cada movimiento (campo <code>pdf_azul</code>, <code>pdf_rojo</code>) o en el nivel de causa (campo <code>ebook</code> con <code>pdf_ebook</code>)</li>
+                            <li><strong>Base de Datos:</strong> En las tablas <code>pdfs</code> y <code>ebooks</code> en el campo <code>base64_content</code> (LONGTEXT para MariaDB 5.5)</li>
+                        </ul>
+                        <p style="margin-top: 10px; margin-bottom: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>Nota:</strong> MariaDB 5.5 no soporta JSON nativo, por lo que usamos LONGTEXT para almacenar el contenido base64.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3><span class="icon">🗄️</span> Comandos de Base de Datos</h3>
@@ -1053,13 +1399,13 @@ npm run api:start</code>
                             </tr>
                             <tr>
                                 <td><code>pdfs</code></td>
-                                <td>Registro de PDFs descargados</td>
-                                <td>movimiento_id, nombre_archivo, ruta</td>
+                                <td>Registro de PDFs descargados con base64</td>
+                                <td>movimiento_id, nombre_archivo, ruta, <strong>base64_content</strong> (LONGTEXT), tipo (PRINCIPAL/ANEXO/EBOOK)</td>
                             </tr>
                             <tr>
                                 <td><code>ebooks</code></td>
-                                <td>Registro de eBooks descargados</td>
-                                <td>causa_id, nombre_archivo, ruta</td>
+                                <td>Registro de eBooks descargados con base64 (pdf_ebook)</td>
+                                <td>causa_id, nombre_archivo, ruta, <strong>base64_content</strong> (LONGTEXT), identificado por RIT</td>
                             </tr>
                             <tr>
                                 <td><code>errores_scraping</code></td>
@@ -1537,12 +1883,29 @@ npm run api:start</code>
 
                     <div class="command-block">
                         <div class="command-header">
-                            <span class="command-title">Instalar Playwright (navegador)</span>
+                            <span class="command-title">Instalar Firefox para Playwright (recomendado)</span>
+                            <span class="command-badge npm">npm</span>
+                        </div>
+                        <div class="command-code">
+                            <code>npx playwright install firefox</code>
+                            <button class="copy-btn" onclick="copyCommand('npx playwright install firefox')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Firefox es el navegador por defecto. Funciona mejor con reCAPTCHA v3 del PJUD.
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <span class="command-title">Instalar Chromium para Playwright (alternativo)</span>
                             <span class="command-badge npm">npm</span>
                         </div>
                         <div class="command-code">
                             <code>npx playwright install chromium</code>
                             <button class="copy-btn" onclick="copyCommand('npx playwright install chromium')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            <strong>⚠️ No recomendado:</strong> Chromium tiene problemas con reCAPTCHA v3 en modo headless.
                         </div>
                     </div>
 
@@ -1626,6 +1989,16 @@ npm run services:status  # Ver estado</code>
                                 <td><code>API_PORT</code></td>
                                 <td>Puerto del servidor</td>
                                 <td>3000</td>
+                            </tr>
+                            <tr>
+                                <td><code>USE_FIREFOX</code></td>
+                                <td>Usar Firefox en lugar de Chromium</td>
+                                <td>true (por defecto)</td>
+                            </tr>
+                            <tr>
+                                <td><code>SCRAPER_HEADLESS</code></td>
+                                <td>Modo headless del navegador</td>
+                                <td>true (por defecto)</td>
                             </tr>
                         </tbody>
                     </table>

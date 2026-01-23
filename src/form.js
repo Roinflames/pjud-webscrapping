@@ -353,91 +353,305 @@ async function openDetalle(page) {
     // Guardar URL actual para detectar navegación
     const urlAntes = page.url();
 
-    // Buscar y hacer click usando JavaScript directamente
-    // El enlace puede tener title="Detalle de la causa" o ser el primer <a> en la celda
-    const clicked = await page.evaluate(() => {
-      // Intentar primero con el selector original
-      let link = document.querySelector('a[title="Detalle de la causa"]');
-
-      if (!link) {
-        // Buscar en la primera fila de la tabla de resultados
-        const firstRow = document.querySelector('table tbody tr');
-        if (firstRow) {
-          // El enlace de la lupa suele estar en la primera celda
-          link = firstRow.querySelector('td a') || firstRow.querySelector('a');
+    // DEBUG: Buscar específicamente en la tabla de resultados (dtaTableDetalle)
+    const tableInfo = await page.evaluate(() => {
+      // Buscar la tabla de resultados por ID o por contenido de RIT
+      const tables = document.querySelectorAll('table');
+      let resultTable = null;
+      
+      for (const table of tables) {
+        if (table.id === 'dtaTableDetalle') {
+          resultTable = table;
+          break;
+        }
+        // Buscar tabla que contenga RIT (C-xxx-xxxx)
+        const firstRow = table.querySelector('tbody tr');
+        if (firstRow && firstRow.innerText.match(/C-\d+-\d{4}/)) {
+          resultTable = table;
+          break;
         }
       }
-
-      if (link) {
-        console.log('Encontrado enlace:', link.outerHTML.substring(0, 200));
-        link.click();
-        return true;
+      
+      if (!resultTable) {
+        return { error: 'No se encontró tabla de resultados', tablesCount: tables.length };
       }
-      return false;
+      
+      const firstRow = resultTable.querySelector('tbody tr');
+      if (!firstRow) {
+        return { error: 'Tabla sin filas', tableId: resultTable.id };
+      }
+      
+      const allLinks = [...firstRow.querySelectorAll('a')];
+      return {
+        tableId: resultTable.id || 'sin-id',
+        tableClass: resultTable.className,
+        rowText: firstRow.innerText.substring(0, 200),
+        linksCount: allLinks.length,
+        links: allLinks.map(a => ({
+          onclick: a.getAttribute('onclick')?.substring(0, 100),
+          href: a.href,
+          title: a.title
+        }))
+      };
+    });
+    console.log("🔍 DEBUG - Tabla de resultados:", JSON.stringify(tableInfo, null, 2));
+    
+    // Buscar y hacer click en el enlace de detalle de la primera causa
+    const clicked = await page.evaluate(() => {
+      // Buscar la tabla de resultados
+      let resultTable = document.querySelector('#dtaTableDetalle');
+      
+      if (!resultTable) {
+        // Buscar tabla con RIT
+        const tables = document.querySelectorAll('table');
+        for (const table of tables) {
+          const firstRow = table.querySelector('tbody tr');
+          if (firstRow && firstRow.innerText.match(/C-\d+-\d{4}/)) {
+            resultTable = table;
+            break;
+          }
+        }
+      }
+      
+      if (!resultTable) {
+        return { clicked: false, error: 'No se encontró tabla de resultados' };
+      }
+      
+      // Buscar el enlace de detalle en la primera fila
+      const firstRow = resultTable.querySelector('tbody tr');
+      if (!firstRow) {
+        return { clicked: false, error: 'Tabla sin filas' };
+      }
+      
+      // El enlace de detalle tiene onclick="detalleCausaCivil(...)"
+      const detalleLink = firstRow.querySelector('a[onclick*="detalleCausaCivil"]') ||
+                          firstRow.querySelector('a[onclick]') ||
+                          firstRow.querySelector('td:first-child a');
+      
+      if (detalleLink) {
+        // Retornar info del enlace para hacer click con Playwright
+        return {
+          found: true,
+          selector: 'a[onclick*="detalleCausaCivil"]',
+          onclick: detalleLink.getAttribute('onclick')?.substring(0, 200)
+        };
+      }
+      
+      return { found: false, error: 'No se encontró enlace de detalle en la fila' };
+    });
+    
+    if (!clicked.found) {
+      console.log("   ⚠️ No se encontró enlace en la primera fila, buscando en toda la tabla...");
+      // Intentar buscar en cualquier fila de la tabla
+      const hasLink = await page.$('a[onclick*="detalleCausaCivil"]');
+      if (!hasLink) {
+        await page.screenshot({ path: 'debug_no_enlace_detalle.png', fullPage: true });
+        throw new Error('No se encontró el enlace de detalle en la tabla de resultados');
+      }
+    }
+    
+    // Usar page.click() de Playwright para hacer click real (mejor para reCAPTCHA)
+    console.log("   🖱️ Haciendo click con Playwright en el enlace de detalle...");
+    try {
+      // Hacer click en el primer enlace con onclick de detalleCausaCivil
+      await page.click('table#dtaTableDetalle tbody tr:first-child a[onclick*="detalleCausaCivil"]', { timeout: 5000 });
+    } catch (e) {
+      // Fallback: buscar cualquier enlace de detalle
+      try {
+        await page.click('a[onclick*="detalleCausaCivil"]', { timeout: 5000 });
+      } catch (e2) {
+        // Último fallback: click con JavaScript
+        await page.evaluate(() => {
+          const link = document.querySelector('a[onclick*="detalleCausaCivil"]');
+          if (link) link.click();
+        });
+      }
+    }
+    
+    const clicked2 = { clicked: true, method: 'playwright_click', onclick: clicked.onclick };
+
+    console.log(`✅ Click ejecutado en enlace de detalle (método: ${clicked2.method})`);
+    if (clicked2.onclick) {
+      console.log(`   📋 onclick: ${clicked2.onclick}`);
+    }
+    
+    // Capturar errores JavaScript de la página
+    const jsErrors = [];
+    page.on('pageerror', error => {
+      jsErrors.push(error.message);
+      console.log(`   ❌ Error JS en página: ${error.message}`);
+    });
+    
+    // Capturar solicitudes de red fallidas
+    page.on('requestfailed', request => {
+      console.log(`   ❌ Request fallido: ${request.url()} - ${request.failure()?.errorText}`);
     });
 
-    if (!clicked) {
-      await page.screenshot({ path: 'debug_no_enlace_detalle.png', fullPage: true });
-      throw new Error('No se encontró el enlace de detalle en la tabla de resultados');
+    // Esperar a que el modal se abra y cargue contenido AJAX
+    // El PJUD carga el contenido del modal dinámicamente via AJAX
+    console.log("🔄 Esperando modal y contenido AJAX...");
+    
+    // Verificar si la función detalleCausaCivil existe y obtener su código
+    const funcInfo = await page.evaluate(() => {
+      return {
+        exists: typeof window.detalleCausaCivil === 'function',
+        typeOf: typeof window.detalleCausaCivil,
+        // Obtener el código completo de la función
+        source: typeof window.detalleCausaCivil === 'function' 
+          ? window.detalleCausaCivil.toString()
+          : 'N/A'
+      };
+    });
+    console.log(`   🔍 Función detalleCausaCivil: existe=${funcInfo.exists}`);
+    if (funcInfo.exists) {
+      console.log(`   📋 Código completo de la función:`);
+      console.log(funcInfo.source);
     }
-
-    console.log("✅ Click ejecutado en enlace de detalle");
-
-    // Esperar a que algo cambie (modal o navegación)
-    await page.waitForTimeout(2000);
-
-    // Verificar si navegó a otra página
-    const urlDespues = page.url();
-    const navego = urlDespues !== urlAntes;
-
-    if (navego) {
-      console.log("📄 Navegó a página de detalle:", urlDespues);
-      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
-    } else {
-      // Esperar el modal
-      console.log("🔄 Esperando modal...");
-
-      try {
-        // Esperar que el modal sea visible
-        await page.waitForFunction(() => {
-          const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
-          if (!modal) return false;
-
-          // Verificar que tenga contenido (tabla de historia)
-          const tabla = modal.querySelector('table tbody tr');
-          return tabla !== null;
-        }, { timeout: 20000 });
-
-        console.log("✅ Modal con contenido detectado");
-      } catch (e) {
-        // Verificar si el modal existe pero está vacío o cargando
-        const modalState = await page.evaluate(() => {
-          const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral');
-          if (!modal) return { exists: false };
-
-          const style = window.getComputedStyle(modal);
-          return {
-            exists: true,
-            display: style.display,
-            visibility: style.visibility,
-            hasShow: modal.classList.contains('show'),
-            innerHTML: modal.innerHTML.substring(0, 500)
-          };
-        });
-
-        console.log("Estado del modal:", JSON.stringify(modalState, null, 2));
-
-        if (modalState.exists && (modalState.display !== 'none' || modalState.hasShow)) {
-          console.log("✅ Modal detectado (puede estar cargando contenido)");
-          // Esperar un poco más para que cargue
-          await page.waitForTimeout(3000);
-        } else {
-          await page.screenshot({ path: 'debug_sin_modal.png', fullPage: true });
-          throw new Error('Modal no se abrió correctamente');
+    
+    // Interceptar TODAS las peticiones de red después del click
+    const allResponses = [];
+    page.on('response', async response => {
+      const url = response.url();
+      // Ignorar recursos estáticos
+      if (!url.includes('.css') && !url.includes('.js') && !url.includes('.png') && !url.includes('.jpg') && !url.includes('.gif') && !url.includes('.woff')) {
+        try {
+          const status = response.status();
+          allResponses.push({ url: url.substring(0, 120), status });
+          console.log(`   📡 Response: ${status} - ${url.substring(0, 80)}`);
+        } catch (e) {}
+      }
+    });
+    
+    // El click ya ejecutó la función detalleCausaCivil que hace reCAPTCHA + AJAX
+    // El PJUD tarda 10-15 segundos en cargar el modal con los movimientos
+    // Solo necesitamos esperar pacientemente a que el contenido se cargue
+    console.log("   ⏳ Esperando carga del modal (reCAPTCHA + AJAX tarda 10-15 segundos)...");
+    
+    // Esperar hasta 30 segundos a que el modal tenga contenido
+    let intentos = 0;
+    const maxIntentos = 30; // 30 intentos de 1 segundo = 30 segundos máximo
+    let tablaEncontrada = false;
+    
+    while (intentos < maxIntentos && !tablaEncontrada) {
+      const modalContent = await page.evaluate(() => {
+        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+        if (!modal) return { exists: false, visible: false, hasTable: false, tableRows: 0, tableCols: 0 };
+        
+        const isVisible = modal.classList.contains('show') || 
+                          modal.style.display === 'block' ||
+                          window.getComputedStyle(modal).display !== 'none';
+        
+        // Buscar tabla DENTRO del modal con columnas de movimientos (6+ columnas)
+        const tables = modal.querySelectorAll('table');
+        let bestTable = null;
+        let maxCols = 0;
+        
+        for (const table of tables) {
+          const firstRow = table.querySelector('tbody tr');
+          if (firstRow) {
+            const cols = firstRow.querySelectorAll('td').length;
+            if (cols > maxCols) {
+              maxCols = cols;
+              bestTable = table;
+            }
+          }
         }
+        
+        const tableRows = bestTable ? bestTable.querySelectorAll('tbody tr').length : 0;
+        
+        return {
+          exists: true,
+          visible: isVisible,
+          hasTable: bestTable !== null && maxCols >= 6,
+          tableRows: tableRows,
+          tableCols: maxCols,
+          contentLength: modal.innerHTML.length
+        };
+      });
+      
+      // Mostrar progreso cada 5 segundos
+      if (intentos % 5 === 0 || modalContent.hasTable) {
+        console.log(`   🔄 [${intentos}s] Modal: visible=${modalContent.visible}, tabla=${modalContent.hasTable}, filas=${modalContent.tableRows}, cols=${modalContent.tableCols}, contenido=${modalContent.contentLength} chars`);
+      }
+      
+      // Éxito si encontramos tabla con 6+ columnas (tabla de movimientos)
+      if (modalContent.hasTable && modalContent.tableRows > 0 && modalContent.tableCols >= 6) {
+        tablaEncontrada = true;
+        console.log(`   ✅ Modal cargado con tabla de movimientos (${modalContent.tableRows} filas, ${modalContent.tableCols} columnas)`);
+      } else {
+        await page.waitForTimeout(1000);
+        intentos++;
       }
     }
+    
+    if (!tablaEncontrada) {
+      console.warn(`   ⚠️ No se detectó tabla de movimientos después de ${maxIntentos} segundos`);
+      console.log(`   📡 Responses capturadas: ${allResponses.length}`);
+      allResponses.slice(-5).forEach(r => console.log(`      - ${r.status}: ${r.url}`));
+    }
 
+    // Esperar a que la tabla de movimientos tenga contenido con al menos 6 columnas
+    console.log("🔄 Verificando tabla de movimientos...");
+    
+    // Esperar más tiempo para que cargue el contenido AJAX del modal
+    await page.waitForTimeout(3000);
+    
+    try {
+      // El PJUD carga la tabla de movimientos via AJAX en el modal
+      // Buscar cualquier tabla con más de 6 columnas
+      await page.waitForFunction(() => {
+        // Buscar en toda la página tablas con 6+ columnas
+        const allTables = document.querySelectorAll('table.table tbody tr');
+        for (const tr of allTables) {
+          const cols = tr.querySelectorAll('td');
+          if (cols.length >= 6) {
+            return true;
+          }
+        }
+        return false;
+      }, { timeout: 15000 });
+      console.log("✅ Tabla de movimientos con contenido detectada");
+    } catch (e) {
+      console.warn("⚠️ No se pudo verificar tabla de movimientos, continuando...");
+      // Debug: mostrar todas las tablas disponibles
+      const tableInfo = await page.evaluate(() => {
+        const tables = document.querySelectorAll('table');
+        return Array.from(tables).map((t, i) => ({
+          index: i,
+          id: t.id || 'sin-id',
+          className: t.className,
+          rows: t.querySelectorAll('tbody tr').length,
+          firstRowCols: t.querySelector('tbody tr')?.querySelectorAll('td').length || 0
+        }));
+      });
+      console.log("📊 Tablas disponibles:", JSON.stringify(tableInfo, null, 2));
+    }
+    
+    // Capturar screenshot y HTML para debugging
+    const timestamp = Date.now();
+    const debugScreenshot = `src/logs/debug_detalle_${timestamp}.png`;
+    await page.screenshot({ path: debugScreenshot, fullPage: true }).catch(() => {});
+    console.log(`📸 Screenshot guardado: ${debugScreenshot}`);
+    
+    // Capturar HTML del modal
+    const modalHtml = await page.evaluate(() => {
+      const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+      if (modal) {
+        return {
+          id: modal.id,
+          className: modal.className,
+          style: modal.getAttribute('style'),
+          innerHTML: modal.innerHTML.substring(0, 5000) // Primeros 5000 caracteres
+        };
+      }
+      return null;
+    });
+    if (modalHtml) {
+      const fs = require('fs');
+      fs.writeFileSync(`src/logs/debug_modal_${timestamp}.json`, JSON.stringify(modalHtml, null, 2));
+      console.log(`📄 HTML del modal guardado: src/logs/debug_modal_${timestamp}.json`);
+    }
+    
     // Delay final
     await page.waitForTimeout(500);
     console.log("✅ Detalle cargado.");

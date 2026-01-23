@@ -161,6 +161,10 @@ CREATE TABLE `pdfs` (
     `tamano_bytes` INT(11) UNSIGNED DEFAULT NULL,
     `hash_md5` VARCHAR(32) DEFAULT NULL,
     
+    -- Contenido base64 (para MariaDB 5.5 usamos LONGTEXT)
+    `base64_content` LONGTEXT DEFAULT NULL COMMENT 'Contenido del PDF en base64',
+    `tamano_base64_bytes` INT(11) UNSIGNED DEFAULT NULL COMMENT 'Tamaño del string base64',
+    
     `descargado` TINYINT(1) DEFAULT 0,
     `fecha_descarga` DATETIME DEFAULT NULL,
     `error_descarga` VARCHAR(500) DEFAULT NULL,
@@ -190,6 +194,10 @@ CREATE TABLE `ebooks` (
     `nombre_archivo` VARCHAR(255) NOT NULL,
     `ruta_relativa` VARCHAR(500) DEFAULT NULL,
     `tamano_bytes` INT(11) UNSIGNED DEFAULT NULL,
+    
+    -- Contenido base64 (para MariaDB 5.5 usamos LONGTEXT)
+    `base64_content` LONGTEXT DEFAULT NULL COMMENT 'Contenido del eBook en base64 (pdf_ebook)',
+    `tamano_base64_bytes` INT(11) UNSIGNED DEFAULT NULL COMMENT 'Tamaño del string base64',
     
     `descargado` TINYINT(1) DEFAULT 0,
     `fecha_descarga` DATETIME DEFAULT NULL,

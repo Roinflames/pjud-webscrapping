@@ -77,36 +77,67 @@ function buscarResultadoEnArchivos(rit) {
     console.log(`[storage] Buscando archivos para RIT: ${rit}`);
     console.log(`[storage] ritNormalizado: ${ritNormalizado}`);
     
-    // Buscar archivo movimientos_*.json (estructurado)
+    // Buscar archivo movimientos_*.json (estructurado del scraper-5-causas)
     const archivoMovimientos = path.join(outputsDir, `movimientos_${ritNormalizado}.json`);
     if (fs.existsSync(archivoMovimientos)) {
       const datos = JSON.parse(fs.readFileSync(archivoMovimientos, 'utf-8'));
       
-      // Leer PDFs desde archivos físicos y convertirlos a base64
+      // Los PDFs ya vienen en base64 dentro de los movimientos (pdf_azul.base64, pdf_rojo.base64)
+      // También puede haber pdf_ebook en el nivel de causa
       const pdfsBase64 = {};
+      
+      // Extraer PDFs base64 de los movimientos
+      if (datos.movimientos && Array.isArray(datos.movimientos)) {
+        datos.movimientos.forEach((mov, idx) => {
+          if (mov.pdf_azul && mov.pdf_azul.base64) {
+            const nombre = mov.pdf_azul.nombre || `${ritNormalizado}_mov_${mov.folio || mov.indice || idx}_azul.pdf`;
+            pdfsBase64[nombre] = mov.pdf_azul.base64;
+          }
+          if (mov.pdf_rojo && mov.pdf_rojo.base64) {
+            const nombre = mov.pdf_rojo.nombre || `${ritNormalizado}_mov_${mov.folio || mov.indice || idx}_rojo.pdf`;
+            pdfsBase64[nombre] = mov.pdf_rojo.base64;
+          }
+        });
+      }
+      
+      // Agregar eBook si existe (pdf_ebook)
+      if (datos.ebook && datos.ebook.base64) {
+        const nombreEbook = datos.ebook.nombre || datos.pdf_ebook?.nombre || `${ritNormalizado}_ebook.pdf`;
+        pdfsBase64[nombreEbook] = datos.ebook.base64;
+      } else if (datos.pdf_ebook && datos.pdf_ebook.base64) {
+        const nombreEbook = datos.pdf_ebook.nombre || `${ritNormalizado}_ebook.pdf`;
+        pdfsBase64[nombreEbook] = datos.pdf_ebook.base64;
+      }
+      
+      // También buscar PDFs físicos si no están en base64 (fallback)
       const pdfFiles = fs.readdirSync(outputsDir).filter(f => 
         f.startsWith(ritNormalizado) && f.endsWith('.pdf')
       );
       
       for (const pdfFile of pdfFiles) {
-        const pdfPath = path.join(outputsDir, pdfFile);
-        try {
-          const fileBuffer = fs.readFileSync(pdfPath);
-          pdfsBase64[pdfFile] = fileBuffer.toString('base64');
-        } catch (error) {
-          console.warn(`No se pudo leer PDF ${pdfFile}:`, error.message);
+        if (!pdfsBase64[pdfFile]) {
+          const pdfPath = path.join(outputsDir, pdfFile);
+          try {
+            const fileBuffer = fs.readFileSync(pdfPath);
+            pdfsBase64[pdfFile] = fileBuffer.toString('base64');
+          } catch (error) {
+            console.warn(`No se pudo leer PDF ${pdfFile}:`, error.message);
+          }
         }
       }
       
       // Estructurar resultado como lo espera el sistema
       return {
-        rit: datos.causa?.rit || rit,
-        fecha_scraping: datos.metadata?.fecha_procesamiento || new Date().toISOString(),
+        rit: datos.rit || datos.cabecera?.rit || rit,
+        fecha_scraping: datos.procesado_en || datos.metadata?.fecha_procesamiento || new Date().toISOString(),
         movimientos: datos.movimientos || [],
-        cabecera: datos.causa || {},
+        cabecera: datos.cabecera || {},
         estado_actual: datos.estado_actual || {},
         pdfs: pdfsBase64,
-        total_movimientos: datos.metadata?.total_movimientos || (datos.movimientos ? datos.movimientos.length : 0),
+        ebook: datos.ebook || datos.pdf_ebook || null,
+        pdf_ebook: datos.pdf_ebook || (datos.ebook ? { rit: datos.rit, nombre: datos.ebook.nombre, base64: datos.ebook.base64, tipo: datos.ebook.tipo, tamaño_kb: datos.ebook.tamaño_kb } : null),
+        cuadernos: datos.cuadernos || null,
+        total_movimientos: datos.movimientos?.length || datos.metadata?.total_movimientos || 0,
         total_pdfs: Object.keys(pdfsBase64).length,
         estado: 'completado'
       };

@@ -810,6 +810,264 @@
 
             <div class="card">
                 <div class="card-header">
+                    <h3><span class="icon">🔍</span> Cómo Funciona el Frontend en /demo - Extracción y Visualización de Datos</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        Esta sección explica en detalle cómo el frontend en <code>/demo</code> extrae la información de las causas desde la API y cómo la muestra al usuario.
+                    </p>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📥 Flujo de Carga de Datos</h4>
+                    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <p style="margin: 0 0 10px; font-size: 0.9rem; font-weight: 600;">El proceso de carga sigue estos pasos:</p>
+                        <ol style="list-style: decimal; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Inicialización:</strong> Al cargar la página, se ejecuta <code>$(document).ready()</code></li>
+                            <li><strong>Renderizado inicial:</strong> Se muestran datos estáticos de ejemplo con <code>renderizarCausasGuardadas()</code></li>
+                            <li><strong>Carga asíncrona:</strong> En segundo plano se ejecuta <code>cargarCausasDesdeJSON()</code></li>
+                            <li><strong>Actualización:</strong> Los datos reales reemplazan los datos de ejemplo cuando están disponibles</li>
+                        </ol>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔌 Extracción de Datos desde la API</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        El frontend utiliza dos endpoints principales para obtener los datos:
+                    </p>
+
+                    <div class="command-block" style="margin-bottom: 20px;">
+                        <div class="command-header">
+                            <span class="command-title">1. Listar RITs Disponibles</span>
+                            <span class="command-badge api">API</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/scraping/listar</code>
+                            <button class="copy-btn" onclick="copyCommand('GET /api/scraping/listar')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene una lista de todos los RITs (causas) disponibles en el sistema. Retorna un array con los RITs que tienen datos guardados.
+                        </div>
+                    </div>
+
+                    <div class="command-block" style="margin-bottom: 20px;">
+                        <div class="command-header">
+                            <span class="command-title">2. Obtener Datos de una Causa Específica</span>
+                            <span class="command-badge api">API</span>
+                        </div>
+                        <div class="command-code">
+                            <code>GET /api/scraping/resultado/{rit}</code>
+                            <button class="copy-btn" onclick="copyCommand('GET /api/scraping/resultado/{rit}')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Obtiene todos los datos de una causa específica, incluyendo movimientos, PDFs (en base64), eBook, cuadernos, etc.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔄 Función: cargarCausasDesdeJSON()</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Esta función es el corazón del sistema de extracción de datos. Realiza las siguientes operaciones:
+                    </p>
+
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h5 style="color: var(--success); margin-bottom: 10px;">Proceso Detallado:</h5>
+                        <ol style="list-style: decimal; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Obtener lista de RITs:</strong> Hace fetch a <code>/api/scraping/listar</code> para obtener todos los RITs disponibles</li>
+                            <li><strong>Iterar sobre cada RIT:</strong> Para cada RIT encontrado, hace fetch a <code>/api/scraping/resultado/{rit}</code></li>
+                            <li><strong>Transformar datos:</strong> Convierte el formato del scraper/BD al formato esperado por el frontend</li>
+                            <li><strong>Procesar movimientos:</strong> Extrae y normaliza los movimientos procesales con sus PDFs</li>
+                            <li><strong>Procesar eBook:</strong> Extrae el eBook (carpeta digital completa) si está disponible</li>
+                            <li><strong>Actualizar interfaz:</strong> Reemplaza los datos estáticos con los datos reales cargados</li>
+                        </ol>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📊 Transformación de Datos</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        El frontend transforma los datos del formato del scraper/BD al formato interno del frontend:
+                    </p>
+
+                    <table class="info-table" style="margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th>Campo Original (API)</th>
+                                <th>Campo Frontend</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>data.rit</code></td>
+                                <td><code>causa.rit</code></td>
+                                <td>RIT de la causa (ej: "C-571-2019")</td>
+                            </tr>
+                            <tr>
+                                <td><code>data.cabecera.caratulado</code></td>
+                                <td><code>causa.caratulado</code></td>
+                                <td>Nombre/caratulado de la causa</td>
+                            </tr>
+                            <tr>
+                                <td><code>data.cabecera.juzgado</code></td>
+                                <td><code>causa.tribunal</code></td>
+                                <td>Nombre del tribunal/juzgado</td>
+                            </tr>
+                            <tr>
+                                <td><code>data.movimientos[]</code></td>
+                                <td><code>causa.movimientos[]</code></td>
+                                <td>Array de movimientos procesales</td>
+                            </tr>
+                            <tr>
+                                <td><code>mov.pdf_azul</code> / <code>mov.pdf_rojo</code></td>
+                                <td><code>mov.pdf_azul</code> / <code>mov.pdf_rojo</code></td>
+                                <td>Objetos PDF con <code>nombre</code> y <code>base64</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>data.ebook</code> / <code>data.pdf_ebook</code></td>
+                                <td><code>causa.ebook</code></td>
+                                <td>eBook completo de la causa</td>
+                            </tr>
+                            <tr>
+                                <td><code>data.cuadernos[]</code></td>
+                                <td><code>causa.cuadernos[]</code></td>
+                                <td>Array de cuadernos si la causa tiene múltiples</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📄 Procesamiento de PDFs</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Los PDFs pueden venir en diferentes formatos desde la API. El frontend normaliza todos a un formato estándar:
+                    </p>
+
+                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h5 style="color: var(--warning); margin-bottom: 10px;">Formatos Soportados:</h5>
+                        <ul style="list-style: disc; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Objeto con base64:</strong> <code>{nombre: "archivo.pdf", base64: "data:application/pdf;base64,...", tipo: "application/pdf"}</code></li>
+                            <li><strong>String (nombre):</strong> Si solo viene el nombre, busca el base64 en <code>data.pdfs[nombre]</code></li>
+                            <li><strong>Fallback a pdf_principal/anexo:</strong> Si no hay pdf_azul/rojo, intenta usar pdf_principal/anexo</li>
+                        </ul>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🎨 Visualización de Datos</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Una vez que los datos están cargados y transformados, se muestran en la interfaz mediante varias funciones:
+                    </p>
+
+                    <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h5 style="color: #8b5cf6; margin-bottom: 10px;">Funciones de Renderizado:</h5>
+                        <ul style="list-style: disc; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>renderizarCausasGuardadas():</strong> Muestra la tabla principal con todas las causas disponibles</li>
+                            <li><strong>verDetalle(rit):</strong> Abre el modal con el detalle completo de una causa específica</li>
+                            <li><strong>renderModalMovimientos():</strong> Renderiza la tabla de movimientos dentro del modal de detalle</li>
+                            <li><strong>cargarContenidoDemanda(causa):</strong> Carga la pestaña "Demanda" con movimientos relacionados</li>
+                            <li><strong>cargarContenidoEstados(causa):</strong> Carga la pestaña "Estados" con estados únicos de la causa</li>
+                        </ul>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📋 Estructura de Datos en el Frontend</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        Cada causa en el frontend tiene la siguiente estructura:
+                    </p>
+
+                    <div class="command-block" style="margin-bottom: 20px;">
+                        <div class="command-header">
+                            <span class="command-title">Estructura de Objeto Causa</span>
+                            <span class="command-badge js">JavaScript</span>
+                        </div>
+                        <div class="command-code">
+                            <code>{
+  rit: "C-571-2019",
+  caratulado: "HERRERA/LANDERO",
+  tribunal: "Juzgado de Letras de San Javier",
+  fechaIngreso: "27/05/2019",
+  estado: "EN_TRAMITE",
+  movimientos: [
+    {
+      folio: 1,
+      fecha: "27/05/2019",
+      etapa: "Ingreso",
+      tramite: "Ingreso",
+      descripcion: "Se ingresa demanda civil",
+      foja: "1",
+      pdf_azul: {
+        nombre: "C_571_2019_mov_1_azul.pdf",
+        base64: "data:application/pdf;base64,...",
+        tipo: "application/pdf"
+      },
+      pdf_rojo: null,
+      tiene_pdf_azul: true,
+      tiene_pdf_rojo: false
+    }
+  ],
+  totalPdfs: 3,
+  tieneEbook: false,
+  ebook: null,
+  cuadernos: [
+    {
+      id_cuaderno: "1",
+      nombre: "Principal",
+      movimientos: [...]
+    }
+  ]
+}</code>
+                            <button class="copy-btn" onclick="copyCommand('Estructura de objeto causa')">Copiar</button>
+                        </div>
+                        <div class="description">
+                            Esta es la estructura completa que el frontend espera para cada causa. Los datos se transforman desde el formato de la API a este formato interno.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">🔍 Búsqueda y Filtrado</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        El frontend incluye funcionalidades de búsqueda y filtrado:
+                    </p>
+
+                    <ul style="list-style: disc; padding-left: 25px; line-height: 1.8;">
+                        <li><strong>Búsqueda por RIT:</strong> El formulario de búsqueda permite buscar por Rol y Año, construyendo el RIT como "C-{rol}-{año}"</li>
+                        <li><strong>Filtros en modal:</strong> Dentro del modal de detalle se pueden filtrar movimientos por:
+                            <ul style="list-style: circle; padding-left: 20px; margin-top: 5px;">
+                                <li>Fecha (búsqueda de texto)</li>
+                                <li>Descripción (búsqueda de texto)</li>
+                                <li>Etapa procesal (dropdown)</li>
+                                <li>Cuaderno (dropdown, solo si hay múltiples cuadernos)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Paginación:</strong> Los movimientos se muestran con paginación (25 por página por defecto) para mejorar el rendimiento</li>
+                    </ul>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">📥 Descarga y Visualización de PDFs</h4>
+                    <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                        El frontend maneja los PDFs de dos formas según cómo estén almacenados:
+                    </p>
+
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--info); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h5 style="color: var(--info); margin-bottom: 10px;">Métodos de Acceso a PDFs:</h5>
+                        <ol style="list-style: decimal; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li><strong>Con base64:</strong> Si el PDF tiene <code>base64</code> en el objeto, se descarga directamente usando <code>descargarPDFBase64()</code> o se muestra con <code>verPDFBase64()</code></li>
+                            <li><strong>Sin base64:</strong> Si solo tiene <code>nombre</code>, hace fetch a <code>/api/scraping/pdf/{rit}/{nombre}</code> para obtener el PDF desde el servidor</li>
+                            <li><strong>eBook:</strong> Similar proceso, pero usando <code>descargarEbook()</code> o <code>verEbook()</code></li>
+                        </ol>
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">⚡ Optimizaciones y Manejo de Errores</h4>
+                    <ul style="list-style: disc; padding-left: 25px; line-height: 1.8;">
+                        <li><strong>Carga progresiva:</strong> Primero se muestran datos estáticos, luego se cargan los reales en segundo plano</li>
+                        <li><strong>Manejo de errores:</strong> Si la API no está disponible, se usan datos de ejemplo con una notificación</li>
+                        <li><strong>Notificaciones:</strong> El sistema muestra notificaciones informativas durante la carga y al completar</li>
+                        <li><strong>Fallback:</strong> Si un RIT no se puede cargar, se omite y se continúa con los demás</li>
+                        <li><strong>Combinación de datos:</strong> Los datos cargados desde la API se combinan con datos estáticos (si no se cargaron desde la API)</li>
+                    </ul>
+
+                    <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <h5 style="color: var(--danger); margin-bottom: 10px;">⚠️ Notas Importantes:</h5>
+                        <ul style="list-style: disc; padding-left: 25px; margin: 0; line-height: 1.8; font-size: 0.9rem;">
+                            <li>El frontend espera que los datos estén en formato JSON válido</li>
+                            <li>Los PDFs en base64 pueden ser muy grandes, por lo que se recomienda cargarlos bajo demanda</li>
+                            <li>Si un movimiento no tiene PDF, se muestra un indicador "-" en lugar de botones</li>
+                            <li>El sistema detecta automáticamente si hay múltiples cuadernos y muestra el selector correspondiente</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
                     <h3><span class="icon">📋</span> Movimientos Procesales (/movimientos)</h3>
                 </div>
                 <div class="card-body">
@@ -1134,7 +1392,7 @@ npm run api:start</code>
                         </div>
                         <div class="command-code">
                             <code>POST /api/dashboard/verificar-movimientos/:rit</code>
-                            <button class="copy-btn" onclick="copyCommand('curl -X POST http://localhost:3000/api/dashboard/verificar-movimientos/C-571-2018 -H \"Content-Type: application/json\" -d \'{\"email_cliente\":\"cliente@ejemplo.com\",\"nombre_cliente\":\"Juan Pérez\"}\'')">Copiar</button>
+                            <button class="copy-btn" onclick="copyCommand('curl -X POST http://localhost:3000/api/dashboard/verificar-movimientos/C-571-2018 -H &quot;Content-Type: application/json&quot; -d &apos;{&quot;email_cliente&quot;:&quot;cliente@ejemplo.com&quot;,&quot;nombre_cliente&quot;:&quot;Juan Pérez&quot;}&apos;')">Copiar</button>
                         </div>
                         <div class="description">
                             Verifica movimientos nuevos en una causa específica y envía email de notificación si los hay.
@@ -1269,7 +1527,7 @@ APP_URL=http://localhost:3000
                         </div>
                         <div class="command-code">
                             <code>GET /api/causas/:rit/movimientos?limit=20&etapa=Ingreso</code>
-                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/causas/C-571-2018/movimientos?limit=10\"')">Copiar</button>
+                            <button class="copy-btn" onclick="copyCommand('curl &quot;http://localhost:3000/api/causas/C-571-2018/movimientos?limit=10&quot;')">Copiar</button>
                         </div>
                         <div class="description">
                             Obtiene movimientos de una causa con filtros opcionales (etapa, tiene_pdf).
@@ -1284,7 +1542,7 @@ APP_URL=http://localhost:3000
                         </div>
                         <div class="command-code">
                             <code>GET /api/movimientos?rit=C-571-2018&tiene_pdf=true&limit=50</code>
-                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/movimientos?rit=C-571-2018&limit=10\"')">Copiar</button>
+                            <button class="copy-btn" onclick="copyCommand('curl &quot;http://localhost:3000/api/movimientos?rit=C-571-2018&amp;limit=10&quot;')">Copiar</button>
                         </div>
                         <div class="description">
                             Lista movimientos con filtros: rit, etapa, tiene_pdf, fecha_desde, fecha_hasta, cuaderno.
@@ -1313,7 +1571,7 @@ APP_URL=http://localhost:3000
                         </div>
                         <div class="command-code">
                             <code>GET /api/pdfs?rit=C-571-2018&tipo=PRINCIPAL</code>
-                            <button class="copy-btn" onclick="copyCommand('curl \"http://localhost:3000/api/pdfs?rit=C-571-2018\"')">Copiar</button>
+                            <button class="copy-btn" onclick="copyCommand('curl &quot;http://localhost:3000/api/pdfs?rit=C-571-2018&quot;')">Copiar</button>
                         </div>
                         <div class="description">
                             Lista PDFs con filtros: rit, tipo (PRINCIPAL/ANEXO), movimiento_id.
@@ -1930,7 +2188,7 @@ DB_NAME=pjud_scraping</code>
                         </div>
                         <div class="command-code">
                             <code>git commit -m "Mensaje descriptivo"</code>
-                            <button class="copy-btn" onclick="copyCommand('git commit -m "Mensaje descriptivo"')">Copiar</button>
+                            <button class="copy-btn" onclick="copyCommand('git commit -m &quot;Mensaje descriptivo&quot;')">Copiar</button>
                         </div>
                         <div class="description">
                             Guarda los cambios en el historial con un mensaje descriptivo.

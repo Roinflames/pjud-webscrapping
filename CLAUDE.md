@@ -326,3 +326,44 @@ async function processBatch(causas) {
 - **Caratulado:** Official causa name
 - **PJUD:** Poder Judicial de Chile
 - **OJV:** Oficina Judicial Virtual (PJUD web portal)
+
+---
+
+## Session Context Recovery
+
+Para mantener continuidad entre sesiones de Claude Code, este proyecto usa una estructura de archivos en `.claude/`.
+
+### Al iniciar una nueva sesión
+
+Pedir a Claude:
+> "Resume el contexto del proyecto"
+
+Claude leerá automáticamente:
+1. Este archivo (`CLAUDE.md`) - documentación técnica
+2. `.claude/session-context.md` - estado actual del proyecto
+3. `git status` - cambios pendientes
+4. `.claude/history/` - prompts históricos relevantes
+
+### Estructura de archivos `.claude/`
+
+```
+.claude/
+├── settings.local.json      # Permisos persistentes de Claude Code
+├── session-context.md       # Estado actual del proyecto (actualizar al final de cada sesión)
+└── history/                 # Historial de prompts y decisiones
+    ├── 01_selectores-formulario-pjud.md
+    ├── 02_boton-busqueda-detalle.md
+    ├── ...
+    └── NN_descripcion-corta.md
+```
+
+### Al finalizar una sesión
+
+Pedir a Claude:
+> "Actualiza el contexto de sesión"
+
+Esto actualizará `.claude/session-context.md` con:
+- Tareas realizadas
+- Archivos modificados
+- Decisiones tomadas
+- Próximos pasos pendientes

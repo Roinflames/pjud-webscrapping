@@ -110,7 +110,16 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
           // Método 1: Usar forms
           const form = row.forms[pdfIndex];
           // Usar el índice original de la fila (guardado en extractTableAsArray)
-          const rowIndex = (row.rowIndex !== undefined ? row.rowIndex : rows.indexOf(row)) + 1; // +1 porque nth-child es 1-based
+          // Si no tiene rowIndex, usar el índice en el array rows (pero esto puede fallar si hay filas filtradas)
+          const rowIndex = (row.rowIndex !== undefined && row.rowIndex !== null) 
+            ? row.rowIndex + 1  // +1 porque nth-child es 1-based
+            : rows.indexOf(row) + 1; // Fallback
+          
+          if (!rowIndex || rowIndex < 1) {
+            console.warn(`      ⚠️ No se pudo determinar rowIndex para folio ${folio}, saltando...`);
+            continue;
+          }
+          
           clickResult = await page.evaluate(({ rowIndex, formIndex: idx }) => {
             const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based
@@ -145,7 +154,15 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
         } else {
           // Método 2: Usar enlaces/íconos/imágenes de la segunda columna (td:nth-child(2))
           // Usar el índice original de la fila (guardado en extractTableAsArray)
-          const rowIndex = (row.rowIndex !== undefined ? row.rowIndex : rows.indexOf(row)) + 1; // +1 porque nth-child es 1-based
+          const rowIndex = (row.rowIndex !== undefined && row.rowIndex !== null)
+            ? row.rowIndex + 1  // +1 porque nth-child es 1-based
+            : rows.indexOf(row) + 1; // Fallback
+          
+          if (!rowIndex || rowIndex < 1) {
+            console.warn(`      ⚠️ No se pudo determinar rowIndex para folio ${folio}, saltando...`);
+            continue;
+          }
+          
           clickResult = await page.evaluate(({ rowIndex, linkIndex }) => {
             const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based

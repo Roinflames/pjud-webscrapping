@@ -17,6 +17,7 @@
     "db:test": "node src/database/db-mariadb.js",
     "importar:movimientos": "node src/importar_movimientos_sql.js",
     "test:insertar-causa": "node scripts/insertar_causa_test.js",
+    "test:insertar-causas": "node scripts/insertar_causas_test.js",
     "api:start": "node src/api/server.js",
     "api:listener": "node src/api/listener.js",
     "api:listener:causa": "node src/api/listener.js --table causa",

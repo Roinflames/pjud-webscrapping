@@ -278,8 +278,39 @@
         "src/outputs/causas/C_23607_2015.json",
         "src/table.js"
       ]
+    },
+    {
+      "version": 25,
+      "commitHash": "ba7a456e1f38c96848850d9acfcb2ca051116b39",
+      "tag": "snapshot-v25",
+      "timestamp": 1769536802694,
+      "message": "Snapshot V25",
+      "filesChanged": [
+        "REPORTE_FINAL_TEST.md"
+      ]
+    },
+    {
+      "version": 26,
+      "commitHash": "da289413e797ddb09cdcb822af7b6c087c37b0a6",
+      "tag": "snapshot-v26",
+      "timestamp": 1769537598923,
+      "message": "Snapshot V26",
+      "filesChanged": [
+        "src/process-causas.js",
+        "src/table.js"
+      ]
+    },
+    {
+      "version": 27,
+      "commitHash": "6739a6574634bc87087abd32834b0021aa2ddcc7",
+      "tag": "snapshot-v27",
+      "timestamp": 1769537977580,
+      "message": "Snapshot V27",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
     }
   ],
-  "nextVersion": 25,
-  "currentVersion": 24
+  "nextVersion": 28,
+  "currentVersion": 27
 }

@@ -42,7 +42,13 @@
       "Bash(PLAYWRIGHT_BROWSER=firefox node src/process-causas.js 1)",
       "Bash(node src/process-causas.js 1)",
       "Bash(git add -A)",
-      "Bash(git commit -m \"fix: Mejorar validación de rowIndex y agregar reporte de test\")"
+      "Bash(git commit -m \"fix: Mejorar validación de rowIndex y agregar reporte de test\")",
+      "Bash(git push origin testing-27-enero)",
+      "Bash(git add REPORTE_FINAL_TEST.md)",
+      "Bash(git commit -m \"docs: Agregar reporte final de test con análisis del problema\")",
+      "Bash(tee /tmp/scraping_test.log)",
+      "Bash(git commit -m \"fix: Corregir selector de tabla del modal y agregar diagnóstico\")",
+      "Bash(git commit -m \"docs: Agregar reporte de mejoras con análisis del problema del modal\")"
     ]
   }
 }

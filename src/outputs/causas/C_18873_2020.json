@@ -1,31 +1,31 @@
 {
-  "rit": "C-13786-2018",
+  "rit": "C-18873-2020",
   "metadata": {
-    "processed_at": "2026-01-27T19:51:27.483Z",
+    "processed_at": "2026-01-27T19:55:10.805Z",
     "total_movimientos": 0,
     "tiene_documentos_pdf": false,
     "tiene_demanda": false,
     "tiene_ebook": false
   },
   "config_entrada": {
-    "causa_id": "11",
-    "agenda_id": "75152",
+    "causa_id": "37",
+    "agenda_id": "98738",
     "competencia": "3",
     "corte": "90",
-    "tribunal": "8",
+    "tribunal": "5",
     "tipoCausa": "C",
-    "rol": "13786",
-    "año": "2018",
-    "caratulado": "PROMOTORA CMR FALABELLA S.A/YÁ",
+    "rol": "18873",
+    "año": "2020",
+    "caratulado": "CMR FALABELLA/QUINTREQUEO",
     "cliente": null,
     "rut": null,
     "abogado_id": null,
     "cuenta_id": null
   },
   "datos_basicos": {
-    "rol": "13786",
+    "rol": "18873",
     "fecha": "",
-    "caratulado": "PROMOTORA CMR FALABELLA S.A/YÁ"
+    "caratulado": "CMR FALABELLA/QUINTREQUEO"
   },
   "demanda": null,
   "ebook": null,

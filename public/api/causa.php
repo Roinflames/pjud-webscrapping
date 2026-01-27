@@ -84,26 +84,57 @@ try {
     // Acción por defecto: Obtener movimientos
     $includePdfs = ($_GET['include_pdfs'] ?? 'false') === 'true';
 
+    // Primero obtener información de la causa
+    $stmtCausa = $pdo->prepare("
+        SELECT
+            c.rit,
+            c.caratulado,
+            c.tribunal_nombre,
+            c.fecha_ingreso,
+            c.estado,
+            c.etapa,
+            c.total_movimientos,
+            c.total_pdfs
+        FROM causas c
+        WHERE c.rit = :rit
+    ");
+    $stmtCausa->execute(['rit' => $rol]);
+    $causaInfo = $stmtCausa->fetch(PDO::FETCH_ASSOC);
+
+    // Verificar si existe eBook
+    $stmtEbook = $pdo->prepare("
+        SELECT
+            e.nombre_archivo,
+            e.ruta_relativa,
+            e.tamano_bytes,
+            e.descargado
+        FROM ebooks e
+        JOIN causas c ON e.causa_id = c.id
+        WHERE c.rit = :rit
+        LIMIT 1
+    ");
+    $stmtEbook->execute(['rit' => $rol]);
+    $ebookInfo = $stmtEbook->fetch(PDO::FETCH_ASSOC);
+
     if ($includePdfs) {
         // Consulta con PDFs en base64
         $stmt = $pdo->prepare("
             SELECT
                 m.folio,
                 m.tiene_pdf,
-                m.tipo_movimiento,
-                m.subtipo_movimiento,
+                m.etapa,
+                m.tramite,
                 m.descripcion,
                 m.fecha,
-                m.caratulado,
-                m.juzgado,
+                m.foja,
                 m.indice,
                 pp.contenido_base64 AS pdf_principal_base64,
                 pp.nombre_archivo AS pdf_principal_nombre,
                 pa.contenido_base64 AS pdf_anexo_base64,
                 pa.nombre_archivo AS pdf_anexo_nombre
             FROM movimientos m
-            LEFT JOIN movimientos_pdf pp ON m.id = pp.movimiento_id AND pp.tipo = 'principal'
-            LEFT JOIN movimientos_pdf pa ON m.id = pa.movimiento_id AND pa.tipo = 'anexo'
+            LEFT JOIN pdfs pp ON m.id = pp.movimiento_id AND pp.tipo = 'PRINCIPAL'
+            LEFT JOIN pdfs pa ON m.id = pa.movimiento_id AND pa.tipo = 'ANEXO'
             WHERE m.rit = :rit
             ORDER BY m.indice DESC
         ");
@@ -113,18 +144,17 @@ try {
             SELECT
                 m.folio,
                 m.tiene_pdf,
-                m.tipo_movimiento,
-                m.subtipo_movimiento,
+                m.etapa,
+                m.tramite,
                 m.descripcion,
                 m.fecha,
-                m.caratulado,
-                m.juzgado,
+                m.foja,
                 m.indice,
                 pp.nombre_archivo AS pdf_principal_nombre,
                 pa.nombre_archivo AS pdf_anexo_nombre
             FROM movimientos m
-            LEFT JOIN movimientos_pdf pp ON m.id = pp.movimiento_id AND pp.tipo = 'principal'
-            LEFT JOIN movimientos_pdf pa ON m.id = pa.movimiento_id AND pa.tipo = 'anexo'
+            LEFT JOIN pdfs pp ON m.id = pp.movimiento_id AND pp.tipo = 'PRINCIPAL'
+            LEFT JOIN pdfs pa ON m.id = pa.movimiento_id AND pa.tipo = 'ANEXO'
             WHERE m.rit = :rit
             ORDER BY m.indice DESC
         ");

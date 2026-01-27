@@ -1,8 +1,8 @@
 <?php
 
-// Desactivar warnings de deprecación para compatibilidad PHP 8.4
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING);
-ini_set('display_errors', '0');
+// TEMPORAL: Mostrar errores para debug
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 
 use App\Kernel;
 use Symfony\Component\Dotenv\Dotenv;

@@ -2,7 +2,26 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(node src/api/server.js)",
+      "Bash(npm install)",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)",
+      "Bash(php -S localhost:8000)",
+      "Read(//Users/diegomartinez/Documents/carpeta sin título/a/src/**)",
+      "Bash(mysql -u root codi_ejamtest -e \"DELETE FROM pdfs; DELETE FROM movimientos; DELETE FROM causas WHERE rit IN (''C-13786-2018'', ''C-16707-2019'');\")",
+      "Read(//Users/diegomartinez/Documents/**)",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT rit, COUNT(*) as total_pdfs FROM pdfs GROUP BY rit LIMIT 10\")",
+      "Bash(find /Users/diegomartinez/Documents/carpeta sin título/a/src/outputs -name \"*.json\" -type f -exec grep -l \"pdf\" {})",
+      "Bash(mysql -u root -D codi_ejamtest -e \"DELETE FROM pdfs; DELETE FROM movimientos; DELETE FROM causas; SELECT ''Tablas limpiadas'' as status;\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"\nINSERT INTO causas (rit, tipo_causa, rol, anio, competencia_id, competencia_nombre, corte_id, corte_nombre, tribunal_id, tribunal_nombre, caratulado, estado, scraping_exitoso)\nVALUES \n(''C-123-2020'', ''C'', ''123'', ''2020'', ''3'', ''Civil'', ''90'', ''C.A. de Santiago'', ''7'', ''7º Juzgado Civil de Santiago'', ''HDI SEGUROS S.A./CEPEDA'', ''SIN_INFORMACION'', 0),\n(''C-234-2020'', ''C'', ''234'', ''2020'', ''3'', ''Civil'', ''90'', ''C.A. de Santiago'', ''19'', ''19º Juzgado Civil de Santiago'', ''CAJA DE COMPENSACIÓN DE ASIGNACIÓN FAMILIAR LOS ANDES./AGUILERA'', ''SIN_INFORMACION'', 0),\n(''C-2-2025'', ''C'', ''2'', ''2025'', ''3'', ''Civil'', ''30'', ''C.A. de Valparaíso'', ''276'', ''Juzgado de Letras y Gar.de Paillaco'', ''BANCO DEL ESTADO D E CHILE/OJEDA'', ''SIN_INFORMACION'', 0),\n(''C-2-2024'', ''C'', ''2'', ''2024'', ''3'', ''Civil'', ''30'', ''C.A. de Valparaíso'', ''274'', ''1º Juzgado Civil de Viña del Mar'', ''BANCO DEL ESTADO DE CHILE/FLORES'', ''SIN_INFORMACION'', 0),\n(''C-2-2024B'', ''C'', ''2'', ''2024'', ''3'', ''Civil'', ''30'', ''C.A. de Valparaíso'', ''275'', ''Juzgado de Letras y Gar.de Chile Chico'', ''BELMAR/MORANDÉ'', ''SIN_INFORMACION'', 0);\n\nSELECT ''Causas insertadas en SQL'' as status, COUNT(*) as total FROM causas;\n\")",
+      "Bash(node src/index.js)",
+      "Bash(mysql -u root -D codi_ejamtest -e \"UPDATE causas SET scraping_exitoso = 0, total_pdfs = 0 WHERE rit = ''C-123-2020''\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT rit, caratulado, tribunal_id, tribunal_nombre FROM causas WHERE rit = ''C-123-2020'' LIMIT 1\")",
+      "Bash(node src/processRit.js C-123-2020 \"HDI SEGUROS S.A./CEPEDA\" \"7º Juzgado Civil de Santiago\")",
+      "Bash(node src/process-csv-causas.js 1 --db)",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as pdfs_totales FROM pdfs\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as total_pdfs FROM pdfs; SELECT COUNT(*) as total_movimientos FROM movimientos;\")"
     ]
   }
 }

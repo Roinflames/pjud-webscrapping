@@ -1,3 +1,11 @@
+<?php
+require_once __DIR__ . '/src/autoload.php';
+
+use App\Repository\CausaRepository;
+
+$causaRepository = new CausaRepository();
+$causas = $causaRepository->findAll();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -98,7 +106,37 @@ body { background:#f5f6f8; font-size:14px; }
                         </thead>
 
                         <tbody id="tablaCausas">
-                            <!-- Cargado dinámicamente desde MySQL via AJAX -->
+                        <?php
+                            $folio = 20212; // Folio inicial para demo
+                            foreach ($causas as $causa):
+                                $caratulado = $causa->getCaratulado() ?? '';
+                                $partes = explode('/', $caratulado);
+                                $demandante = isset($partes[0]) ? trim($partes[0]) : 'Promotora CMR Falabella';
+                                $demandado = isset($partes[1]) ? trim($partes[1]) : 'Sin información';
+                                $rut = '8.462.961-8'; // Dato fijo para demo
+                                $abogado = 'Tatiana Gonzalez'; // Dato fijo para demo
+                        ?>
+                            <tr data-rit="<?php echo htmlspecialchars($causa->getRit(), ENT_QUOTES, 'UTF-8'); ?>">
+                                <td><?php echo htmlspecialchars($causa->getRit(), ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars((string) $folio, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($demandado, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($rut, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($abogado, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($demandante, ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($causa->getTribunalNombre() ?? '-', ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-warning">⬇</button>
+                                    <button class="btn btn-sm btn-primary btn-ver-causa"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDetalleCivil">👁</button>
+                                    <button class="btn btn-sm btn-success">📄</button>
+                                    <button class="btn btn-sm btn-danger">✖</button>
+                                </td>
+                            </tr>
+                        <?php
+                                $folio++;
+                            endforeach;
+                        ?>
                         </tbody>
 
                     </table>
@@ -208,61 +246,18 @@ body { background:#f5f6f8; font-size:14px; }
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Cargar causas desde MySQL
 document.addEventListener('DOMContentLoaded', function() {
-    cargarCausas();
+    // Asociar eventos a los botones de ver causa ya renderizados desde PHP/SQL
+    document.querySelectorAll('.btn-ver-causa').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tr = this.closest('tr');
+            const rit = tr.dataset.rit;
+            if (rit) {
+                buscarCausa(rit);
+            }
+        });
+    });
 });
-
-async function cargarCausas() {
-    try {
-        const res = await fetch('api/listar_causas.php');
-        const data = await res.json();
-
-        if (!data.success) {
-            console.error('Error al cargar causas:', data.error);
-            return;
-        }
-
-        const tbody = document.getElementById('tablaCausas');
-        tbody.innerHTML = '';
-
-        data.causas.forEach(causa => {
-            const tr = document.createElement('tr');
-            tr.dataset.rit = causa.rit;
-            tr.innerHTML = `
-                <td>${causa.rit}</td>
-                <td>${causa.folio || '-'}</td>
-                <td>${causa.cliente || '-'}</td>
-                <td>${causa.rut || '-'}</td>
-                <td>${causa.abogado || '-'}</td>
-                <td>${causa.juzgado || '-'}</td>
-                <td>${causa.tribunal_nombre}</td>
-                <td class="actions">
-                    <button class="btn btn-sm btn-warning">⬇</button>
-                    <button class="btn btn-sm btn-primary btn-ver-causa"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalDetalleCivil">👁</button>
-                    <button class="btn btn-sm btn-success">📄</button>
-                    <button class="btn btn-sm btn-danger">✖</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // Agregar event listeners a los botones
-        document.querySelectorAll('.btn-ver-causa').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const tr = this.closest('tr');
-                const rit = tr.dataset.rit;
-                if (rit) {
-                    buscarCausa(rit);
-                }
-            });
-        });
-    } catch (error) {
-        console.error('Error cargando causas:', error);
-    }
-}
 
 // Variables globales para filtrado
 let todosLosMovimientos = [];

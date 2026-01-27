@@ -1417,8 +1417,8 @@
                     <td><span class="folio-badge">${folio}</span></td>
                     <td>
                         <div class="documentos-cell">
-                            ${hasAzul ? `<button class="action-btn btn-pdf-blue" title="PDF Principal" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'azul')"><i class="fas fa-file-pdf"></i></button>` : ''}
-                            ${hasRojo ? `<button class="action-btn btn-pdf-red" title="PDF Anexo" style="width:26px;height:26px;font-size:12px;" onclick="descargarPDF('${cause.rit}', ${i}, 'rojo')"><i class="fas fa-file-pdf"></i></button>` : ''}
+                            ${hasAzul ? `<button class="action-btn btn-pdf-blue" title="Ver PDF Principal" style="width:26px;height:26px;font-size:12px;" onclick="abrirPDF('${cause.rit}', ${i}, 'azul')"><i class="fas fa-file-pdf"></i></button>` : ''}
+                            ${hasRojo ? `<button class="action-btn btn-pdf-red" title="Ver PDF Anexo" style="width:26px;height:26px;font-size:12px;" onclick="abrirPDF('${cause.rit}', ${i}, 'rojo')"><i class="fas fa-file-pdf"></i></button>` : ''}
                             ${!hasAzul && !hasRojo ? '<span style="color:#999;font-size:11px;">Sin documentos</span>' : ''}
                         </div>
                     </td>
@@ -1571,24 +1571,107 @@
             }
 
             const pdfData = tipo === 'azul' ? mov.pdf_azul : mov.pdf_rojo;
+            const folio = mov.folio || mov.indice || movIndex + 1;
+            const color = tipo; // 'azul' o 'rojo'
             
-            if (!pdfData) {
-                mostrarNotificacion(`❌ No hay PDF ${tipo} disponible`, 'error');
+            // Si tiene base64, descargar directamente
+            if (pdfData && pdfData.base64) {
+                descargarPDFBase64(pdfData.base64, pdfData.nombre || `${rit}_mov_${folio}_${color}.pdf`);
                 return;
             }
 
-            if (pdfData.base64) {
-                // Tiene base64, descargar directamente
-                descargarPDFBase64(pdfData.base64, pdfData.nombre);
-            } else {
-                // No tiene base64, simular descarga o mostrar mensaje
-                mostrarNotificacion(`📄 PDF: ${pdfData.nombre} (pendiente de descarga desde PJUD)`, 'info');
-                
-                // En producción, aquí se haría la llamada a la API para obtener el PDF
-                // fetch(`/api/scraping/pdf/${rit}/${pdfData.nombre}`)
-                //     .then(res => res.blob())
-                //     .then(blob => { ... })
+            // Si no tiene base64 pero tiene indicador de PDF, obtenerlo desde la API PHP
+            const tienePdf = (tipo === 'azul' && (mov.tiene_pdf_azul || pdfData)) || 
+                            (tipo === 'rojo' && (mov.tiene_pdf_rojo || pdfData));
+            
+            if (!tienePdf) {
+                mostrarNotificacion(`❌ No hay PDF ${tipo} disponible para este movimiento`, 'error');
+                return;
             }
+
+            // Obtener PDF desde la API PHP (base de datos)
+            mostrarNotificacion(`📄 Descargando PDF desde base de datos...`, 'info');
+            
+            // URL de la API PHP que sirve PDFs desde MySQL
+            const apiUrl = `http://127.0.0.1:8000/api/descargar_pdf.php?rit=${encodeURIComponent(rit)}&folio=${encodeURIComponent(folio)}&color=${encodeURIComponent(color)}`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Verificar que es un PDF válido
+                    if (blob.type !== 'application/pdf' && blob.size > 0) {
+                        // Intentar leer los primeros bytes para verificar
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const arr = new Uint8Array(e.target.result);
+                            if (arr.length >= 4 && String.fromCharCode(arr[0], arr[1], arr[2], arr[3]) === '%PDF') {
+                                // Es un PDF válido
+                                descargarBlob(blob, `${rit}_mov_${folio}_${color}.pdf`);
+                            } else {
+                                // No es un PDF, puede ser un mensaje de error
+                                blob.text().then(text => {
+                                    mostrarNotificacion(`❌ Error: ${text}`, 'error');
+                                });
+                            }
+                        };
+                        reader.readAsArrayBuffer(blob.slice(0, 4));
+                    } else {
+                        descargarBlob(blob, `${rit}_mov_${folio}_${color}.pdf`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error descargando PDF:', error);
+                    mostrarNotificacion(`❌ Error al descargar PDF: ${error.message}`, 'error');
+                });
+        }
+
+        /**
+         * Descarga un blob como archivo
+         */
+        function descargarBlob(blob, nombreArchivo) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = nombreArchivo;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            mostrarNotificacion(`✅ PDF descargado: ${nombreArchivo}`, 'success');
+        }
+
+        /**
+         * Abre un PDF en una nueva pestaña desde la API PHP
+         * @param {string} rit - RIT de la causa
+         * @param {number} movIndex - Índice del movimiento
+         * @param {string} tipo - 'azul' o 'rojo'
+         */
+        function abrirPDF(rit, movIndex, tipo) {
+            const causa = causasGuardadas.find(c => c.rit === rit);
+            if (!causa) {
+                mostrarNotificacion('❌ Causa no encontrada', 'error');
+                return;
+            }
+
+            const mov = causa.movimientos[movIndex];
+            if (!mov) {
+                mostrarNotificacion('❌ Movimiento no encontrado', 'error');
+                return;
+            }
+
+            const folio = mov.folio || mov.indice || movIndex + 1;
+            const color = tipo; // 'azul' o 'rojo'
+            
+            // URL de la API PHP que sirve PDFs desde MySQL
+            const apiUrl = `http://127.0.0.1:8000/api/descargar_pdf.php?rit=${encodeURIComponent(rit)}&folio=${encodeURIComponent(folio)}&color=${encodeURIComponent(color)}`;
+            
+            // Abrir en nueva pestaña
+            window.open(apiUrl, '_blank');
         }
 
         /**
@@ -1703,73 +1786,88 @@
         // ============================================
 
         /**
-         * Carga los datos de causas desde los archivos JSON generados por el scraping
+         * Carga los datos de causas desde la API PHP (base de datos MySQL)
          */
-        async function cargarCausasDesdeJSON() {
+        async function cargarCausasDesdeBD() {
             try {
-                // Lista de archivos JSON a cargar (generados por el scraping)
-                const archivosJSON = [
-                    '/api/scraping/resultado/C-3030-2017',
-                    '/api/scraping/resultado/C-571-2019'
-                ];
+                // Primero, obtener lista de causas desde la API PHP
+                const responseLista = await fetch('http://127.0.0.1:8000/api/listar_causas.php');
+                if (!responseLista.ok) {
+                    throw new Error(`HTTP ${responseLista.status}`);
+                }
                 
+                const dataLista = await responseLista.json();
+                if (!dataLista.success || !dataLista.causas) {
+                    console.warn('No se pudieron cargar causas desde BD:', dataLista.error);
+                    return;
+                }
+
                 const causasCargadas = [];
                 
-                for (const archivo of archivosJSON) {
+                // Para cada causa, obtener sus movimientos y detalles
+                for (const causaResumen of dataLista.causas) {
                     try {
-                        const response = await fetch(archivo);
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            // Transformar datos del formato del scraper al formato del frontend
-                            const movs = (data.movimientos || []).map(mov => ({
-                                folio: mov.folio || mov.indice,
-                                fecha: mov.fecha || mov.fec_tramite || '-',
-                                etapa: mov.etapa || mov.etapa_codigo || 'TRAMITACION',
-                                tramite: mov.tramite || mov.tipo_movimiento,
-                                descripcion: mov.descripcion || mov.desc_tramite || mov.tipo_movimiento || '-',
-                                foja: mov.foja,
-                                id_pagina: mov.id_pagina,
-                                id_cuaderno: mov.id_cuaderno,
-                                cuaderno_nombre: mov.cuaderno_nombre,
-                                pdf_azul: mov.pdf_azul || null,
-                                pdf_rojo: mov.pdf_rojo || null,
-                                tiene_pdf_azul: mov.tiene_pdf_azul || false,
-                                tiene_pdf_rojo: mov.tiene_pdf_rojo || false
-                            }));
-                            const causa = {
-                                rit: data.rit || data.cabecera?.rit,
-                                caratulado: data.cabecera?.caratulado || '-',
-                                tribunal: data.cabecera?.juzgado || '-',
-                                fechaIngreso: data.cabecera?.fecha_ingreso || '-',
-                                estado: data.estado_actual?.estado || 'EN_TRAMITE',
-                                movimientos: movs,
-                                totalPdfs: movs.filter(m => m.tiene_pdf_azul || m.tiene_pdf_rojo).length,
-                                tieneEbook: !!data.ebook,
-                                ebook: data.ebook || null,
-                                cuadernos: data.cuadernos || null
-                            };
-                            
-                            causasCargadas.push(causa);
+                        const rit = causaResumen.rit;
+                        const responseDetalle = await fetch(`http://127.0.0.1:8000/api/causa.php?rol=${encodeURIComponent(rit)}`);
+                        
+                        if (!responseDetalle.ok) {
+                            console.warn(`No se pudo cargar detalle de ${rit}`);
+                            continue;
                         }
+                        
+                        const dataDetalle = await responseDetalle.json();
+                        
+                        // Transformar datos del formato de la API PHP al formato del frontend
+                        const movs = (dataDetalle.movimientos || []).map(mov => ({
+                            folio: mov.folio || mov.indice,
+                            fecha: mov.fecha || mov.fec_tramite || '-',
+                            etapa: mov.etapa || mov.etapa_codigo || 'TRAMITACION',
+                            tramite: mov.tramite || mov.tipo_movimiento,
+                            descripcion: mov.descripcion || mov.desc_tramite || mov.tipo_movimiento || '-',
+                            foja: mov.foja,
+                            id_pagina: mov.id_pagina,
+                            id_cuaderno: mov.id_cuaderno || mov.cuaderno_id,
+                            cuaderno_nombre: mov.cuaderno_nombre,
+                            // Los PDFs están en la BD, no en base64 en la respuesta (por rendimiento)
+                            // pero tenemos los indicadores
+                            tiene_pdf_azul: mov.tiene_pdf_azul || false,
+                            tiene_pdf_rojo: mov.tiene_pdf_rojo || false,
+                            // Referencias para cuando se necesite descargar
+                            pdf_azul: mov.tiene_pdf_azul ? { nombre: `${rit}_mov_${mov.folio || mov.indice}_azul.pdf` } : null,
+                            pdf_rojo: mov.tiene_pdf_rojo ? { nombre: `${rit}_mov_${mov.folio || mov.indice}_rojo.pdf` } : null
+                        }));
+                        
+                        const causa = {
+                            rit: dataDetalle.causa?.rit || causaResumen.rit,
+                            caratulado: dataDetalle.causa?.caratulado || causaResumen.caratulado || '-',
+                            tribunal: dataDetalle.causa?.tribunal || causaResumen.tribunal_nombre || '-',
+                            fechaIngreso: dataDetalle.causa?.fecha_ingreso || causaResumen.fecha_ingreso || '-',
+                            estado: dataDetalle.causa?.estado || causaResumen.estado || 'EN_TRAMITE',
+                            movimientos: movs,
+                            totalPdfs: dataDetalle.causa?.total_pdfs || causaResumen.total_pdfs || 0,
+                            tieneEbook: !!dataDetalle.ebook,
+                            ebook: dataDetalle.ebook || null,
+                            cuadernos: dataDetalle.cuadernos || null
+                        };
+                        
+                        causasCargadas.push(causa);
                     } catch (error) {
-                        console.warn(`No se pudo cargar ${archivo}:`, error.message);
+                        console.warn(`Error cargando causa ${causaResumen.rit}:`, error.message);
                     }
                 }
                 
                 if (causasCargadas.length > 0) {
-                    // Combinar con datos estáticos (mantener los que no se cargaron)
-                    const ritsCargados = new Set(causasCargadas.map(c => c.rit));
-                    const causasEstaticas = causasGuardadas.filter(c => !ritsCargados.has(c.rit));
-                    
+                    // Reemplazar datos estáticos con datos de BD
                     causasGuardadas.length = 0;
-                    causasGuardadas.push(...causasCargadas, ...causasEstaticas);
+                    causasGuardadas.push(...causasCargadas);
                     
                     renderizarCausasGuardadas();
-                    console.log(`✅ Cargadas ${causasCargadas.length} causas desde JSON`);
+                    console.log(`✅ Cargadas ${causasCargadas.length} causas desde base de datos MySQL`);
+                } else {
+                    console.warn('No se cargaron causas desde BD, usando datos estáticos');
                 }
             } catch (error) {
-                console.log('Usando datos estáticos (no se pudieron cargar JSON):', error.message);
+                console.warn('Error cargando causas desde BD, usando datos estáticos:', error.message);
             }
         }
 
@@ -1794,8 +1892,7 @@
         $(document).ready(function() {
             renderizarCausasGuardadas();
             setupModalFiltersAndPagination();
-            cargarCausasDesdeJSON(); // Cargar datos reales desde JSON
-            // cargarCausasDesdeAPI(); // Descomentar en producción
+            cargarCausasDesdeBD(); // Cargar datos reales desde base de datos MySQL vía API PHP
         });
     </script>
 </body>

@@ -13,14 +13,33 @@ if (!$rit || !$folio) {
     die('Faltan parámetros: rit y folio son requeridos');
 }
 
+// Cargar .env manualmente (buscar en raíz del proyecto)
+$envFile = realpath(__DIR__ . '/../../.env') ?: realpath(__DIR__ . '/../.env');
+if ($envFile && file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) continue;
+        if (strpos($line, '=') === false) continue;
+        list($key, $value) = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value, '"\'');
+        if (!getenv($key)) {
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
 $dbHost = getenv('DB_HOST') ?: 'localhost';
+$dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'codi_ejamtest';
 $dbUser = getenv('DB_USER') ?: 'root';
 $dbPass = getenv('DB_PASS') ?: '';
 
 try {
     $pdo = new PDO(
-        "mysql:host={$dbHost};dbname={$dbName};charset=utf8",
+        "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8",
         $dbUser,
         $dbPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
@@ -30,23 +49,30 @@ try {
     $tipoPdf = ($color === 'rojo') ? 'ANEXO' : 'PRINCIPAL';
     
     // Buscar el PDF directamente desde la tabla pdfs
+    // Como los PDFs pueden tener movimiento_id NULL, buscamos por nombre de archivo
+    // Formato esperado: C_3030_2017_mov_54_azul.pdf o C_3030_2017_mov_54_rojo.pdf
+    $ritClean = str_replace('-', '_', $rit);
+    $colorSuffix = ($color === 'rojo') ? 'rojo' : 'azul';
+    $nombreEsperado = "{$ritClean}_mov_{$folio}_{$colorSuffix}.pdf";
+    
     $stmt = $pdo->prepare("
         SELECT
             p.contenido_base64,
             p.nombre_archivo,
             p.tamano_bytes,
             p.tipo,
-            m.folio,
-            m.rit
+            p.rit
         FROM pdfs p
-        INNER JOIN movimientos m ON p.movimiento_id = m.id
-        WHERE m.rit = :rit AND m.folio = :folio AND p.tipo = :tipo
+        WHERE p.rit = :rit 
+          AND p.tipo = :tipo
+          AND p.nombre_archivo = :nombre
         LIMIT 1
     ");
+    
     $stmt->execute([
         'rit' => $rit, 
-        'folio' => $folio,
-        'tipo' => $tipoPdf
+        'tipo' => $tipoPdf,
+        'nombre' => $nombreEsperado
     ]);
     $pdf = $stmt->fetch(PDO::FETCH_ASSOC);
 

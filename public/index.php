@@ -144,8 +144,8 @@ body { background:#f5f6f8; font-size:14px; }
 
         <!-- CUADERNO -->
         <h6><strong>Historia Causa Cuaderno</strong></h6>
-        <select id="m_cuaderno" class="form-select w-25 mb-3">
-            <option>1 - Principal</option>
+        <select id="m_cuaderno" class="form-select w-25 mb-3" onchange="filtrarPorCuaderno()">
+            <option value="">Todos los cuadernos</option>
         </select>
 
         <!-- TABS -->
@@ -263,29 +263,117 @@ async function cargarCausas() {
     }
 }
 
+// Variables globales para filtrado
+let todosLosMovimientos = [];
+let movimientosActuales = [];
+let cuadernosDisponibles = [];
+let ritActual = '';
+
 async function buscarCausa(rit) {
+    ritActual = rit;
     const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rit)}`);
     const respuesta = await res.json();
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';
 
-    // Usar formato legacy para compatibilidad
-    const data = respuesta.legacy || respuesta;
+    // Usar formato nuevo con movimientos estructurados
+    if (respuesta.movimientos && Array.isArray(respuesta.movimientos)) {
+        todosLosMovimientos = respuesta.movimientos;
+        movimientosActuales = [...todosLosMovimientos];
 
-    if (!Array.isArray(data)) {
-        if (respuesta.error == 'Archivo de resultados no encontrado') {
-            tbody.innerHTML = '';
+        // Cargar cuadernos en el select
+        cuadernosDisponibles = respuesta.cuadernos || [{id: '1', nombre: 'Principal', total_movimientos: todosLosMovimientos.length}];
+        const selectCuaderno = document.getElementById('m_cuaderno');
+        selectCuaderno.innerHTML = '<option value="">Todos los cuadernos</option>';
+        cuadernosDisponibles.forEach(cuad => {
+            selectCuaderno.innerHTML += `<option value="${cuad.id}">${cuad.id} - ${cuad.nombre} (${cuad.total_movimientos})</option>`;
+        });
+
+        // Mostrar info de cabecera
+        if (respuesta.causa) {
+            document.getElementById('m_rol').textContent = respuesta.causa.rit || '-';
+            document.getElementById('m_fing').textContent = respuesta.causa.fecha_ingreso || '-';
+            document.getElementById('m_promotora').textContent = respuesta.causa.caratulado || '-';
+            document.getElementById('m_tribunal').textContent = respuesta.causa.tribunal || '-';
+            document.getElementById('m_estadm').textContent = respuesta.causa.estado || 'SIN_INFORMACION';
+            document.getElementById('m_proc').textContent = 'Ejecutivo Obligación de Dar';
+            document.getElementById('m_ubic').textContent = 'Archivada Digital';
+            document.getElementById('m_estproc').textContent = respuesta.causa.estado || 'Concluido';
+            document.getElementById('m_etapa').textContent = respuesta.causa.etapa || 'Terminada';
+        }
+
+        renderizarMovimientos();
+    } else {
+        // Fallback a formato legacy
+        const data = respuesta.legacy || respuesta;
+        if (!Array.isArray(data)) {
+            alert('Formato de datos inválido');
             return;
         }
-        alert('Formato de datos inválido');
-        return;
+        renderizarFormatoLegacy(data, rit);
     }
+}
 
-    /* CABECERA - buscar la fila que contiene el RIT */
+function filtrarPorCuaderno() {
+    const cuadernoSeleccionado = document.getElementById('m_cuaderno').value;
+    if (!cuadernoSeleccionado) {
+        movimientosActuales = [...todosLosMovimientos];
+    } else {
+        movimientosActuales = todosLosMovimientos.filter(m => m.cuaderno_id === cuadernoSeleccionado);
+    }
+    renderizarMovimientos();
+}
+
+function renderizarMovimientos() {
+    const tbody = document.querySelector('#tablaHistoria tbody');
+    tbody.innerHTML = '';
+
+    const ritParts = ritActual.split('-');
+    const rolNum = ritParts[1];
+    const anio = ritParts[2];
+
+    movimientosActuales.forEach(mov => {
+        const folio = mov.folio || mov.indice || '-';
+        const etapa = mov.etapa || '-';
+        const tramite = mov.tramite || '-';
+        const desc = mov.descripcion || '-';
+        const fecha = mov.fecha || '-';
+        const foja = mov.foja || '-';
+        const tienePdfAzul = mov.tiene_pdf_azul || false;
+        const tienePdfRojo = mov.tiene_pdf_rojo || false;
+
+        let docCol = '';
+        if (tienePdfAzul) {
+            docCol += `<button class="btn btn-sm" style="background:#0ea5e9;color:white;margin-right:4px;" title="PDF Principal (Azul)">📄</button>`;
+        }
+        if (tienePdfRojo) {
+            docCol += `<button class="btn btn-sm" style="background:#ef4444;color:white;" title="PDF Anexo (Rojo)">📄</button>`;
+        }
+        if (!tienePdfAzul && !tienePdfRojo) {
+            docCol = '<span style="color:#999;">-</span>';
+        }
+
+        tbody.innerHTML += `
+            <tr data-cuaderno="${mov.cuaderno_id || '1'}">
+                <td>${folio}</td>
+                <td>${docCol}</td>
+                <td>${folio}</td>
+                <td>${etapa}</td>
+                <td>${tramite}</td>
+                <td>${desc}</td>
+                <td>${fecha}</td>
+                <td>${foja}</td>
+                <td></td>
+            </tr>
+        `;
+    });
+}
+
+function renderizarFormatoLegacy(data, rit) {
+    const tbody = document.querySelector('#tablaHistoria tbody');
     let cab = null;
     let startIndex = 0;
 
-    // Buscar la cabecera (fila que contiene el RIT en posición 1)
     for (let i = 0; i < Math.min(data.length, 5); i++) {
         const row = data[i];
         if (row && row[1] && typeof row[1] === 'string' && row[1].match(/^C?-?\d+-\d{4}$/)) {
@@ -295,7 +383,6 @@ async function buscarCausa(rit) {
         }
     }
 
-    // Fallback si no encuentra cabecera con RIT
     if (!cab) {
         cab = data[1] || data[0] || [];
         startIndex = 2;
@@ -306,22 +393,12 @@ async function buscarCausa(rit) {
     document.getElementById('m_promotora').textContent = cab?.[3] || '-';
     document.getElementById('m_tribunal').textContent = cab?.[4] || '-';
 
-    document.getElementById('m_estadm').textContent = 'Archivada';
-    document.getElementById('m_proc').textContent = 'Ejecutivo Obligación de Dar';
-    document.getElementById('m_ubic').textContent = 'Archivada Digital';
-    document.getElementById('m_estproc').textContent = 'Concluido';
-    document.getElementById('m_etapa').textContent = 'Terminada';
-
-    /* HISTORIA */
     const ritParts = rit.split('-');
     const rolNum = ritParts[1];
     const anio = ritParts[2];
 
-    // Filtrar solo filas de movimientos (tienen folio numérico o vacío en posición 0)
     const movimientos = data.slice(startIndex).filter(row => {
-        // Excluir filas de partes (AB.DTE, DDO., DTE.)
         if (row[0] && ['AB.DTE', 'DDO.', 'DTE.'].includes(row[0])) return false;
-        // Excluir filas de paginación
         if (row[0] && row[0].includes('Total de registros')) return false;
         return true;
     });
@@ -335,20 +412,10 @@ async function buscarCausa(rit) {
         const fecha = row[6];
         const foja = row[7];
 
-        const pdfUrl = folio
-            ? `/outputs/${rolNum}_${anio}_doc_${folio}.pdf`
-            : null;
-
         tbody.innerHTML += `
             <tr>
                 <td>${folio || '-'}</td>
-                <td>
-                    ${
-                      tienePdf && pdfUrl
-                      ? `<a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-outline-primary">Ver PDF</a>`
-                      : ''
-                    }
-                </td>
+                <td>${tienePdf ? '<button class="btn btn-sm btn-primary">📄</button>' : '-'}</td>
                 <td>${folio || '-'}</td>
                 <td>${etapa || '-'}</td>
                 <td>${tramite || '-'}</td>

@@ -150,6 +150,10 @@ try {
                 m.fecha,
                 m.foja,
                 m.indice,
+                m.cuaderno,
+                m.cuaderno_id,
+                m.pdf_azul,
+                m.pdf_rojo,
                 pp.nombre_archivo AS pdf_principal_nombre,
                 pa.nombre_archivo AS pdf_anexo_nombre
             FROM movimientos m
@@ -207,6 +211,12 @@ try {
             'descripcion' => $row['descripcion'] ?? '',
             'fecha' => $row['fecha'] ?? '',
             'foja' => $row['foja'] ?? '',
+            'cuaderno' => $row['cuaderno'] ?? 'Principal',
+            'cuaderno_id' => $row['cuaderno_id'] ?? '1',
+            'tiene_pdf_azul' => !empty($row['pdf_azul']),
+            'tiene_pdf_rojo' => !empty($row['pdf_rojo']),
+            'pdf_azul' => $row['pdf_azul'] ?? null,
+            'pdf_rojo' => $row['pdf_rojo'] ?? null,
             'pdf_principal' => null,
             'pdf_anexo' => null
         ];
@@ -251,6 +261,20 @@ try {
 
     array_unshift($movimientos, [], $cabecera);
 
+    // Obtener lista de cuadernos únicos
+    $cuadernosUnicos = [];
+    foreach ($movimientosDetallados as $mov) {
+        $cuadId = $mov['cuaderno_id'];
+        if (!isset($cuadernosUnicos[$cuadId])) {
+            $cuadernosUnicos[$cuadId] = [
+                'id' => $cuadId,
+                'nombre' => $mov['cuaderno'],
+                'total_movimientos' => 0
+            ];
+        }
+        $cuadernosUnicos[$cuadId]['total_movimientos']++;
+    }
+
     // Respuesta estructurada con toda la información
     $response = [
         'legacy' => $movimientos, // Formato legacy para compatibilidad
@@ -264,6 +288,7 @@ try {
             'total_movimientos' => $causaInfo['total_movimientos'] ?? count($movimientosDetallados),
             'total_pdfs' => $totalPdfs
         ],
+        'cuadernos' => array_values($cuadernosUnicos),
         'ebook' => $ebookInfo ? [
             'nombre' => $ebookInfo['nombre_archivo'],
             'ruta' => $ebookInfo['ruta_relativa'],

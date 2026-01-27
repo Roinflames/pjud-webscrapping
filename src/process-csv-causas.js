@@ -7,7 +7,7 @@ const { readCausaCSV, mapCsvToDB } = require('./read-csv');
 const { getAllCausas } = require('./database/db-mariadb');
 const { startBrowser } = require('./browser');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
-const { fillForm, openDetalle } = require('./form');
+const { fillForm, openDetalle, openDetalleEspecifico } = require('./form');
 const { extractTable, extractTableAsArray } = require('./table');
 const { exportToJSON, exportToCSV, processTableData } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
@@ -372,10 +372,9 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle usando la función openDetalle (más robusta, como en scraper-5-causas)
-    // openDetalle ya maneja: búsqueda del enlace, click, espera del modal y verificación de contenido
-    console.log(`   🔍 Abriendo detalle de la causa...`);
-    await openDetalle(page);
+    // PASO 2: Abrir el detalle usando openDetalleEspecifico con match de caratulado/tribunal
+    console.log(`   🔍 Abriendo detalle de la causa específica...`);
+    await openDetalleEspecifico(page, config.caratulado, config.tribunal_nombre);
     console.log(`   ✅ Detalle abierto y verificado`);
     
     // PASO 4: Extraer tabla de movimientos (con forms para PDFs)

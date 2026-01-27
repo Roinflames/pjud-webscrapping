@@ -338,6 +338,80 @@ async function fillForm(page, CONFIG) {
   }
 }
 
+/**
+ * Abre el detalle de una causa específica haciendo match por caratulado y tribunal
+ * @param {Page} page - Página de Playwright
+ * @param {string} caratulado - Caratulado para hacer match (opcional)
+ * @param {string} tribunalNombre - Nombre del tribunal para hacer match (opcional)
+ */
+async function openDetalleEspecifico(page, caratulado, tribunalNombre) {
+  try {
+    console.log("🔍 Buscando causa específica...");
+    if (caratulado) console.log(`   📋 Caratulado: ${caratulado}`);
+    if (tribunalNombre) console.log(`   🏛️  Tribunal: ${tribunalNombre}`);
+
+    // Esperar a que la tabla de resultados tenga filas
+    await page.waitForFunction(() => {
+      const rows = document.querySelectorAll('table tbody tr');
+      return rows.length > 0;
+    }, { timeout: 15000 });
+
+    await page.waitForTimeout(1000);
+
+    // Buscar la fila que coincide con caratulado y/o tribunal
+    const clicked = await page.evaluate(({ caratulado, tribunalNombre }) => {
+      const rows = document.querySelectorAll('table tbody tr');
+
+      for (const row of rows) {
+        const cells = Array.from(row.querySelectorAll('td'));
+        if (cells.length < 4) continue;
+
+        // Extraer texto de las celdas (típicamente: [icono, rit, fecha, caratulado, tribunal])
+        const caratuladoCell = cells[3]?.innerText?.trim() || '';
+        const tribunalCell = cells[4]?.innerText?.trim() || '';
+
+        // Hacer match flexible (contiene o similar)
+        const matchCaratulado = !caratulado || caratuladoCell.includes(caratulado) || caratulado.includes(caratuladoCell);
+        const matchTribunal = !tribunalNombre || tribunalCell.includes(tribunalNombre) || tribunalNombre.includes(tribunalCell);
+
+        if (matchCaratulado && matchTribunal) {
+          // Encontrada la fila correcta
+          const link = row.querySelector('td a') || row.querySelector('a');
+          if (link) {
+            console.log('✅ Match encontrado:', caratuladoCell, '|', tribunalCell);
+            link.click();
+            return { success: true, caratulado: caratuladoCell, tribunal: tribunalCell };
+          }
+        }
+      }
+
+      return { success: false, message: 'No se encontró fila que coincida' };
+    }, { caratulado, tribunalNombre });
+
+    if (!clicked.success) {
+      await page.screenshot({ path: 'debug_no_match_detalle.png', fullPage: true });
+      throw new Error(`No se encontró causa con caratulado="${caratulado}" y tribunal="${tribunalNombre}"`);
+    }
+
+    console.log(`✅ Click ejecutado en: ${clicked.caratulado} - ${clicked.tribunal}`);
+
+    // Esperar modal
+    await page.waitForTimeout(2000);
+    await page.waitForFunction(() => {
+      const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+      if (!modal) return false;
+      const tabla = modal.querySelector('table tbody tr');
+      return tabla !== null;
+    }, { timeout: 20000 });
+
+    console.log("✅ Modal con contenido detectado");
+    console.log("✅ Detalle cargado.");
+  } catch (error) {
+    await page.screenshot({ path: 'error_detalle_especifico.png', fullPage: true });
+    throw new Error(`Error abriendo detalle específico: ${error.message}`);
+  }
+}
+
 async function openDetalle(page) {
   try {
     console.log("🔍 Buscando enlace 'Detalle de la causa'...");
@@ -356,7 +430,7 @@ async function openDetalle(page) {
     // Buscar y hacer click usando JavaScript directamente
     // El enlace puede tener title="Detalle de la causa" o ser el primer <a> en la celda
     const clicked = await page.evaluate(() => {
-      // Intentar primero con el selector original
+      // Intentar primero con el selector original (compatibilidad hacia atrás)
       let link = document.querySelector('a[title="Detalle de la causa"]');
 
       if (!link) {
@@ -482,4 +556,4 @@ async function openDetalle(page) {
   }
 }
 
-module.exports = { fillForm, openDetalle, resetForm };
+module.exports = { fillForm, openDetalle, openDetalleEspecifico, resetForm };

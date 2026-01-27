@@ -45,7 +45,8 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "playwright": "1.39.0"
+    "playwright": "1.39.0",
+    "playwright-core": "^1.39.0"
   },
   "dependencies": {
     "cors": "^2.8.5",

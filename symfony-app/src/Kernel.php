@@ -49,4 +49,11 @@ class Kernel extends BaseKernel
         $routes->import($confDir.'/{routes}/*'.self::CONFIG_EXTS, '/', 'glob');
         $routes->import($confDir.'/{routes}'.self::CONFIG_EXTS, '/', 'glob');
     }
+
+    public function registerContainerConfiguration(LoaderInterface $loader): void
+    {
+        $loader->load($this->getProjectDir().'/config/{packages}/*.yaml', 'glob');
+        $loader->load($this->getProjectDir().'/config/{packages}/'.$this->environment.'/*.yaml', 'glob');
+        $loader->load($this->getProjectDir().'/config/{services}.yaml', 'glob');
+    }
 }

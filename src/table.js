@@ -43,6 +43,52 @@ async function extractTableAsArray(page) {
 
   await page.waitForSelector(MODAL_TABLE_SELECTOR, { timeout: 15000 });
 
+  // PRE-ANÁLISIS: Identificar cuál tabla es la de movimientos (folio numérico + múltiples columnas)
+  const tablasInfo = await page.evaluate(() => {
+    const modals = [
+      document.querySelector('#modalDetalleCivil'),
+      document.querySelector('#modalDetalleLaboral'),
+      document.querySelector('.modal-body')
+    ].filter(Boolean);
+
+    if (modals.length === 0) return { tables: [], selectedIndex: -1 };
+
+    const modal = modals[0];
+    const tables = Array.from(modal.querySelectorAll('table'));
+
+    const tableAnalysis = tables.map((table, idx) => {
+      const firstRow = table.querySelector('tbody tr');
+      if (!firstRow) return null;
+
+      const tds = firstRow.querySelectorAll('td');
+      const firstText = tds[0] ? tds[0].innerText.trim() : '';
+      const isNumeric = /^\d+$/.test(firstText);
+
+      return {
+        index: idx,
+        columns: tds.length,
+        rows: table.querySelectorAll('tbody tr').length,
+        firstCell: firstText.substring(0, 50),
+        isNumeric: isNumeric,
+        isMovimientos: isNumeric && tds.length >= 7
+      };
+    }).filter(Boolean);
+
+    // Buscar la tabla de movimientos (folio numérico + >=7 columnas)
+    const movimientosIndex = tableAnalysis.findIndex(t => t.isMovimientos);
+
+    return {
+      tables: tableAnalysis,
+      selectedIndex: movimientosIndex >= 0 ? movimientosIndex : 0
+    };
+  });
+
+  console.log(`📊 Análisis de tablas del modal:`, JSON.stringify(tablasInfo.tables, null, 2));
+  console.log(`✅ Tabla seleccionada: Tabla ${tablasInfo.selectedIndex} (${tablasInfo.tables[tablasInfo.selectedIndex]?.columns || '?'} columnas)`);
+
+  // Selector específico para la tabla de movimientos correcta
+  const TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, #modalDetalleLaboral table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, .modal-body table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr`;
+
   // Agregar diagnóstico: verificar estructura de la tabla DEL MODAL
   const diagnosticInfo = await page.evaluate((selector) => {
     const trs = document.querySelectorAll(selector);
@@ -89,7 +135,7 @@ async function extractTableAsArray(page) {
         }))
       }
     };
-  }, MODAL_TABLE_SELECTOR);
+  }, TABLE_SPECIFIC_SELECTOR);
 
   console.log(`🔍 Diagnóstico de tabla del MODAL:`, JSON.stringify(diagnosticInfo, null, 2));
 
@@ -102,7 +148,7 @@ async function extractTableAsArray(page) {
   }
 
   const rows = await page.$$eval(
-    MODAL_TABLE_SELECTOR,
+    TABLE_SPECIFIC_SELECTOR,
     trs =>
       trs.map((tr, rowIndex) => {
         const tds = [...tr.querySelectorAll('td')];

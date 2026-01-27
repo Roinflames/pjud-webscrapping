@@ -1,28 +1,70 @@
-const { chromium } = require('playwright');
+const { chromium, firefox, webkit } = require('playwright');
 
-// User agents rotativos para evitar detección
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
-];
+// User agents específicos por navegador
+const USER_AGENTS = {
+  chromium: [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  ],
+  firefox: [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:122.0) Gecko/20100101 Firefox/122.0',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0'
+  ],
+  webkit: [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15'
+  ]
+};
 
-function getRandomUserAgent() {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+function getRandomUserAgent(browserType) {
+  const agents = USER_AGENTS[browserType] || USER_AGENTS.firefox;
+  return agents[Math.floor(Math.random() * agents.length)];
 }
 
 async function startBrowser(url, options = {}) {
   const { headless = true, slowMo = 100 } = options;
-  
-  const browser = await chromium.launch({ 
+
+  // Leer tipo de navegador de variable de entorno o usar firefox por defecto
+  // IMPORTANTE: Firefox evita reCAPTCHA mejor que Chromium
+  const browserType = process.env.PLAYWRIGHT_BROWSER || 'firefox';
+  console.log(`🌐 Usando navegador: ${browserType.toUpperCase()}`);
+
+  // Seleccionar el navegador correcto
+  let browserEngine;
+  switch(browserType.toLowerCase()) {
+    case 'chromium':
+    case 'chrome':
+      browserEngine = chromium;
+      break;
+    case 'firefox':
+    case 'ff':
+      browserEngine = firefox;
+      break;
+    case 'webkit':
+    case 'safari':
+      browserEngine = webkit;
+      break;
+    default:
+      console.log(`⚠️  Navegador '${browserType}' no reconocido, usando Firefox`);
+      browserEngine = firefox;
+  }
+
+  const browser = await browserEngine.launch({
     headless: headless, // Modo headless configurable
-    slowMo: slowMo // Delay entre acciones configurable
+    slowMo: slowMo, // Delay entre acciones configurable
+    // Firefox-specific: evita mejor el reCAPTCHA
+    firefoxUserPrefs: browserType === 'firefox' ? {
+      'dom.webdriver.enabled': false,
+      'useAutomationExtension': false,
+      'general.platform.override': 'Win32',
+      'general.useragent.override': getRandomUserAgent('firefox')
+    } : undefined
   });
-  
-  // Rotar user agent para evitar detección
-  const userAgent = getRandomUserAgent();
+
+  // Rotar user agent para evitar detección (específico del navegador)
+  const userAgent = getRandomUserAgent(browserType);
   
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },

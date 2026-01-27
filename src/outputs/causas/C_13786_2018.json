@@ -1,9 +1,9 @@
 {
   "rit": "C-13786-2018",
   "metadata": {
-    "processed_at": "2026-01-27T17:44:50.374Z",
+    "processed_at": "2026-01-27T18:48:50.449Z",
     "total_movimientos": 0,
-    "tiene_documentos_pdf": true,
+    "tiene_documentos_pdf": false,
     "tiene_demanda": false,
     "tiene_ebook": false
   },
@@ -24,83 +24,13 @@
   },
   "datos_basicos": {
     "rol": "13786",
-    "fecha": "09/05/2018",
-    "caratulado": "ITAU CORPBANCA/HERNÁNDEZ"
+    "fecha": "",
+    "caratulado": "PROMOTORA CMR FALABELLA S.A/YÁ"
   },
   "demanda": null,
   "ebook": null,
-  "pdf_mapping": {
-    "1": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "2": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "3": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "4": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "5": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "6": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "7": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    },
-    "8": {
-      "azul": null,
-      "rojo": null,
-      "azul_base64": null,
-      "rojo_base64": null,
-      "azul_nombre": null,
-      "rojo_nombre": null
-    }
-  },
-  "cabecera": {
-    "rit": "C-13786-2018",
-    "fecha_ingreso": "09/05/2018",
-    "caratulado": "ITAU CORPBANCA/HERNÁNDEZ",
-    "juzgado": "4º Juzgado Civil de Santiago"
-  },
+  "pdf_mapping": {},
+  "cabecera": null,
   "estado_actual": {
     "estado": "SIN_INFORMACION",
     "etapa": null,

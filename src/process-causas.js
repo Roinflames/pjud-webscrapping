@@ -184,7 +184,9 @@ async function extractResultadosBasicos(page, config) {
     }
     
     // Extraer datos de la fila que corresponde al RIT buscado
-    const datos = await page.evaluate((ritBuscado, rolBuscado) => {
+    const ritBuscado = config.rit;
+    const rolBuscado = config.rol;
+    const datos = await page.evaluate(({ ritBuscado, rolBuscado }) => {
       // Buscar en todas las tablas posibles
       const tables = document.querySelectorAll('table, #tablaConsultas');
       
@@ -255,7 +257,7 @@ async function extractResultadosBasicos(page, config) {
       }
       
       return { rol: null, fecha: null, caratulado: null, encontrado: false };
-    }, config.rit, config.rol);
+    }, { ritBuscado, rolBuscado });
     
     // Si no encontramos en la tabla, usar los datos del config
     if (!datos.encontrado || !datos.rol) {
@@ -408,11 +410,35 @@ async function processCausa(page, context, config, outputDir) {
     
     // PASO 3: Esperar a que se abra el modal de detalle
     console.log(`   ⏳ Esperando que se abra el detalle...`);
-    await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
-      timeout: 20000 
-    });
-    await page.waitForTimeout(1500); // Dar tiempo a que cargue completamente
-    console.log(`   ✅ Detalle abierto`);
+    try {
+      // Intentar múltiples selectores y estrategias
+      await Promise.race([
+        page.waitForSelector('#modalDetalleCivil table', { timeout: 30000, state: 'attached' }),
+        page.waitForSelector('#modalDetalleLaboral table', { timeout: 30000, state: 'attached' }),
+        page.waitForSelector('.modal-body table', { timeout: 30000, state: 'attached' }),
+        page.waitForSelector('#modalDetalleCivil', { timeout: 30000, state: 'attached' })
+      ]);
+      await page.waitForTimeout(2000); // Dar más tiempo a que cargue completamente
+      console.log(`   ✅ Detalle abierto`);
+    } catch (error) {
+      // Si falla, intentar verificar si el modal existe aunque no tenga tabla aún
+      const modalExists = await page.evaluate(() => {
+        return document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal-body') !== null;
+      });
+      
+      if (modalExists) {
+        console.log('   ⚠️ Modal detectado pero tabla aún no cargada, esperando adicional...');
+        await page.waitForTimeout(3000);
+        // Intentar una vez más
+        await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
+          timeout: 10000,
+          state: 'attached'
+        });
+        console.log(`   ✅ Tabla de detalle finalmente cargada`);
+      } else {
+        throw new Error(`Modal de detalle no se abrió: ${error.message}`);
+      }
+    }
     
     // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);

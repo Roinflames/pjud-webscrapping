@@ -16,7 +16,7 @@ const STATE_FILE = path.resolve(__dirname, 'rit_state.json');
 
 /**
  * Carga la lista de RITs válidos desde el CSV (causa.csv)
- * Usa la misma lógica de validación que process-csv-causas.js
+ * Usa la misma lógica de validación que process-causas.js
  */
 function loadRitList() {
   console.log('📂 Leyendo CSV de causas...');

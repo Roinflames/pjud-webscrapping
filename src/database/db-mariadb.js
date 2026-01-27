@@ -18,7 +18,7 @@ const DB_CONFIG = {
   port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'codi_ejamtest',
+  database: process.env.DB_NAME || 'pjud_scraping',
   charset: 'utf8',
   connectTimeout: 10000,
   // Pool configuration

@@ -1,5 +1,9 @@
 <?php
 
+// Desactivar warnings de deprecación para compatibilidad PHP 8.4
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_WARNING);
+ini_set('display_errors', '0');
+
 use App\Kernel;
 use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\ErrorHandler\Debug;
@@ -14,10 +18,14 @@ if (method_exists(Dotenv::class, 'bootEnv')) {
     (new Dotenv())->load(dirname(__DIR__).'/.env');
 }
 
-if (isset($_SERVER['APP_DEBUG']) && $_SERVER['APP_DEBUG']) {
-    umask(0000);
+$_SERVER['APP_ENV'] = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'dev';
+$_SERVER['APP_DEBUG'] = $_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? '0';
 
-    Debug::enable();
+if ($_SERVER['APP_DEBUG']) {
+    umask(0000);
+    if (class_exists(Debug::class)) {
+        Debug::enable();
+    }
 }
 
 if ($trustedProxies = $_SERVER['TRUSTED_PROXIES'] ?? false) {

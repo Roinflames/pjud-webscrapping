@@ -165,10 +165,44 @@ async function fillForm(page, CONFIG) {
     }
     await page.waitForTimeout(200 + Math.random() * 300); // Optimizado
 
-    // 3. Tribunal: SIEMPRE omitido para optimizar velocidad
-    // Todas las causas con RIT son civiles, tribunal es opcional y ralentiza el proceso
-    console.log('📋 Tribunal: Omitido (optimización: siempre buscar sin tribunal)');
-    // No esperamos ni seleccionamos tribunal - ahorra 1-3 segundos por causa
+    // 3. Tribunal: Seleccionar si está disponible en CONFIG
+    const tribunal = CONFIG.tribunal;
+    if (tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '') {
+      console.log(`📋 Tribunal: ${tribunal}`);
+      try {
+        // Esperar a que el campo se habilite (no esté disabled)
+        await page.waitForFunction(
+          () => {
+            const tribunalSelect = document.querySelector('#conTribunal');
+            return tribunalSelect && !tribunalSelect.disabled && tribunalSelect.options.length > 1;
+          },
+          { timeout: 15000 }
+        );
+        console.log('✅ Campo Tribunal habilitado');
+        
+        await page.waitForTimeout(300 + Math.random() * 400);
+        
+        // Verificar que la opción existe antes de seleccionar
+        const tribunalExists = await page.evaluate((tribunalValue) => {
+          const select = document.querySelector('#conTribunal');
+          if (!select) return false;
+          const options = Array.from(select.options);
+          return options.some(opt => opt.value === tribunalValue || opt.value === String(tribunalValue));
+        }, tribunal);
+        
+        if (tribunalExists) {
+          await page.selectOption('#conTribunal', tribunal);
+          console.log('✅ Tribunal seleccionado');
+        } else {
+          console.warn(`⚠️ Tribunal ${tribunal} no encontrado en las opciones, continuando sin tribunal...`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ No se pudo seleccionar tribunal ${tribunal}, continuando sin tribunal: ${error.message}`);
+      }
+      await page.waitForTimeout(200 + Math.random() * 300);
+    } else {
+      console.log('📋 Tribunal: Omitido (no disponible en configuración)');
+    }
 
     // 4. Esperar a que se habilite Tipo Causa y seleccionarlo
     console.log(`📋 Tipo Causa: ${CONFIG.tipoCausa}`);

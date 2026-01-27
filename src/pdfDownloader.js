@@ -109,15 +109,14 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
         if (tieneForms && pdf.source === 'form') {
           // Método 1: Usar forms
           const form = row.forms[pdfIndex];
-          clickResult = await page.evaluate(({ folioValue, formIndex: idx }) => {
+          // Usar el índice de la fila en lugar de buscar por folio (más confiable)
+          const rowIndex = rows.indexOf(row) + 1; // +1 porque nth-child es 1-based
+          clickResult = await page.evaluate(({ rowIndex, formIndex: idx }) => {
             const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
-            const row = Array.from(trs).find(tr => {
-              const firstCell = tr.querySelector('td');
-              return firstCell && firstCell.innerText.trim() === String(folioValue);
-            });
+            const row = trs[rowIndex - 1]; // -1 porque array es 0-based
             
             if (!row) {
-              return { success: false, error: 'Fila no encontrada' };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas)` };
             }
             
             const forms = Array.from(row.querySelectorAll('form'));
@@ -142,18 +141,17 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
                 return { success: false, error: 'No se pudo hacer submit: ' + e.message };
               }
             }
-          }, { folioValue: String(folio), formIndex: pdfIndex });
+          }, { rowIndex, formIndex: pdfIndex });
         } else {
           // Método 2: Usar enlaces/íconos/imágenes de la segunda columna (td:nth-child(2))
-          clickResult = await page.evaluate(({ folioValue, linkIndex }) => {
+          // Usar el índice de la fila en lugar de buscar por folio (más confiable)
+          const rowIndex = rows.indexOf(row) + 1; // +1 porque nth-child es 1-based
+          clickResult = await page.evaluate(({ rowIndex, linkIndex }) => {
             const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
-            const row = Array.from(trs).find(tr => {
-              const firstCell = tr.querySelector('td');
-              return firstCell && firstCell.innerText.trim() === String(folioValue);
-            });
+            const row = trs[rowIndex - 1]; // -1 porque array es 0-based
             
             if (!row) {
-              return { success: false, error: 'Fila no encontrada' };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas)` };
             }
             
             // Buscar en la segunda columna (donde suelen estar los PDFs en PJUD)

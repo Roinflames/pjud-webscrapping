@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 <style>
 body { background:#f5f6f8; font-size:14px; }
@@ -342,18 +343,23 @@ function renderizarMovimientos() {
         const tienePdfAzul = mov.tiene_pdf_azul || false;
         const tienePdfRojo = mov.tiene_pdf_rojo || false;
 
-        let docCol = '';
+        let docCol = '<div style="display:flex;gap:4px;align-items:center;">';
         if (tienePdfAzul) {
             const urlAzul = `api/descargar_pdf.php?rit=${encodeURIComponent(ritActual)}&folio=${encodeURIComponent(folio)}&color=azul`;
-            docCol += `<a href="${urlAzul}" target="_blank" class="btn btn-sm" style="background:#0ea5e9;color:white;margin-right:4px;" title="PDF Principal (Azul)">📄</a>`;
+            docCol += `<a href="${urlAzul}" target="_blank" class="pdf-link" style="color:#0ea5e9;font-size:18px;text-decoration:none;" title="Ver PDF Principal (Azul)" onclick="event.preventDefault(); abrirPDF('${urlAzul}'); return false;">
+                <i class="fa fa-file-pdf-o" style="color:#0ea5e9;"></i>
+            </a>`;
         }
         if (tienePdfRojo) {
             const urlRojo = `api/descargar_pdf.php?rit=${encodeURIComponent(ritActual)}&folio=${encodeURIComponent(folio)}&color=rojo`;
-            docCol += `<a href="${urlRojo}" target="_blank" class="btn btn-sm" style="background:#ef4444;color:white;" title="PDF Anexo (Rojo)">📄</a>`;
+            docCol += `<a href="${urlRojo}" target="_blank" class="pdf-link" style="color:#ef4444;font-size:18px;text-decoration:none;" title="Ver PDF Anexo (Rojo)" onclick="event.preventDefault(); abrirPDF('${urlRojo}'); return false;">
+                <i class="fa fa-file-pdf-o" style="color:#ef4444;"></i>
+            </a>`;
         }
         if (!tienePdfAzul && !tienePdfRojo) {
-            docCol = '<span style="color:#999;">-</span>';
+            docCol = '<span style="color:#999;font-size:12px;">Sin documentos</span>';
         }
+        docCol += '</div>';
 
         tbody.innerHTML += `
             <tr data-cuaderno="${mov.cuaderno_id || '1'}">
@@ -428,6 +434,49 @@ function renderizarFormatoLegacy(data, rit) {
             </tr>
         `;
     });
+}
+
+// Función para abrir PDF en nueva ventana/modal
+function abrirPDF(url) {
+    // Abrir en nueva ventana
+    const ventana = window.open(url, '_blank', 'width=800,height=600,scrollbars=yes');
+    if (!ventana) {
+        // Si el popup está bloqueado, abrir en la misma ventana
+        window.location.href = url;
+    }
+}
+
+// Función alternativa para mostrar PDF en modal (similar al poder judicial)
+function verPDFEnModal(url, nombreArchivo) {
+    // Crear modal si no existe
+    let modal = document.getElementById('modalPDF');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalPDF';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Visualizador de PDF</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding:0;">
+                        <iframe id="pdfFrame" src="" style="width:100%;height:80vh;border:none;"></iframe>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // Cargar PDF en el iframe
+    const iframe = document.getElementById('pdfFrame');
+    iframe.src = url;
+    
+    // Mostrar modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
 }
 </script>
 

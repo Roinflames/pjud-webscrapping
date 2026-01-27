@@ -50,7 +50,7 @@ async function guardarMovimientos(rit, movimientos, cabecera = {}, pdfsBase64 = 
 
     // Eliminar movimientos anteriores de este RIT (para actualización)
     await connection.execute('DELETE FROM movimientos WHERE rit = ?', [rit]);
-    await connection.execute('DELETE FROM movimientos_pdf WHERE rit = ?', [rit]);
+    await connection.execute('DELETE FROM pdfs WHERE rit = ?', [rit]);
 
     console.log(`[DB] Guardando ${movimientos.length} movimientos para RIT: ${rit}`);
 
@@ -89,17 +89,27 @@ async function guardarMovimientos(rit, movimientos, cabecera = {}, pdfsBase64 = 
 
       if (pdfPrincipalKeys.length > 0) {
         const pdfKey = pdfPrincipalKeys[0];
-        await connection.execute(`
-          INSERT INTO movimientos_pdf (movimiento_id, rit, indice, tipo, nombre_archivo, contenido_base64, tamano_bytes)
-          VALUES (?, ?, ?, 'principal', ?, ?, ?)
-        `, [
-          movimientoId,
-          rit,
-          indice,
-          pdfKey,
-          pdfsBase64[pdfKey],
-          Buffer.from(pdfsBase64[pdfKey], 'base64').length
-        ]);
+        // Obtener causa_id
+        const [causaRows] = await connection.execute('SELECT id FROM causas WHERE rit = ? LIMIT 1', [rit]);
+        const causaId = causaRows.length > 0 ? causaRows[0].id : null;
+        
+        if (causaId) {
+          await connection.execute(`
+            INSERT INTO pdfs (causa_id, movimiento_id, rit, tipo, nombre_archivo, contenido_base64, tamano_bytes, descargado)
+            VALUES (?, ?, ?, 'PRINCIPAL', ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+              contenido_base64 = VALUES(contenido_base64),
+              tamano_bytes = VALUES(tamano_bytes),
+              descargado = 1
+          `, [
+            causaId,
+            movimientoId,
+            rit,
+            pdfKey,
+            pdfsBase64[pdfKey],
+            Buffer.from(pdfsBase64[pdfKey], 'base64').length
+          ]);
+        }
       }
 
       // Buscar PDF anexo (rojo)
@@ -109,17 +119,27 @@ async function guardarMovimientos(rit, movimientos, cabecera = {}, pdfsBase64 = 
 
       if (pdfAnexoKeys.length > 0) {
         const pdfKey = pdfAnexoKeys[0];
-        await connection.execute(`
-          INSERT INTO movimientos_pdf (movimiento_id, rit, indice, tipo, nombre_archivo, contenido_base64, tamano_bytes)
-          VALUES (?, ?, ?, 'anexo', ?, ?, ?)
-        `, [
-          movimientoId,
-          rit,
-          indice,
-          pdfKey,
-          pdfsBase64[pdfKey],
-          Buffer.from(pdfsBase64[pdfKey], 'base64').length
-        ]);
+        // Obtener causa_id
+        const [causaRows] = await connection.execute('SELECT id FROM causas WHERE rit = ? LIMIT 1', [rit]);
+        const causaId = causaRows.length > 0 ? causaRows[0].id : null;
+        
+        if (causaId) {
+          await connection.execute(`
+            INSERT INTO pdfs (causa_id, movimiento_id, rit, tipo, nombre_archivo, contenido_base64, tamano_bytes, descargado)
+            VALUES (?, ?, ?, 'ANEXO', ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE
+              contenido_base64 = VALUES(contenido_base64),
+              tamano_bytes = VALUES(tamano_bytes),
+              descargado = 1
+          `, [
+            causaId,
+            movimientoId,
+            rit,
+            pdfKey,
+            pdfsBase64[pdfKey],
+            Buffer.from(pdfsBase64[pdfKey], 'base64').length
+          ]);
+        }
       }
     }
 
@@ -155,8 +175,8 @@ async function obtenerMovimientos(rit, includePdfs = false) {
           pa.contenido_base64 AS pdf_anexo_base64,
           pa.nombre_archivo AS pdf_anexo_nombre
         FROM movimientos m
-        LEFT JOIN movimientos_pdf pp ON m.id = pp.movimiento_id AND pp.tipo = 'principal'
-        LEFT JOIN movimientos_pdf pa ON m.id = pa.movimiento_id AND pa.tipo = 'anexo'
+        LEFT JOIN pdfs pp ON m.id = pp.movimiento_id AND pp.tipo = 'PRINCIPAL'
+        LEFT JOIN pdfs pa ON m.id = pa.movimiento_id AND pa.tipo = 'ANEXO'
         WHERE m.rit = ?
         ORDER BY m.indice DESC
       `;
@@ -169,8 +189,8 @@ async function obtenerMovimientos(rit, includePdfs = false) {
           CASE WHEN pp.id IS NOT NULL THEN 1 ELSE 0 END AS tiene_pdf_principal,
           CASE WHEN pa.id IS NOT NULL THEN 1 ELSE 0 END AS tiene_pdf_anexo
         FROM movimientos m
-        LEFT JOIN movimientos_pdf pp ON m.id = pp.movimiento_id AND pp.tipo = 'principal'
-        LEFT JOIN movimientos_pdf pa ON m.id = pa.movimiento_id AND pa.tipo = 'anexo'
+        LEFT JOIN pdfs pp ON m.id = pp.movimiento_id AND pp.tipo = 'PRINCIPAL'
+        LEFT JOIN pdfs pa ON m.id = pa.movimiento_id AND pa.tipo = 'ANEXO'
         WHERE m.rit = ?
         ORDER BY m.indice DESC
       `;
@@ -228,11 +248,13 @@ async function obtenerPDF(rit, indice, tipo = 'principal') {
   const db = await getPool();
 
   try {
+    const tipoEnum = tipo === 'principal' ? 'PRINCIPAL' : 'ANEXO';
     const [rows] = await db.execute(`
-      SELECT nombre_archivo, contenido_base64, tamano_bytes
-      FROM movimientos_pdf
-      WHERE rit = ? AND indice = ? AND tipo = ?
-    `, [rit, indice, tipo]);
+      SELECT p.nombre_archivo, p.contenido_base64, p.tamano_bytes
+      FROM pdfs p
+      JOIN movimientos m ON p.movimiento_id = m.id
+      WHERE m.rit = ? AND m.indice = ? AND p.tipo = ?
+    `, [rit, indice, tipoEnum]);
 
     if (rows.length === 0) {
       return null;

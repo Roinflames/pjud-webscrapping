@@ -475,12 +475,13 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
   const sql = `
     INSERT INTO pdfs (
       causa_id, movimiento_id, rit,
-      tipo, nombre_archivo, ruta_relativa, tamano_bytes, hash_md5,
+      tipo, nombre_archivo, ruta_relativa, tamano_bytes, contenido_base64, hash_md5,
       descargado, fecha_descarga, error_descarga
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       ruta_relativa = VALUES(ruta_relativa),
       tamano_bytes = VALUES(tamano_bytes),
+      contenido_base64 = VALUES(contenido_base64),
       hash_md5 = VALUES(hash_md5),
       descargado = VALUES(descargado),
       fecha_descarga = VALUES(fecha_descarga),
@@ -495,6 +496,7 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
     datos.nombre_archivo,
     datos.ruta_relativa || null,
     datos.tamano_bytes || null,
+    datos.contenido_base64 || null,
     datos.hash_md5 || null,
     datos.descargado ? 1 : 0,
     datos.fecha_descarga ? new Date(datos.fecha_descarga) : null,

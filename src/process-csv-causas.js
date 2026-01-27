@@ -428,6 +428,135 @@ async function processCausa(page, context, config, outputDir) {
     const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean) || {};
     console.log(`   ✅ PDFs descargados`);
 
+    // PASO 6b: Guardar datos en base de datos
+    try {
+      const { upsertCausa, getCausaByRit, insertMovimientosBatch, registrarPdf, registrarEbook, query } = require('./database/db-mariadb');
+      
+      // Obtener o crear causa en BD
+      const causaData = {
+        rit: config.rit,
+        tipo_causa: config.tipoCausa || 'C',
+        rol: datosAGuardar.rol || config.rol || '',
+        anio: config.año || '',
+        competencia_id: parseInt(config.competencia) || 3,
+        competencia_nombre: 'Civil',
+        corte_id: parseInt(config.corte) || 90,
+        corte_nombre: '',
+        tribunal_id: config.tribunal ? parseInt(config.tribunal) : null,
+        tribunal_nombre: datosAGuardar.caratulado ? datosAGuardar.caratulado.split('/')[1]?.trim() : '',
+        caratulado: datosAGuardar.caratulado || config.caratulado || '',
+        fecha_ingreso: datosAGuardar.fecha || null,
+        estado: 'ACTIVA',
+        etapa: '',
+        total_movimientos: rows.length,
+        total_pdfs: Object.keys(pdfMapping).reduce((acc, k) => {
+          const pdfs = pdfMapping[k];
+          return acc + (pdfs.azul_base64 ? 1 : 0) + (pdfs.rojo_base64 ? 1 : 0);
+        }, 0),
+        scraping_exitoso: true
+      };
+      
+      await upsertCausa(causaData);
+      const causa = await getCausaByRit(config.rit);
+      const causaId = causa?.id;
+      
+      if (causaId) {
+        console.log(`   💾 Guardando movimientos y PDFs en base de datos...`);
+        
+        // Preparar movimientos para guardar
+        const movimientosParaBD = datosProcesados.movimientos.map(mov => {
+          const indice = mov.indice || mov.folio;
+          const pdfs = pdfMapping[indice] || {};
+          
+          return {
+            rit: config.rit,
+            indice: parseInt(indice) || null,
+            folio: mov.folio || indice || null,
+            etapa: mov.etapa || null,
+            tramite: mov.tramite || null,
+            descripcion: mov.descripcion || mov.desc_tramite || null,
+            fecha: mov.fecha || mov.fec_tramite || null,
+            foja: mov.foja || null,
+            tiene_pdf: !!(pdfs.azul_base64 || pdfs.rojo_base64),
+            pdf_principal: pdfs.azul_nombre || null,
+            pdf_anexo: pdfs.rojo_nombre || null,
+            pdf_descargado: !!(pdfs.azul_base64 || pdfs.rojo_base64)
+          };
+        });
+        
+        // Guardar movimientos
+        await insertMovimientosBatch(movimientosParaBD, causaId, config.rit);
+        console.log(`   ✅ ${movimientosParaBD.length} movimientos guardados`);
+        
+        // Guardar PDFs asociados a cada movimiento
+        for (const [indiceStr, pdfData] of Object.entries(pdfMapping)) {
+          const indice = parseInt(indiceStr);
+          if (!indice) continue;
+          
+          // Buscar movimiento_id por indice y rit
+          const [movRows] = await query(
+            'SELECT id FROM movimientos WHERE rit = ? AND indice = ? LIMIT 1',
+            [config.rit, indice]
+          );
+          
+          const movimientoId = movRows.length > 0 ? movRows[0].id : null;
+          
+          // Guardar PDF principal (azul) si existe
+          if (pdfData.azul_base64 && pdfData.azul_nombre) {
+            const tamanoBytes = Buffer.from(pdfData.azul_base64, 'base64').length;
+            await registrarPdf(causaId, movimientoId, config.rit, {
+              tipo: 'PRINCIPAL',
+              nombre_archivo: pdfData.azul_nombre,
+              contenido_base64: pdfData.azul_base64,
+              tamano_bytes: tamanoBytes,
+              descargado: true,
+              fecha_descarga: new Date()
+            });
+          }
+          
+          // Guardar PDF anexo (rojo) si existe
+          if (pdfData.rojo_base64 && pdfData.rojo_nombre) {
+            const tamanoBytes = Buffer.from(pdfData.rojo_base64, 'base64').length;
+            await registrarPdf(causaId, movimientoId, config.rit, {
+              tipo: 'ANEXO',
+              nombre_archivo: pdfData.rojo_nombre,
+              contenido_base64: pdfData.rojo_base64,
+              tamano_bytes: tamanoBytes,
+              descargado: true,
+              fecha_descarga: new Date()
+            });
+          }
+        }
+        
+        console.log(`   ✅ PDFs guardados en base de datos`);
+        
+        // Guardar eBook si existe
+        if (ebookNombre) {
+          const ebookPath = path.join(pdfDir, ebookNombre);
+          if (fs.existsSync(ebookPath)) {
+            const ebookBase64 = require('./pdfDownloader').fileToBase64(ebookPath);
+            if (ebookBase64) {
+              const tamanoBytes = Buffer.from(ebookBase64, 'base64').length;
+              await registrarEbook(causaId, config.rit, {
+                nombre_archivo: ebookNombre,
+                contenido_base64: ebookBase64,
+                tamano_bytes: tamanoBytes,
+                descargado: true,
+                fecha_descarga: new Date()
+              });
+              console.log(`   ✅ eBook guardado en base de datos`);
+            }
+          }
+        }
+      } else {
+        console.warn(`   ⚠️ No se pudo obtener causa_id, datos no guardados en BD`);
+      }
+    } catch (dbError) {
+      console.warn(`   ⚠️ Error guardando en BD: ${dbError.message}`);
+      console.error(dbError);
+      // Continuar aunque falle el guardado en BD
+    }
+
     // PASO 7: Descargar eBook
     console.log(`   📚 Descargando eBook...`);
     await downloadEbook(page, context, config, pdfDir);

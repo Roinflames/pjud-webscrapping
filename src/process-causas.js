@@ -419,14 +419,38 @@ async function processCausa(page, context, config, outputDir) {
       ]);
       console.log(`   ✅ Modal detectado en DOM`);
 
+      // DEBUG: Tomar screenshot para ver qué muestra el modal
+      await page.screenshot({ path: path.join(outputDir, `debug_modal_${ritClean}.png`), fullPage: true });
+      console.log(`   📸 Screenshot guardado: debug_modal_${ritClean}.png`);
+
+      // DEBUG: Capturar errores de console
+      const consoleErrors = [];
+      page.on('console', msg => {
+        if (msg.type() === 'error') {
+          consoleErrors.push(msg.text());
+        }
+      });
+
       // 2. CRÍTICO: Esperar a que la tabla DENTRO del modal se cargue (AJAX)
       // El modal se abre vacío y luego se llena via AJAX - necesitamos esperar el contenido
       console.log(`   ⏳ Esperando contenido del modal (tabla de movimientos)...`);
+
+      // DEBUG: Ver qué hay en el modal mientras esperamos
+      const modalContentBeforeWait = await page.evaluate(() => {
+        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal-body');
+        return modal ? modal.innerHTML.substring(0, 2000) : 'Modal no encontrado';
+      });
+      console.log(`   📋 Contenido del modal ANTES de esperar tabla:`, modalContentBeforeWait.substring(0, 500));
+
       await Promise.race([
         page.waitForSelector('#modalDetalleCivil table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
         page.waitForSelector('#modalDetalleLaboral table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
         page.waitForSelector('.modal-body table tbody tr:first-child', { timeout: 45000, state: 'attached' })
       ]);
+
+      if (consoleErrors.length > 0) {
+        console.log(`   ⚠️ Errores de console detectados:`, consoleErrors);
+      }
 
       // 3. Dar tiempo adicional para que todas las filas carguen
       await page.waitForTimeout(3000);

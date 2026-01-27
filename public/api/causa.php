@@ -178,61 +178,105 @@ try {
 
     // Formatear respuesta
     $movimientos = [];
+    $movimientosDetallados = [];
     $cabecera = null;
     $pdfs = [];
+    $totalPdfs = 0;
 
     foreach ($rows as $row) {
+        // Formato legacy para compatibilidad
         $movimiento = [
             $row['folio'] ?? '',
             $row['tiene_pdf'] ? 'Descargar Documento' : '',
             $row['folio'] ?? '',
-            $row['tipo_movimiento'] ?? '',
-            $row['subtipo_movimiento'] ?? '',
+            $row['etapa'] ?? '',
+            $row['tramite'] ?? '',
             $row['descripcion'] ?? '',
             $row['fecha'] ?? '',
-            '',
+            $row['foja'] ?? '',
             ''
+        ];
+
+        // Formato detallado con toda la información
+        $movimientoDetallado = [
+            'folio' => $row['folio'] ?? '',
+            'indice' => $row['indice'] ?? '',
+            'tiene_pdf' => (bool)$row['tiene_pdf'],
+            'etapa' => $row['etapa'] ?? '',
+            'tramite' => $row['tramite'] ?? '',
+            'descripcion' => $row['descripcion'] ?? '',
+            'fecha' => $row['fecha'] ?? '',
+            'foja' => $row['foja'] ?? '',
+            'pdf_principal' => null,
+            'pdf_anexo' => null
         ];
 
         // Agregar info de PDFs si están disponibles
         if ($row['pdf_principal_nombre']) {
             $movimiento['pdf_principal'] = $row['pdf_principal_nombre'];
+            $movimientoDetallado['pdf_principal'] = [
+                'nombre' => $row['pdf_principal_nombre'],
+                'base64' => $includePdfs ? ($row['pdf_principal_base64'] ?? null) : null
+            ];
+            $totalPdfs++;
             if ($includePdfs && $row['pdf_principal_base64']) {
                 $pdfs[$row['pdf_principal_nombre']] = $row['pdf_principal_base64'];
             }
         }
         if ($row['pdf_anexo_nombre']) {
             $movimiento['pdf_anexo'] = $row['pdf_anexo_nombre'];
+            $movimientoDetallado['pdf_anexo'] = [
+                'nombre' => $row['pdf_anexo_nombre'],
+                'base64' => $includePdfs ? ($row['pdf_anexo_base64'] ?? null) : null
+            ];
+            $totalPdfs++;
             if ($includePdfs && $row['pdf_anexo_base64']) {
                 $pdfs[$row['pdf_anexo_nombre']] = $row['pdf_anexo_base64'];
             }
         }
 
         $movimientos[] = $movimiento;
+        $movimientosDetallados[] = $movimientoDetallado;
 
         if ($cabecera === null) {
             $cabecera = [
                 '',
                 $rol,
-                $row['fecha'] ?? '',
-                $row['caratulado'] ?? '',
-                $row['juzgado'] ?? ''
+                $causaInfo['fecha_ingreso'] ?? ($row['fecha'] ?? ''),
+                $causaInfo['caratulado'] ?? '',
+                $causaInfo['tribunal_nombre'] ?? ''
             ];
         }
     }
 
     array_unshift($movimientos, [], $cabecera);
 
-    // Respuesta estructurada
-    $response = $movimientos;
+    // Respuesta estructurada con toda la información
+    $response = [
+        'legacy' => $movimientos, // Formato legacy para compatibilidad
+        'causa' => [
+            'rit' => $rol,
+            'caratulado' => $causaInfo['caratulado'] ?? '',
+            'tribunal' => $causaInfo['tribunal_nombre'] ?? '',
+            'fecha_ingreso' => $causaInfo['fecha_ingreso'] ?? '',
+            'estado' => $causaInfo['estado'] ?? 'SIN_INFORMACION',
+            'etapa' => $causaInfo['etapa'] ?? '',
+            'total_movimientos' => $causaInfo['total_movimientos'] ?? count($movimientosDetallados),
+            'total_pdfs' => $totalPdfs
+        ],
+        'ebook' => $ebookInfo ? [
+            'nombre' => $ebookInfo['nombre_archivo'],
+            'ruta' => $ebookInfo['ruta_relativa'],
+            'tamano' => $ebookInfo['tamano_bytes'],
+            'descargado' => (bool)$ebookInfo['descargado']
+        ] : null,
+        'movimientos' => $movimientosDetallados,
+        'ultimo_movimiento' => !empty($movimientosDetallados) ? $movimientosDetallados[0]['fecha'] : null
+    ];
 
-    // Si se solicitaron PDFs, agregarlos al final
+    // Si se solicitaron PDFs, agregarlos
     if ($includePdfs && count($pdfs) > 0) {
-        $response = [
-            'movimientos' => $movimientos,
-            'pdfs' => $pdfs,
-            'total_pdfs' => count($pdfs)
-        ];
+        $response['pdfs'] = $pdfs;
     }
 
     echo json_encode($response, JSON_UNESCAPED_UNICODE);

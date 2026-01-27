@@ -6,14 +6,14 @@ use PDO;
 use PDOException;
 
 /**
- * Clase para manejar la conexión a la base de datos
+ * Clase para manejar la conexiï¿½n a la base de datos
  */
 class Database
 {
     private static ?PDO $connection = null;
 
     /**
-     * Obtiene la conexión PDO (Singleton)
+     * Obtiene la conexiï¿½n PDO (Singleton)
      *
      * @return PDO
      * @throws PDOException
@@ -22,11 +22,12 @@ class Database
     {
         if (self::$connection === null) {
             $dbHost = getenv('DB_HOST') ?: 'localhost';
+            $dbPort = getenv('DB_PORT') ?: '3306';
             $dbName = getenv('DB_NAME') ?: 'codi_ejamtest';
             $dbUser = getenv('DB_USER') ?: 'root';
             $dbPass = getenv('DB_PASS') ?: '';
 
-            $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
+            $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
 
             self::$connection = new PDO($dsn, $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -40,7 +41,7 @@ class Database
     }
 
     /**
-     * Cierra la conexión (útil para tests)
+     * Cierra la conexiï¿½n (ï¿½til para tests)
      */
     public static function closeConnection(): void
     {

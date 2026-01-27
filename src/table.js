@@ -168,6 +168,7 @@ async function extractTableAsArray(page) {
             }));
 
         return {
+          rowIndex: rowIndex, // Guardar índice original para referencia
           texto,
           datos_limpios,
           forms,

@@ -134,8 +134,8 @@ async function upsertCausa(causa) {
     causa.tribunal_nombre || null,
     causa.caratulado || null,
     causa.fecha_ingreso || null,
-    // Dejar que la BD use su valor por defecto / ENUM válido
-    causa.estado || null,
+    // No forzar estado desde el scraper; dejar que la BD use su valor por defecto
+    null,
     causa.etapa || null,
     causa.estado_descripcion || null,
     causa.total_movimientos || 0,

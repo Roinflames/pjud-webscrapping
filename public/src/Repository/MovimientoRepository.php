@@ -23,7 +23,7 @@ class MovimientoRepository
      * Busca todos los movimientos de una causa por RIT
      *
      * @param string $rit
-     * @param bool $includePdfs Si true, incluye información de PDFs disponibles
+     * @param bool $includePdfs Si true, incluye informaciï¿½n de PDFs disponibles
      * @return Movimiento[]
      */
     public function findByRit(string $rit, bool $includePdfs = true): array
@@ -31,7 +31,14 @@ class MovimientoRepository
         if ($includePdfs) {
             $stmt = $this->pdo->prepare("
                 SELECT
-                    m.*,
+                    m.id,
+                    m.rit,
+                    m.folio,
+                    m.fecha,
+                    m.etapa,
+                    m.tramite,
+                    m.descripcion,
+                    m.foja,
                     (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul') > 0 as tiene_pdf_azul,
                     (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo') > 0 as tiene_pdf_rojo,
                     (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul' LIMIT 1) as pdf_azul,
@@ -42,7 +49,8 @@ class MovimientoRepository
             ");
         } else {
             $stmt = $this->pdo->prepare("
-                SELECT * FROM movimientos m
+                SELECT id, rit, folio, fecha, etapa, tramite, descripcion, foja
+                FROM movimientos m
                 WHERE m.rit = :rit
                 ORDER BY m.folio ASC
             ");
@@ -77,20 +85,24 @@ class MovimientoRepository
      */
     public function getCuadernosByRit(string $rit): array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT DISTINCT id_cuaderno, nombre
-            FROM movimientos
-            WHERE rit = :rit AND id_cuaderno IS NOT NULL
-            ORDER BY id_cuaderno
-        ");
-
-        $stmt->execute(['rit' => $rit]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Verificar si existe la columna id_cuaderno
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT DISTINCT id_cuaderno, cuaderno_nombre as nombre
+                FROM movimientos
+                WHERE rit = :rit AND id_cuaderno IS NOT NULL
+                ORDER BY id_cuaderno
+            ");
+            $stmt->execute(['rit' => $rit]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            // Si falla (columna no existe), retornar array vacÃ­o
+            return [];
+        }
     }
 
     /**
-     * Busca un movimiento específico por RIT y folio
+     * Busca un movimiento especï¿½fico por RIT y folio
      *
      * @param string $rit
      * @param string $folio

@@ -104,23 +104,29 @@ async function extractTableAsArray(page) {
         // Si no hay forms, buscar enlaces e iconos con onclick (método alternativo)
         let pdfLinks = [];
         if (forms.length === 0) {
-          // Buscar en la segunda columna (td:nth-child(2)) que es donde suelen estar los PDFs
-          const secondTd = tds[1];
-          if (secondTd) {
-            // Buscar enlaces con onclick o iconos
-            const links = [...secondTd.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"]')];
-            const icons = [...secondTd.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf')];
-            
-            // Combinar enlaces e iconos
-            pdfLinks = [...links, ...icons].map((el, i) => ({
-              index: i,
-              tagName: el.tagName,
-              hasOnclick: !!el.getAttribute('onclick'),
-              onclick: el.getAttribute('onclick') || null,
-              href: el.getAttribute('href') || null,
-              className: el.className || null
-            }));
-          }
+          // Buscar en TODA la fila (no solo segunda columna)
+          const links = [...tr.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"], a[onclick*="submit"]')];
+          const icons = [...tr.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf, i.fa-file')];
+
+          // Combinar enlaces e iconos (eliminar duplicados si un icono está dentro de un enlace)
+          const allElements = [...links, ...icons];
+          const uniqueElements = allElements.filter((el, idx) => {
+            // Si es un icono, verificar que no esté dentro de un enlace ya agregado
+            if (el.tagName === 'I') {
+              const parentLink = el.closest('a');
+              return !parentLink || !allElements.slice(0, idx).includes(parentLink);
+            }
+            return true;
+          });
+
+          pdfLinks = uniqueElements.map((el, i) => ({
+            index: i,
+            tagName: el.tagName,
+            hasOnclick: !!el.getAttribute('onclick'),
+            onclick: el.getAttribute('onclick') || null,
+            href: el.getAttribute('href') || null,
+            className: el.className || null
+          }));
         }
 
         const texto = tds.map(td => td.innerText.trim());

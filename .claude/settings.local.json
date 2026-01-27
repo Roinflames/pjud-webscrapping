@@ -48,7 +48,9 @@
       "Bash(git commit -m \"docs: Agregar reporte final de test con análisis del problema\")",
       "Bash(tee /tmp/scraping_test.log)",
       "Bash(git commit -m \"fix: Corregir selector de tabla del modal y agregar diagnóstico\")",
-      "Bash(git commit -m \"docs: Agregar reporte de mejoras con análisis del problema del modal\")"
+      "Bash(git commit -m \"docs: Agregar reporte de mejoras con análisis del problema del modal\")",
+      "Bash(tee /tmp/scraping_test_lupa.log)",
+      "Bash(git commit -m \"docs: Agregar resumen final de sesión con análisis completo\")"
     ]
   }
 }

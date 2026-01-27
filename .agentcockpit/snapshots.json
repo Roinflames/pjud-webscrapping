@@ -309,8 +309,40 @@
       "filesChanged": [
         "src/process-causas.js"
       ]
+    },
+    {
+      "version": 28,
+      "commitHash": "9090069c7a87306c49af8fa67df01b4cadb54e01",
+      "tag": "snapshot-v28",
+      "timestamp": 1769538049014,
+      "message": "Snapshot V28",
+      "filesChanged": [
+        ".agentcockpit/snapshots.json",
+        ".claude/settings.local.json",
+        "REPORTE_MEJORAS_27_ENERO.md"
+      ]
+    },
+    {
+      "version": 29,
+      "commitHash": "23b00da727251090a72696670878dc14d9af7765",
+      "tag": "snapshot-v29",
+      "timestamp": 1769538159911,
+      "message": "Snapshot V29",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
+    },
+    {
+      "version": 30,
+      "commitHash": "a348a889940da5716421bdf0e8c7931a4d6e6617",
+      "tag": "snapshot-v30",
+      "timestamp": 1769538453262,
+      "message": "Snapshot V30",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
     }
   ],
-  "nextVersion": 28,
-  "currentVersion": 27
+  "nextVersion": 31,
+  "currentVersion": 30
 }

@@ -1,8 +1,11 @@
 {
   "name": "webscrapping",
   "version": "0.0.1",
-  "description": "",
+  "description": "Sistema RPA para scraping PJUD Chile - Compatible con Node 16.20.2+",
   "main": "index.js",
+  "engines": {
+    "node": ">=16.20.2 <18.0.0"
+  },
   "scripts": {
     "test": "node src/test/run-tests.js",
     "test:unit": "node src/test/run-tests.js",
@@ -28,20 +31,27 @@
     "services:restart": "bash scripts/control-servicios.sh restart",
     "services:status": "bash scripts/control-servicios.sh status",
     "services:enable": "bash scripts/control-servicios.sh enable",
-    "services:disable": "bash scripts/control-servicios.sh disable"
+    "services:disable": "bash scripts/control-servicios.sh disable",
+    "postinstall": "npx playwright install firefox"
   },
-  "keywords": [],
+  "keywords": [
+    "scraping",
+    "rpa",
+    "pjud",
+    "chile",
+    "playwright"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "playwright": "^1.58.0"
+    "playwright": "1.39.0"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mysql2": "^3.16.1",
-    "winston": "^3.18.3"
+    "mysql2": "^3.6.5",
+    "winston": "^3.11.0"
   }
 }

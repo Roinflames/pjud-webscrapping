@@ -59,7 +59,7 @@ class PDFRepository
 
     /**
      * Obtiene todos los PDFs de un movimiento
-     * 
+     *
      * @param int $movimientoId
      * @return PDF[]
      */
@@ -70,7 +70,7 @@ class PDFRepository
             FROM pdfs
             WHERE movimiento_id = :movimiento_id
         ");
-        
+
         $stmt->execute(['movimiento_id' => $movimientoId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -80,5 +80,41 @@ class PDFRepository
         }
 
         return $pdfs;
+    }
+
+    /**
+     * Busca un PDF por RIT, folio y tipo (usando el vínculo con movimientos)
+     *
+     * @param string $rit
+     * @param string $folio
+     * @param string $color 'azul' | 'rojo' (interfaz frontend)
+     * @return PDF|null
+     */
+    public function findByRitFolioTipo(string $rit, string $folio, string $color): ?PDF
+    {
+        // Mapear color frontend a tipo de BD
+        $tipoBD = ($color === 'rojo') ? 'ANEXO' : 'PRINCIPAL';
+
+        $stmt = $this->pdo->prepare("
+            SELECT p.id, p.movimiento_id, p.rit, p.tipo, p.nombre_archivo, p.contenido_base64, p.tamano_bytes
+            FROM pdfs p
+            JOIN movimientos m ON p.movimiento_id = m.id
+            WHERE p.rit = :rit AND m.folio = :folio AND p.tipo = :tipo
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            'rit' => $rit,
+            'folio' => $folio,
+            'tipo' => $tipoBD
+        ]);
+
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$data) {
+            return null;
+        }
+
+        return PDF::fromArray($data);
     }
 }

@@ -39,10 +39,10 @@ class MovimientoRepository
                     m.tramite,
                     m.descripcion,
                     m.foja,
-                    (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul') > 0 as tiene_pdf_azul,
-                    (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo') > 0 as tiene_pdf_rojo,
-                    (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul' LIMIT 1) as pdf_azul,
-                    (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo' LIMIT 1) as pdf_rojo
+                    (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'PRINCIPAL') > 0 as tiene_pdf_azul,
+                    (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'ANEXO') > 0 as tiene_pdf_rojo,
+                    (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'PRINCIPAL' LIMIT 1) as pdf_azul,
+                    (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'ANEXO' LIMIT 1) as pdf_rojo
                 FROM movimientos m
                 WHERE m.rit = :rit
                 ORDER BY m.folio ASC
@@ -113,10 +113,10 @@ class MovimientoRepository
         $stmt = $this->pdo->prepare("
             SELECT
                 m.*,
-                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul') > 0 as tiene_pdf_azul,
-                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo') > 0 as tiene_pdf_rojo,
-                (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul' LIMIT 1) as pdf_azul,
-                (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo' LIMIT 1) as pdf_rojo
+                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'PRINCIPAL') > 0 as tiene_pdf_azul,
+                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'ANEXO') > 0 as tiene_pdf_rojo,
+                (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'PRINCIPAL' LIMIT 1) as pdf_azul,
+                (SELECT nombre_archivo FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'ANEXO' LIMIT 1) as pdf_rojo
             FROM movimientos m
             WHERE m.rit = :rit AND m.folio = :folio
             LIMIT 1

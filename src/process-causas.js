@@ -7,7 +7,7 @@ const { readCausaCSV, mapCsvToDB } = require('./read-csv');
 const { startBrowser } = require('./browser');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
 const { fillForm, openDetalle } = require('./form');
-const { extractTable } = require('./table');
+const { extractTable, extractTableAsArray } = require('./table');
 const { exportToJSON, exportToCSV, processTableData } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
 const { downloadEbook } = require('./ebook');
@@ -442,16 +442,16 @@ async function processCausa(page, context, config, outputDir) {
     
     // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);
-    const rows = await extractTable(page);
+    const rows = await extractTableAsArray(page);
     console.log(`   ✅ Extraídas ${rows.length} filas de movimientos`);
 
     // PASO 5: Crear subcarpeta para PDFs
     const pdfDir = path.join(outputDir, 'pdf');
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
-    // PASO 6: Descargar PDFs
+    // PASO 6: Descargar PDFs (pasar las rows ya extraídas)
     console.log(`   📄 Descargando PDFs...`);
-    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean) || {};
+    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean, rows) || {};
     console.log(`   ✅ PDFs descargados`);
 
     // PASO 7: Descargar eBook
@@ -464,24 +464,25 @@ async function processCausa(page, context, config, outputDir) {
     let ebookNombre = null;
     
     // Identificar PDF de demanda (buscar movimiento con "demanda" en descripción)
-    // extractTable retorna objetos con 'raw' (array de celdas) o 'folio' (primera celda)
+    // extractTableAsArray retorna objetos con 'texto' (array de celdas) y 'datos_limpios'
     const movDemanda = rows.find(r => {
-      // Buscar en raw (array de celdas) si existe, o en las propiedades del objeto
-      if (r.raw && Array.isArray(r.raw) && r.raw.length > 5) {
-        return r.raw[5] && r.raw[5].toLowerCase().includes('demanda');
+      // Buscar en texto (array de celdas) - índice 5 suele ser descripción del trámite
+      if (r.texto && Array.isArray(r.texto) && r.texto.length > 5) {
+        return r.texto[5] && r.texto[5].toLowerCase().includes('demanda');
       }
-      // Fallback: buscar en descripción si existe
-      if (r.descripcion) {
-        return r.descripcion.toLowerCase().includes('demanda');
+      // Fallback: buscar en datos_limpios
+      if (r.datos_limpios && r.datos_limpios.desc_tramite) {
+        return r.datos_limpios.desc_tramite.toLowerCase().includes('demanda');
       }
       return false;
     });
     
     if (movDemanda) {
       // Usar folio del movimiento (primera celda) para buscar en pdfMapping
-      const folioDemanda = movDemanda.folio || (movDemanda.raw && movDemanda.raw[0]);
-      if (folioDemanda && pdfMapping[folioDemanda] && pdfMapping[folioDemanda].azul) {
-        demandaNombre = pdfMapping[folioDemanda].azul;
+      const folioDemanda = movDemanda.datos_limpios?.folio || movDemanda.texto?.[0];
+      const indiceMov = parseInt(folioDemanda) || null;
+      if (indiceMov && pdfMapping[indiceMov] && pdfMapping[indiceMov].azul) {
+        demandaNombre = pdfMapping[indiceMov].azul_nombre || pdfMapping[indiceMov].azul;
       }
     }
     

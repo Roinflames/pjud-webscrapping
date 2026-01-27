@@ -57,11 +57,22 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
     }
 
     filasConPDFs++;
-    const folio = row.datos_limpios?.folio || row.texto[0];
-    const indiceMov = parseInt(row.texto[0]) || null;
-    if (!indiceMov) {
-      console.log(`   ⚠️ No se pudo obtener índice del movimiento para folio: ${folio}`);
-      continue;
+    // Obtener folio e índice del movimiento
+    // extractTableAsArray retorna: { texto: [...], datos_limpios: { folio, ... } }
+    const folio = row.datos_limpios?.folio || row.texto?.[0] || null;
+    // Intentar parsear el folio como número (índice del movimiento)
+    let indiceMov = null;
+    if (folio) {
+      indiceMov = parseInt(folio);
+      if (isNaN(indiceMov)) {
+        // Si el folio no es un número, usar el índice de la fila (rowIndex + 1)
+        indiceMov = filasConPDFs; // Usar contador como fallback
+        console.log(`   ⚠️ Folio "${folio}" no es numérico, usando índice ${indiceMov} como fallback`);
+      }
+    } else {
+      // Si no hay folio, usar el índice de la fila
+      indiceMov = filasConPDFs;
+      console.log(`   ⚠️ No se encontró folio, usando índice ${indiceMov} como fallback`);
     }
     
     const tieneForms = row.forms && row.forms.length > 0;

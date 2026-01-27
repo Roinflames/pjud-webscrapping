@@ -390,11 +390,61 @@ async function processCausa(page, context, config, outputDir) {
       console.log(`   ✅ Enlace de lupa encontrado en tabla ${lupaInfo.tableIndex}, fila ${lupaInfo.rowIndex}`);
       console.log(`   📋 Fila: ${lupaInfo.rowText}`);
 
-      // CLICK DIRECTO en el enlace usando el atributo temporal
+      // CLICK DIRECTO en el enlace - ENFOQUE HÍBRIDO
       console.log(`   🖱️  Haciendo click en la lupa...`);
-      await page.click('a[data-scraper-target="lupa-detalle"]', { timeout: 10000 });
 
-      console.log(`   ✅ Click ejecutado en la lupa`);
+      // Capturar errores de JavaScript
+      const jsErrors = [];
+      page.on('console', msg => {
+        if (msg.type() === 'error') {
+          jsErrors.push(msg.text());
+        }
+      });
+      page.on('pageerror', error => {
+        jsErrors.push(`Page error: ${error.message}`);
+      });
+
+      // ENFOQUE 1: Click desde el contexto de la página (más natural para Bootstrap)
+      const clickResult = await page.evaluate(() => {
+        const link = document.querySelector('a[data-scraper-target="lupa-detalle"]');
+        if (!link) {
+          return { success: false, error: 'Enlace no encontrado' };
+        }
+
+        // Simular click completo con eventos
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        });
+
+        link.dispatchEvent(clickEvent);
+
+        // También intentar click directo
+        link.click();
+
+        return {
+          success: true,
+          href: link.getAttribute('href'),
+          onclick: link.getAttribute('onclick')?.substring(0, 100),
+          className: link.className
+        };
+      });
+
+      if (!clickResult.success) {
+        console.error(`   ❌ Error haciendo click: ${clickResult.error}`);
+        throw new Error(`Click falló: ${clickResult.error}`);
+      }
+
+      console.log(`   ✅ Click ejecutado en la lupa (href: ${clickResult.href})`);
+
+      // CRÍTICO: Dar tiempo a que el AJAX se dispare después del click
+      console.log(`   ⏳ Esperando 5 segundos para que el modal cargue...`);
+      await page.waitForTimeout(5000);
+
+      if (jsErrors.length > 0) {
+        console.warn(`   ⚠️ Errores JavaScript detectados:`, jsErrors);
+      }
     } catch (error) {
       console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
       throw error;

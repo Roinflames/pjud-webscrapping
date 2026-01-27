@@ -399,6 +399,22 @@ async function openDetalleEspecifico(page, caratulado, tribunalNombre) {
     console.log("   ⏳ Esperando que se abra el modal...");
     await page.waitForTimeout(3000); // Dar más tiempo para el render inicial
 
+    // Verificar si apareció CAPTCHA después del click
+    const captchaDetectado = await page.evaluate(() => {
+      return !!(
+        document.querySelector('iframe[src*="recaptcha"]') ||
+        document.querySelector('iframe[src*="hcaptcha"]') ||
+        document.querySelector('.g-recaptcha') ||
+        document.querySelector('.h-captcha') ||
+        document.querySelector('[data-sitekey]')
+      );
+    });
+
+    if (captchaDetectado) {
+      await page.screenshot({ path: 'captcha_detectado.png', fullPage: true });
+      throw new Error('🚨 CAPTCHA detectado después del click - requiere intervención manual');
+    }
+
     try {
       await page.waitForFunction(() => {
         const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');

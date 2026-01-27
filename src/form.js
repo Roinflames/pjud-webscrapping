@@ -395,17 +395,47 @@ async function openDetalleEspecifico(page, caratulado, tribunalNombre) {
 
     console.log(`✅ Click ejecutado en: ${clicked.caratulado} - ${clicked.tribunal}`);
 
-    // Esperar modal
-    await page.waitForTimeout(2000);
-    await page.waitForFunction(() => {
-      const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
-      if (!modal) return false;
-      const tabla = modal.querySelector('table tbody tr');
-      return tabla !== null;
-    }, { timeout: 20000 });
+    // Esperar modal con más tiempo y mejor diagnóstico
+    console.log("   ⏳ Esperando que se abra el modal...");
+    await page.waitForTimeout(3000); // Dar más tiempo para el render inicial
 
-    console.log("✅ Modal con contenido detectado");
-    console.log("✅ Detalle cargado.");
+    try {
+      await page.waitForFunction(() => {
+        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
+        if (!modal) {
+          console.log('Modal no encontrado aún...');
+          return false;
+        }
+        const tabla = modal.querySelector('table tbody tr');
+        if (!tabla) {
+          console.log('Modal encontrado pero sin tabla...');
+          return false;
+        }
+        console.log('Modal con tabla detectado ✓');
+        return true;
+      }, { timeout: 30000 });
+
+      console.log("✅ Modal con contenido detectado");
+      console.log("✅ Detalle cargado.");
+    } catch (e) {
+      // Diagnóstico detallado si falla
+      const diagnostico = await page.evaluate(() => {
+        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
+        if (!modal) return { modalExists: false };
+        const style = window.getComputedStyle(modal);
+        const tablas = modal.querySelectorAll('table');
+        return {
+          modalExists: true,
+          modalDisplay: style.display,
+          modalVisibility: style.visibility,
+          tablesCount: tablas.length,
+          hasRows: tablas.length > 0 && tablas[0].querySelectorAll('tbody tr').length > 0,
+          rowsCount: tablas.length > 0 ? tablas[0].querySelectorAll('tbody tr').length : 0
+        };
+      });
+      console.log('   ⚠️ Diagnóstico de modal:', JSON.stringify(diagnostico, null, 2));
+      throw new Error(`Modal no cargó correctamente: ${JSON.stringify(diagnostico)}`);
+    }
   } catch (error) {
     await page.screenshot({ path: 'error_detalle_especifico.png', fullPage: true });
     throw new Error(`Error abriendo detalle específico: ${error.message}`);

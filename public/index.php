@@ -68,7 +68,7 @@ body { background:#f5f6f8; font-size:14px; }
 
                         <div class="col-md-3">
                             <label class="form-label">RIT</label>
-                            <input class="form-control" value="C-16707-2019">
+                            <input class="form-control">
                         </div>
 
                         <div class="col-md-1">
@@ -97,7 +97,7 @@ body { background:#f5f6f8; font-size:14px; }
                         </thead>
 
                         <tbody>
-                            <tr>
+                            <tr data-rit="C-16707-2019">
                                 <td>C-16707-2019</td>
                                 <td>20212</td>
                                 <td>Carlos Domingo Gutierrez Ramos</td>
@@ -107,8 +107,24 @@ body { background:#f5f6f8; font-size:14px; }
                                 <td>27 Juzgado Civil de Santiago</td>
                                 <td class="actions">
                                     <button class="btn btn-sm btn-warning">⬇</button>
-                                    <button class="btn btn-sm btn-primary"
-                                            onclick="buscarCausa('C-16707-2019')"
+                                    <button class="btn btn-sm btn-primary btn-ver-causa"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDetalleCivil">👁</button>
+                                    <button class="btn btn-sm btn-success">📄</button>
+                                    <button class="btn btn-sm btn-danger">✖</button>
+                                </td>
+                            </tr>
+                            <tr data-rit="C-13786-2018">
+                                <td>C-13786-2018</td>
+                                <td>20213</td>
+                                <td>Prueba Scraping</td>
+                                <td>12.345.678-9</td>
+                                <td>Test Abogado</td>
+                                <td>Promotora CMR Falabella</td>
+                                <td>1 Juzgado Civil de Santiago</td>
+                                <td class="actions">
+                                    <button class="btn btn-sm btn-warning">⬇</button>
+                                    <button class="btn btn-sm btn-primary btn-ver-causa"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalDetalleCivil">👁</button>
                                     <button class="btn btn-sm btn-success">📄</button>
@@ -224,6 +240,19 @@ body { background:#f5f6f8; font-size:14px; }
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+// Manejar clicks en botones de ver causa
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-ver-causa').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tr = this.closest('tr');
+            const rit = tr.dataset.rit;
+            if (rit) {
+                buscarCausa(rit);
+            }
+        });
+    });
+});
+
 async function buscarCausa(rit) {
     const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rit)}`);
     const data = await res.json();
@@ -239,13 +268,30 @@ async function buscarCausa(rit) {
         return;
     }
 
-    /* CABECERA */
-    const cab = data[0];
+    /* CABECERA - buscar la fila que contiene el RIT */
+    let cab = null;
+    let startIndex = 0;
 
-    document.getElementById('m_rol').textContent = cab[1];
-    document.getElementById('m_fing').textContent = cab[2];
-    document.getElementById('m_promotora').textContent = cab[3];
-    document.getElementById('m_tribunal').textContent = cab[4];
+    // Buscar la cabecera (fila que contiene el RIT en posición 1)
+    for (let i = 0; i < Math.min(data.length, 5); i++) {
+        const row = data[i];
+        if (row && row[1] && typeof row[1] === 'string' && row[1].match(/^C?-?\d+-\d{4}$/)) {
+            cab = row;
+            startIndex = i + 1;
+            break;
+        }
+    }
+
+    // Fallback si no encuentra cabecera con RIT
+    if (!cab) {
+        cab = data[1] || data[0] || [];
+        startIndex = 2;
+    }
+
+    document.getElementById('m_rol').textContent = cab?.[1] || '-';
+    document.getElementById('m_fing').textContent = cab?.[2] || '-';
+    document.getElementById('m_promotora').textContent = cab?.[3] || '-';
+    document.getElementById('m_tribunal').textContent = cab?.[4] || '-';
 
     document.getElementById('m_estadm').textContent = 'Archivada';
     document.getElementById('m_proc').textContent = 'Ejecutivo Obligación de Dar';
@@ -258,7 +304,16 @@ async function buscarCausa(rit) {
     const rolNum = ritParts[1];
     const anio = ritParts[2];
 
-    data.slice(2, 17).forEach(row => {
+    // Filtrar solo filas de movimientos (tienen folio numérico o vacío en posición 0)
+    const movimientos = data.slice(startIndex).filter(row => {
+        // Excluir filas de partes (AB.DTE, DDO., DTE.)
+        if (row[0] && ['AB.DTE', 'DDO.', 'DTE.'].includes(row[0])) return false;
+        // Excluir filas de paginación
+        if (row[0] && row[0].includes('Total de registros')) return false;
+        return true;
+    });
+
+    movimientos.slice(0, 15).forEach(row => {
         const folio = row[0];
         const tienePdf = row[1] === 'Descargar Documento';
         const etapa = row[3];

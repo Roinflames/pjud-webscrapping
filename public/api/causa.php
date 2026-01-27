@@ -10,7 +10,16 @@ if (!$rol) {
     exit;
 }
 
-// Configuración de base de datos
+// PRIMERO: Intentar buscar en archivos (más rápido, sin dependencia de DB)
+if ($action === 'movimientos') {
+    $resultado = buscarEnArchivos($rol);
+    if ($resultado) {
+        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// SEGUNDO: Si no hay archivos, intentar base de datos
 $dbHost = getenv('DB_HOST') ?: 'localhost';
 $dbName = getenv('DB_NAME') ?: 'codi_ejamtest';
 $dbUser = getenv('DB_USER') ?: 'root';
@@ -21,7 +30,10 @@ try {
         "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4",
         $dbUser,
         $dbPass,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 3  // Timeout de 3 segundos
+        ]
     );
 
     // Acción: Obtener PDF específico
@@ -209,61 +221,305 @@ try {
 
 /**
  * Fallback: buscar en archivos CSV/JSON
+ * Busca en múltiples formatos de nombre para mayor compatibilidad
  */
 function buscarEnArchivos($rol) {
-    $rol_limpio = strtolower($rol);
-    $rol_limpio = str_replace(['c-', 'C-'], '', $rol_limpio);
-    $rol_limpio = str_replace('-', '_', $rol_limpio);
+    // Formato 1: Con prefijo (C_13786_2018)
+    $rol_con_prefijo = str_replace('-', '_', $rol);
 
-    $archivoJson = __DIR__ . "/../../src/outputs/resultado_{$rol_limpio}.json";
-    $archivoCsv = __DIR__ . "/../../src/outputs/resultado_{$rol_limpio}.csv";
+    // Formato 2: Sin prefijo (13786_2018)
+    $rol_sin_prefijo = strtolower($rol);
+    $rol_sin_prefijo = preg_replace('/^[a-z]-/i', '', $rol_sin_prefijo);
+    $rol_sin_prefijo = str_replace('-', '_', $rol_sin_prefijo);
 
-    if (file_exists($archivoJson)) {
-        return json_decode(file_get_contents($archivoJson), true);
+    // Rutas posibles para JSON (solo src/outputs)
+    $rutasJson = [
+        __DIR__ . "/../../src/outputs/resultado_{$rol_con_prefijo}.json",   // Con prefijo
+        __DIR__ . "/../../src/outputs/resultado_{$rol_sin_prefijo}.json",   // Sin prefijo
+        __DIR__ . "/../../src/outputs/causas/{$rol_con_prefijo}.json",      // Causas estructuradas
+        __DIR__ . "/../../src/outputs/movimientos_{$rol_con_prefijo}.json", // Movimientos con prefijo
+        __DIR__ . "/../../src/outputs/movimientos_{$rol_sin_prefijo}.json", // Movimientos sin prefijo
+    ];
+
+    // Rutas posibles para CSV
+    $rutasCsv = [
+        __DIR__ . "/../../src/outputs/resultado_{$rol_con_prefijo}.csv",
+        __DIR__ . "/../../src/outputs/resultado_{$rol_sin_prefijo}.csv",
+    ];
+
+    // Buscar JSON primero
+    foreach ($rutasJson as $archivoJson) {
+        if (file_exists($archivoJson)) {
+            $data = json_decode(file_get_contents($archivoJson), true);
+            if ($data) {
+                // Formato 1: causas/C_XXX.json con metadata y config_entrada
+                if (isset($data['metadata']) && isset($data['config_entrada'])) {
+                    return convertirNuevoFormatoALegacy($data, $rol);
+                }
+                // Formato 2: movimientos_XXX.json con causa y metadata (sin config_entrada)
+                if (isset($data['metadata']) && isset($data['causa'])) {
+                    return convertirMovimientosFormatoALegacy($data, $rol);
+                }
+                // Formato 3: resultado_XXX.json con array de objetos [{indice, folio, rit...}]
+                if (is_array($data) && isset($data[0]['indice'])) {
+                    return convertirResultadoALegacy($data, $rol);
+                }
+                // Formato 4: Ya es formato legacy (array de arrays) - filtrar y normalizar
+                return filtrarFormatoLegacy($data, $rol);
+            }
+        }
     }
 
-    if (file_exists($archivoCsv)) {
-        $movimientos = [];
-        $handle = fopen($archivoCsv, 'r');
-
-        if ($handle) {
-            fgetcsv($handle, 0, ';'); // headers
-
-            while (($row = fgetcsv($handle, 0, ';')) !== false) {
-                $movimientos[] = [
-                    $row[6] ?? '',
-                    $row[7] === 'SI' ? 'Descargar Documento' : '',
-                    $row[6] ?? '',
-                    $row[3] ?? '',
-                    $row[4] ?? '',
-                    $row[5] ?? '',
-                    $row[2] ?? '',
-                    '',
-                    ''
-                ];
-            }
-            fclose($handle);
-
-            if (count($movimientos) > 0) {
-                $handle = fopen($archivoCsv, 'r');
-                fgetcsv($handle, 0, ';');
-                $primeraFila = fgetcsv($handle, 0, ';');
-                fclose($handle);
-
-                $cabecera = [
-                    '',
-                    $primeraFila[0] ?? $rol,
-                    $primeraFila[2] ?? '',
-                    $primeraFila[8] ?? '',
-                    $primeraFila[9] ?? ''
-                ];
-
-                array_unshift($movimientos, [], $cabecera);
-            }
-
-            return $movimientos;
+    // Buscar en CSV como fallback
+    foreach ($rutasCsv as $archivoCsv) {
+        if (file_exists($archivoCsv)) {
+            return parsearCSV($archivoCsv, $rol);
         }
     }
 
     return null;
+}
+
+/**
+ * Convierte el nuevo formato JSON estructurado (causas/C_XXX.json) al formato legacy
+ */
+function convertirNuevoFormatoALegacy($data, $rol) {
+    $movimientos = [];
+
+    // Cabecera
+    $cabecera = [
+        '',
+        $rol,
+        $data['datos_basicos']['fecha'] ?? '',
+        $data['cabecera']['caratulado'] ?? $data['datos_basicos']['caratulado'] ?? '',
+        $data['cabecera']['juzgado'] ?? ''
+    ];
+
+    // Convertir movimientos
+    if (isset($data['movimientos']) && is_array($data['movimientos'])) {
+        foreach ($data['movimientos'] as $mov) {
+            $movimientos[] = [
+                $mov['folio'] ?? '',
+                ($mov['tiene_pdf'] ?? false) ? 'Descargar Documento' : '',
+                $mov['folio'] ?? '',
+                $mov['etapa'] ?? '',
+                $mov['tramite'] ?? '',
+                $mov['descripcion'] ?? '',
+                $mov['fecha'] ?? '',
+                $mov['foja'] ?? '',
+                ''
+            ];
+        }
+    }
+
+    array_unshift($movimientos, [], $cabecera);
+    return $movimientos;
+}
+
+/**
+ * Convierte el formato movimientos_XXX.json (con causa y metadata) al formato legacy
+ */
+function convertirMovimientosFormatoALegacy($data, $rol) {
+    $movimientos = [];
+
+    // Cabecera desde $data['causa']
+    $causa = $data['causa'] ?? [];
+    $cabecera = [
+        '',
+        $causa['rit'] ?? $rol,
+        $causa['fecha_ingreso'] ?? '',
+        $causa['caratulado'] ?? '',
+        $causa['juzgado'] ?? ''
+    ];
+
+    // Convertir movimientos si existen
+    if (isset($data['movimientos']) && is_array($data['movimientos'])) {
+        foreach ($data['movimientos'] as $mov) {
+            $movimientos[] = [
+                $mov['folio'] ?? $mov['indice'] ?? '',
+                ($mov['tiene_pdf'] ?? false) ? 'Descargar Documento' : '',
+                $mov['folio'] ?? $mov['indice'] ?? '',
+                $mov['etapa'] ?? '',
+                $mov['tramite'] ?? '',
+                $mov['descripcion'] ?? '',
+                $mov['fecha'] ?? '',
+                $mov['foja'] ?? '',
+                ''
+            ];
+        }
+    }
+
+    array_unshift($movimientos, [], $cabecera);
+    return $movimientos;
+}
+
+/**
+ * Convierte el formato resultado_XXX.json (array de objetos) al formato legacy
+ * Maneja formato mixto: resultados de búsqueda + movimientos + litigantes
+ */
+function convertirResultadoALegacy($data, $rol) {
+    $movimientos = [];
+    $cabecera = null;
+
+    // Buscar la primera fila que sea resultado de búsqueda (raw con 5 elementos y RIT válido)
+    foreach ($data as $obj) {
+        $raw = $obj['raw'] ?? [];
+        if (count($raw) === 5 && isset($raw[1]) && preg_match('/^C?-?\d+-\d{4}$/', $raw[1])) {
+            $cabecera = [
+                '',
+                $raw[1],  // RIT
+                $raw[2],  // fecha
+                $raw[3],  // caratulado
+                $raw[4]   // juzgado
+            ];
+            break;
+        }
+    }
+
+    // Si no encontró cabecera en formato búsqueda, usar primer elemento
+    if (!$cabecera) {
+        $primera = $data[0] ?? [];
+        $cabecera = [
+            '',
+            $primera['rit'] ?? $rol,
+            $primera['fecha'] ?? '',
+            $primera['caratulado'] ?? '',
+            $primera['juzgado'] ?? ''
+        ];
+    }
+
+    // Convertir solo los movimientos reales (raw con 9 elementos, folio numérico)
+    foreach ($data as $obj) {
+        $raw = $obj['raw'] ?? [];
+        $folio = $obj['folio'] ?? '';
+
+        // Saltar filas que no son movimientos:
+        // - Resultados de búsqueda (raw con 5 elementos)
+        // - Paginación (contiene "Total de registros")
+        // - Litigantes (folio es AB.DTE, DDO., DTE.)
+        if (count($raw) === 5) continue;
+        if (is_string($folio) && strpos($folio, 'Total de registros') !== false) continue;
+        if (in_array($folio, ['AB.DTE', 'DDO.', 'DTE.'])) continue;
+
+        // Movimientos reales tienen raw con 9 elementos
+        if (count($raw) === 9) {
+            $tienePdf = ($raw[1] === 'Descargar Documento');
+            $movimientos[] = [
+                $raw[0],  // folio
+                $tienePdf ? 'Descargar Documento' : '',
+                $raw[0],  // anexo (mismo que folio)
+                $raw[3],  // etapa
+                $raw[4],  // tramite
+                $raw[5],  // descripcion
+                $raw[6],  // fecha
+                $raw[7],  // foja
+                $raw[8]   // georef
+            ];
+        } elseif (count($raw) === 4 && !in_array($raw[0], ['AB.DTE', 'DDO.', 'DTE.'])) {
+            // Litigantes tienen raw con 4 elementos - saltar
+            continue;
+        }
+    }
+
+    array_unshift($movimientos, [], $cabecera);
+    return $movimientos;
+}
+
+/**
+ * Parsea un archivo CSV y lo convierte al formato esperado
+ */
+function parsearCSV($archivoCsv, $rol) {
+    $movimientos = [];
+    $handle = fopen($archivoCsv, 'r');
+
+    if (!$handle) {
+        return null;
+    }
+
+    fgetcsv($handle, 0, ';'); // headers
+
+    while (($row = fgetcsv($handle, 0, ';')) !== false) {
+        $movimientos[] = [
+            $row[6] ?? '',
+            ($row[7] ?? '') === 'SI' ? 'Descargar Documento' : '',
+            $row[6] ?? '',
+            $row[3] ?? '',
+            $row[4] ?? '',
+            $row[5] ?? '',
+            $row[2] ?? '',
+            '',
+            ''
+        ];
+    }
+    fclose($handle);
+
+    if (count($movimientos) > 0) {
+        $handle = fopen($archivoCsv, 'r');
+        fgetcsv($handle, 0, ';');
+        $primeraFila = fgetcsv($handle, 0, ';');
+        fclose($handle);
+
+        $cabecera = [
+            '',
+            $primeraFila[0] ?? $rol,
+            $primeraFila[2] ?? '',
+            $primeraFila[8] ?? '',
+            $primeraFila[9] ?? ''
+        ];
+
+        array_unshift($movimientos, [], $cabecera);
+    }
+
+    return $movimientos;
+}
+
+/**
+ * Filtra y normaliza el formato legacy (array de arrays)
+ * Elimina paginación, litigantes y filas vacías innecesarias
+ */
+function filtrarFormatoLegacy($data, $rol) {
+    $cabecera = null;
+    $movimientos = [];
+
+    foreach ($data as $row) {
+        if (!is_array($row)) continue;
+
+        // Detectar cabecera (tiene RIT en posición 1)
+        if (isset($row[1]) && is_string($row[1]) && preg_match('/^C?-?\d+-\d{4}$/', $row[1])) {
+            $cabecera = $row;
+            continue;
+        }
+
+        // Saltar paginación
+        if (isset($row[0]) && is_string($row[0]) && strpos($row[0], 'Total de registros') !== false) {
+            continue;
+        }
+
+        // Saltar litigantes
+        if (isset($row[0]) && in_array($row[0], ['AB.DTE', 'DDO.', 'DTE.'])) {
+            continue;
+        }
+
+        // Saltar filas completamente vacías o con menos de 6 elementos
+        if (count($row) < 6) continue;
+
+        // Incluir movimientos válidos (folio numérico o vacío pero con datos en otras posiciones)
+        $hasContent = !empty($row[3]) || !empty($row[4]) || !empty($row[5]);
+
+        if ($hasContent) {
+            $movimientos[] = $row;
+        }
+    }
+
+    // Construir resultado con formato esperado
+    $resultado = [[]];  // Fila vacía inicial
+
+    if ($cabecera) {
+        $resultado[] = $cabecera;
+    } else {
+        // Cabecera por defecto
+        $resultado[] = ['', $rol, '', '', ''];
+    }
+
+    return array_merge($resultado, $movimientos);
 }

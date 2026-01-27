@@ -408,18 +408,29 @@ async function processCausa(page, context, config, outputDir) {
       throw error;
     }
     
-    // PASO 3: Esperar a que se abra el modal de detalle
+    // PASO 3: Esperar a que se abra el modal de detalle Y que cargue la tabla
     console.log(`   ⏳ Esperando que se abra el detalle...`);
     try {
-      // Intentar múltiples selectores y estrategias
+      // 1. Primero esperar que el modal exista en el DOM
       await Promise.race([
-        page.waitForSelector('#modalDetalleCivil table', { timeout: 30000, state: 'attached' }),
-        page.waitForSelector('#modalDetalleLaboral table', { timeout: 30000, state: 'attached' }),
-        page.waitForSelector('.modal-body table', { timeout: 30000, state: 'attached' }),
-        page.waitForSelector('#modalDetalleCivil', { timeout: 30000, state: 'attached' })
+        page.waitForSelector('#modalDetalleCivil', { timeout: 30000, state: 'attached' }),
+        page.waitForSelector('#modalDetalleLaboral', { timeout: 30000, state: 'attached' }),
+        page.waitForSelector('.modal-body', { timeout: 30000, state: 'attached' })
       ]);
-      await page.waitForTimeout(2000); // Dar más tiempo a que cargue completamente
-      console.log(`   ✅ Detalle abierto`);
+      console.log(`   ✅ Modal detectado en DOM`);
+
+      // 2. CRÍTICO: Esperar a que la tabla DENTRO del modal se cargue (AJAX)
+      // El modal se abre vacío y luego se llena via AJAX - necesitamos esperar el contenido
+      console.log(`   ⏳ Esperando contenido del modal (tabla de movimientos)...`);
+      await Promise.race([
+        page.waitForSelector('#modalDetalleCivil table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
+        page.waitForSelector('#modalDetalleLaboral table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
+        page.waitForSelector('.modal-body table tbody tr:first-child', { timeout: 45000, state: 'attached' })
+      ]);
+
+      // 3. Dar tiempo adicional para que todas las filas carguen
+      await page.waitForTimeout(3000);
+      console.log(`   ✅ Detalle abierto con tabla cargada`);
     } catch (error) {
       // Si falla, intentar verificar si el modal existe aunque no tenga tabla aún
       const modalExists = await page.evaluate(() => {
@@ -439,7 +450,41 @@ async function processCausa(page, context, config, outputDir) {
         throw new Error(`Modal de detalle no se abrió: ${error.message}`);
       }
     }
-    
+
+    // DIAGNÓSTICO: Verificar estructura del modal antes de extraer tabla
+    console.log(`   🔍 Diagnosticando estructura del modal...`);
+    const modalDiagnostic = await page.evaluate(() => {
+      const modals = [
+        document.querySelector('#modalDetalleCivil'),
+        document.querySelector('#modalDetalleLaboral'),
+        document.querySelector('.modal-body'),
+        document.querySelector('.modal')
+      ].filter(Boolean);
+
+      if (modals.length === 0) {
+        return { error: 'No se encontró ningún modal', modalsFound: 0 };
+      }
+
+      const modal = modals[0]; // Usar el primer modal encontrado
+      const tables = modal.querySelectorAll('table');
+      const tablesInfo = Array.from(tables).map(t => ({
+        className: t.className,
+        id: t.id,
+        rowCount: t.querySelectorAll('tbody tr').length,
+        firstRowHTML: t.querySelector('tbody tr') ? t.querySelector('tbody tr').innerHTML.substring(0, 300) : null
+      }));
+
+      return {
+        modalId: modal.id,
+        modalClass: modal.className,
+        tablesCount: tables.length,
+        tables: tablesInfo,
+        modalHTML: modal.innerHTML.substring(0, 1000) // Primeros 1000 chars del modal
+      };
+    });
+
+    console.log(`   📋 Modal encontrado:`, JSON.stringify(modalDiagnostic, null, 2));
+
     // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);
     const rows = await extractTableAsArray(page);

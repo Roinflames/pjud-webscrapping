@@ -37,27 +37,34 @@ async function extractTable(page) {
 // ==========================================
 
 async function extractTableAsArray(page) {
-  await page.waitForSelector(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
-    { timeout: 15000 }
-  );
+  // CORRECCIÓN CRÍTICA: Buscar la tabla SOLO dentro del modal de detalle
+  // El selector anterior era genérico y capturaba AMBAS tablas (resultados + movimientos)
+  const MODAL_TABLE_SELECTOR = '#modalDetalleCivil table tbody tr, #modalDetalleLaboral table tbody tr, .modal-body table tbody tr';
 
-  // Agregar diagnóstico: verificar estructura de la tabla
-  const diagnosticInfo = await page.evaluate(() => {
-    const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
-    if (trs.length === 0) return { totalRows: 0, sampleRow: null };
-    
+  await page.waitForSelector(MODAL_TABLE_SELECTOR, { timeout: 15000 });
+
+  // Agregar diagnóstico: verificar estructura de la tabla DEL MODAL
+  const diagnosticInfo = await page.evaluate((selector) => {
+    const trs = document.querySelectorAll(selector);
+    if (trs.length === 0) return { totalRows: 0, sampleRow: null, error: 'No se encontraron filas en el modal' };
+
     const firstRow = trs[0];
     const tds = [...firstRow.querySelectorAll('td')];
     const forms = [...firstRow.querySelectorAll('form')];
     const links = [...firstRow.querySelectorAll('a')];
     const icons = [...firstRow.querySelectorAll('i')];
-    
+
+    // Verificar primera columna (folio - debe ser número)
+    const firstTd = tds[0];
+    const firstColText = firstTd ? firstTd.innerText.trim() : '';
+    const firstColIsNumber = /^\d+$/.test(firstColText);
+
     // Verificar segunda columna específicamente (donde suelen estar los PDFs)
     const secondTd = tds[1];
     const secondTdLinks = secondTd ? [...secondTd.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"]')] : [];
     const secondTdIcons = secondTd ? [...secondTd.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf')] : [];
-    
+    const secondTdForms = secondTd ? [...secondTd.querySelectorAll('form')] : [];
+
     return {
       totalRows: trs.length,
       sampleRow: {
@@ -65,8 +72,12 @@ async function extractTableAsArray(page) {
         formsCount: forms.length,
         linksCount: links.length,
         iconsCount: icons.length,
+        firstColText,
+        firstColIsNumber,
+        isLikelyMovimientosTable: firstColIsNumber && tds.length >= 7, // Folio numérico + varias columnas
         secondTdLinksCount: secondTdLinks.length,
         secondTdIconsCount: secondTdIcons.length,
+        secondTdFormsCount: secondTdForms.length,
         firstTdHTML: tds[0] ? tds[0].innerHTML.substring(0, 200) : null,
         secondTdHTML: secondTd ? secondTd.innerHTML.substring(0, 300) : null,
         hasForms: forms.length > 0,
@@ -78,12 +89,20 @@ async function extractTableAsArray(page) {
         }))
       }
     };
-  });
-  
-  console.log(`🔍 Diagnóstico de tabla:`, JSON.stringify(diagnosticInfo, null, 2));
+  }, MODAL_TABLE_SELECTOR);
+
+  console.log(`🔍 Diagnóstico de tabla del MODAL:`, JSON.stringify(diagnosticInfo, null, 2));
+
+  // VALIDACIÓN: Verificar que es la tabla correcta (movimientos, no resultados)
+  if (diagnosticInfo.sampleRow && !diagnosticInfo.sampleRow.isLikelyMovimientosTable) {
+    console.warn(`⚠️ ADVERTENCIA: La tabla extraída NO parece ser de movimientos:`);
+    console.warn(`   - Primera columna: "${diagnosticInfo.sampleRow.firstColText}" (¿es folio numérico? ${diagnosticInfo.sampleRow.firstColIsNumber})`);
+    console.warn(`   - Número de columnas: ${diagnosticInfo.sampleRow.tdsCount} (esperado: >=7)`);
+    console.warn(`   - Puede ser la tabla de resultados de búsqueda en lugar de movimientos`);
+  }
 
   const rows = await page.$$eval(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
+    MODAL_TABLE_SELECTOR,
     trs =>
       trs.map((tr, rowIndex) => {
         const tds = [...tr.querySelectorAll('td')];
@@ -192,13 +211,13 @@ async function extractTableAsArray(page) {
  * Incluye pdfs por fila (azul/rojo) para descarga.
  */
 async function extractTableDetalle(page) {
-  await page.waitForSelector(
-    'table.table.table-bordered.table-striped.table-hover tbody tr, #tablaHistoria tbody tr, .modal table.table tbody tr',
-    { timeout: 15000 }
-  );
+  // CORRECCIÓN: Usar el mismo selector específico del modal
+  const MODAL_TABLE_SELECTOR = '#modalDetalleCivil table tbody tr, #modalDetalleLaboral table tbody tr, .modal-body table tbody tr, #tablaHistoria tbody tr';
+
+  await page.waitForSelector(MODAL_TABLE_SELECTOR, { timeout: 15000 });
 
   return await page.$$eval(
-    'table.table.table-bordered.table-striped.table-hover tbody tr, #tablaHistoria tbody tr, .modal table.table tbody tr',
+    MODAL_TABLE_SELECTOR,
     trs => trs.map((tr, rowIndex) => {
       const tds = [...tr.querySelectorAll('td')];
       if (tds.length < 2) return null;

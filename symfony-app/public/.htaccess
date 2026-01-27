@@ -1,0 +1,18 @@
+# Apache 2.4.6 (CentOS 7.9) - Symfony 5.0.11
+# Configuración para mod_rewrite
+
+<IfModule mod_rewrite.c>
+    Options -MultiViews
+    RewriteEngine On
+
+    # Redireccionar todo a index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    <IfModule mod_alias.c>
+        # Si mod_rewrite no está disponible, usar RedirectMatch
+        RedirectMatch 307 ^/$ /index.php/
+    </IfModule>
+</IfModule>

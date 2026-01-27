@@ -323,86 +323,78 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle usando el mismo flujo que el sitio (detalleCausaCivil(token))
-    console.log(`   🔍 Buscando icono de lupa para entrar al detalle...`);
+    // PASO 2: Abrir el detalle haciendo CLICK DIRECTO en la lupa (simula click del usuario)
+    console.log(`   🔍 Buscando enlace de lupa para hacer click directo...`);
     try {
-      // 1) Buscar el token del onclick "detalleCausaCivil('TOKEN')" en la fila del RIT
-      const onclickToken = await page.evaluate((ritBuscado) => {
+      // Buscar la fila del RIT y obtener información del enlace de detalle
+      const lupaInfo = await page.evaluate((ritBuscado) => {
         const tables = document.querySelectorAll('table, #tablaConsultas');
-        
-        for (const table of tables) {
+
+        for (let tableIdx = 0; tableIdx < tables.length; tableIdx++) {
+          const table = tables[tableIdx];
           const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
-          
-          for (const row of rows) {
+
+          for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+            const row = rows[rowIdx];
             const rowText = row.innerText || '';
             if (!rowText) continue;
 
-            // Emparejar por RIT completo o por la parte numérica del RIT (rol)
+            // Buscar coincidencia por RIT completo o por rol
             const partes = ritBuscado.split('-');
             const rolRit = partes.length >= 2 ? partes[1] : null;
             const coincideRit = rowText.includes(ritBuscado);
             const coincideRol = rolRit && rowText.includes(rolRit);
 
             if (coincideRit || coincideRol) {
-              // Buscar enlace con onclick detalleCausaCivil('TOKEN')
-              const link = row.querySelector('a[onclick*="detalleCausaCivil"]') 
-                        || row.querySelector('a.toggle-modal[title*="Detalle"]') 
-                        || row.querySelector('a[href="#modalDetalleCivil"]');
+              // Buscar el enlace/icono de lupa dentro de la fila
+              const link = row.querySelector('a[onclick*="detalleCausaCivil"]')
+                        || row.querySelector('a.toggle-modal[title*="Detalle"]')
+                        || row.querySelector('a[href="#modalDetalleCivil"]')
+                        || row.querySelector('i.fa-search')?.closest('a');
 
               if (link) {
-                const onclickAttr = link.getAttribute('onclick') || '';
-                const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
-                if (match && match[1]) {
-                  return match[1]; // TOKEN JWT que usa el sitio
-                }
-              }
+                // Agregar un atributo temporal para identificar el enlace
+                link.setAttribute('data-scraper-target', 'lupa-detalle');
 
-              // Fallback: buscar el icono y su padre <a> con onclick
-              const icon = row.querySelector('i.fa-search.fa-lg, i.fa-search');
-              if (icon) {
-                const parentLink = icon.closest('a');
-                if (parentLink) {
-                  const onclickAttr = parentLink.getAttribute('onclick') || '';
-                  const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
-                  if (match && match[1]) {
-                    return match[1];
-                  }
-                }
+                return {
+                  found: true,
+                  tableIndex: tableIdx,
+                  rowIndex: rowIdx,
+                  rowText: rowText.substring(0, 100),
+                  linkHref: link.getAttribute('href'),
+                  linkOnclick: link.getAttribute('onclick') ? link.getAttribute('onclick').substring(0, 100) : null,
+                  hasIcon: !!row.querySelector('i.fa-search')
+                };
+              } else {
+                return {
+                  found: false,
+                  error: 'Fila encontrada pero sin enlace de lupa',
+                  rowText: rowText.substring(0, 100)
+                };
               }
             }
           }
         }
-        return null;
+
+        return { found: false, error: 'Fila con RIT no encontrada en ninguna tabla' };
       }, config.rit);
 
-      if (!onclickToken) {
-        console.log('   ⚠️ No se encontró token de detalleCausaCivil en la tabla, intentando click simple en la lupa...');
-        // Último recurso: clickear el primer enlace de detalle (puede abrir modal vacío)
-        await page.click('a[onclick*="detalleCausaCivil"], a[href="#modalDetalleCivil"], i.fa-search').catch(() => {
-          throw new Error('No se pudo encontrar el icono/enlace de detalle');
-        });
-      } else {
-        // 2) Ejecutar detalleCausaCivil(token) dentro del contexto de la página
-        console.log('   ✅ Token de detalleCausaCivil encontrado, ejecutando función en el navegador...');
-        await page.evaluate((token) => {
-          // La función puede estar en window o en el scope global
-          if (typeof window.detalleCausaCivil === 'function') {
-            window.detalleCausaCivil(token);
-          } else if (typeof detalleCausaCivil === 'function') {
-            detalleCausaCivil(token);
-          } else {
-            // Fallback: buscar cualquier función global que contenga 'detalleCausaCivil'
-            for (const key of Object.keys(window)) {
-              if (key.toLowerCase().includes('detallecausacivil') && typeof window[key] === 'function') {
-                window[key](token);
-                break;
-              }
-            }
-          }
-        }, onclickToken);
+      if (!lupaInfo.found) {
+        console.error(`   ❌ No se encontró enlace de lupa: ${lupaInfo.error}`);
+        if (lupaInfo.rowText) {
+          console.error(`   📋 Texto de fila: ${lupaInfo.rowText}`);
+        }
+        throw new Error(`No se pudo encontrar enlace de detalle: ${lupaInfo.error}`);
       }
 
-      console.log(`   ✅ Detalle solicitado vía detalleCausaCivil`);
+      console.log(`   ✅ Enlace de lupa encontrado en tabla ${lupaInfo.tableIndex}, fila ${lupaInfo.rowIndex}`);
+      console.log(`   📋 Fila: ${lupaInfo.rowText}`);
+
+      // CLICK DIRECTO en el enlace usando el atributo temporal
+      console.log(`   🖱️  Haciendo click en la lupa...`);
+      await page.click('a[data-scraper-target="lupa-detalle"]', { timeout: 10000 });
+
+      console.log(`   ✅ Click ejecutado en la lupa`);
     } catch (error) {
       console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
       throw error;

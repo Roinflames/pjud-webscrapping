@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const { obtenerCausas, obtenerCausasValidas, obtenerEstadisticasCausas, buscarCausaPorRIT, prepararConfigScraping } = require('../mvp/causa-manager');
 const { inicializarCola, cargarCola, procesarSiguiente, obtenerEstadisticasCola, verificarLimiteDiario } = require('../mvp/cola-scraping');
-const { ejecutarScraping } = require('./scraper-service');
+const { executeScraping } = require('./scraper-service');
 const { guardarResultado, obtenerResultado, listarRITs, eliminarResultado } = require('./storage');
 const { middlewareAuth } = require('./auth');
 const fs = require('fs');
@@ -251,7 +251,7 @@ router.post('/scraping/ejecutar', middlewareAuth, async (req, res) => {
     console.log(`🚀 Ejecutando scraping para: ${config.rit}`);
 
     // 1️⃣ Ejecutar scraper (NO confiar en return)
-    await ejecutarScraping(config);
+    await executeScraping(config);
 
     // 2️⃣ Leer archivo generado
     const outputPath = path.join(

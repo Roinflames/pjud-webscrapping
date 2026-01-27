@@ -13,110 +13,66 @@ if (!$rit || !$folio) {
     die('Faltan parámetros: rit y folio son requeridos');
 }
 
-// Cargar .env manualmente (buscar en raíz del proyecto)
-$envFile = realpath(__DIR__ . '/../../.env') ?: realpath(__DIR__ . '/../.env');
-if ($envFile && file_exists($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if (empty($line) || strpos($line, '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
-        list($key, $value) = explode('=', $line, 2);
-        $key = trim($key);
-        $value = trim($value, '"\'');
-        if (!getenv($key)) {
-            putenv("{$key}={$value}");
-            $_ENV[$key] = $value;
-        }
-    }
-}
-
 $dbHost = getenv('DB_HOST') ?: 'localhost';
-$dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'codi_ejamtest';
 $dbUser = getenv('DB_USER') ?: 'root';
 $dbPass = getenv('DB_PASS') ?: '';
 
 try {
     $pdo = new PDO(
-        "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8",
+        "mysql:host={$dbHost};dbname={$dbName};charset=utf8",
         $dbUser,
         $dbPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // Determinar tipo de PDF según color
-    $tipoPdf = ($color === 'rojo') ? 'ANEXO' : 'PRINCIPAL';
-    
-    // Buscar el PDF directamente desde la tabla pdfs
-    // Como los PDFs pueden tener movimiento_id NULL, buscamos por nombre de archivo
-    // Formato esperado: C_3030_2017_mov_54_azul.pdf o C_3030_2017_mov_54_rojo.pdf
-    $ritClean = str_replace('-', '_', $rit);
-    $colorSuffix = ($color === 'rojo') ? 'rojo' : 'azul';
-    $nombreEsperado = "{$ritClean}_mov_{$folio}_{$colorSuffix}.pdf";
-    
+    // Buscar el movimiento
     $stmt = $pdo->prepare("
         SELECT
+            m.id,
+            m.rit,
+            m.folio,
+            m.pdf_azul,
+            m.pdf_rojo,
             p.contenido_base64,
             p.nombre_archivo,
-            p.tamano_bytes,
-            p.tipo,
-            p.rit
-        FROM pdfs p
-        WHERE p.rit = :rit 
-          AND p.tipo = :tipo
-          AND p.nombre_archivo = :nombre
+            p.tamano_bytes
+        FROM movimientos m
+        LEFT JOIN pdfs p ON m.id = p.movimiento_id
+        WHERE m.rit = :rit AND m.folio = :folio
         LIMIT 1
     ");
-    
-    $stmt->execute([
-        'rit' => $rit, 
-        'tipo' => $tipoPdf,
-        'nombre' => $nombreEsperado
-    ]);
-    $pdf = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute(['rit' => $rit, 'folio' => $folio]);
+    $mov = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$pdf) {
+    if (!$mov) {
         http_response_code(404);
-        // Mensaje más descriptivo
-        $mensaje = "PDF no encontrado para RIT: $rit, Folio: $folio, Color: $color (Tipo: $tipoPdf)";
-        $mensaje .= "\n\nNota: No todos los movimientos tienen PDF rojo (anexo). Verifica que el movimiento tenga un PDF de este tipo.";
-        die($mensaje);
+        die('Movimiento no encontrado');
+    }
+
+    // Verificar qué PDF se solicita
+    $nombrePdf = ($color === 'rojo') ? $mov['pdf_rojo'] : $mov['pdf_azul'];
+
+    if (!$nombrePdf) {
+        http_response_code(404);
+        die('PDF no disponible para este color');
     }
 
     // Si hay contenido en base64, servirlo
-    if ($pdf['contenido_base64']) {
-        $pdfContent = base64_decode($pdf['contenido_base64'], true);
-        
-        // Verificar que la decodificación fue exitosa
-        if ($pdfContent === false) {
-            http_response_code(500);
-            die('Error decodificando PDF desde base64');
-        }
-        
-        // Verificar que es un PDF válido (debe empezar con %PDF)
-        if (substr($pdfContent, 0, 4) !== '%PDF') {
-            http_response_code(500);
-            die('El contenido no es un PDF válido. Puede ser un PDF de prueba. Ejecuta el scraper para descargar PDFs reales.');
-        }
-        
+    if ($mov['contenido_base64']) {
         header('Content-Type: application/pdf');
-        header('Content-Disposition: inline; filename="' . $pdf['nombre_archivo'] . '"');
-        if ($pdf['tamano_bytes']) {
-            header('Content-Length: ' . $pdf['tamano_bytes']);
-        }
-        // No cachear
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Pragma: no-cache');
-        
-        echo $pdfContent;
+        header('Content-Disposition: inline; filename="' . $nombrePdf . '"');
+        header('Content-Length: ' . $mov['tamano_bytes']);
+        echo base64_decode($mov['contenido_base64']);
         exit;
     }
 
-    // Si no hay contenido
+    // Si no hay contenido, generar un PDF de prueba
     http_response_code(404);
-    echo "PDF registrado pero sin contenido en base de datos.\n";
-    echo "RIT: $rit, Folio: $folio, Color: $color, Tipo: $tipoPdf\n";
+    echo "PDF '$nombrePdf' registrado pero sin contenido en base de datos.\n";
+    echo "RIT: $rit, Folio: $folio, Color: $color\n";
+    echo "\nPara subir el contenido, use:\n";
+    echo "UPDATE pdfs SET contenido_base64 = 'BASE64_AQUI' WHERE movimiento_id = {$mov['id']};\n";
 
 } catch (PDOException $e) {
     http_response_code(500);

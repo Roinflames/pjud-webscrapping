@@ -2,21 +2,18 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-// ⚠️ STANDARD COMPLIANCE: This script now delegates to processCausa engine.
-// See docs/scraping-standard.md for the single-engine rule.
-
 const { startBrowser, delay } = require('./browser');
-const { processCausa } = require('./process-causas');
+const { processRit } = require('./processRit');
 const { saveLastRit, getLastRit, resetState } = require('./ritState');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
 const { readCausaCSV } = require('./read-csv');
-const { isValidForScraping, csvToScrapingConfig, loadTribunalToCorteMap } = require('./process-causas');
+const { isValidForScraping, csvToScrapingConfig, loadTribunalToCorteMap } = require('./process-csv-causas');
 
 const STATE_FILE = path.resolve(__dirname, 'rit_state.json');
 
 /**
  * Carga la lista de RITs válidos desde el CSV (causa.csv)
- * Usa la misma lógica de validación que process-causas.js
+ * Usa la misma lógica de validación que process-csv-causas.js
  */
 function loadRitList() {
   console.log('📂 Leyendo CSV de causas...');
@@ -127,10 +124,9 @@ function loadRitList() {
         console.log(`   Caratulado: ${ritConfig.caratulado}`);
       }
 
-      // ✅ DELEGATE TO ENGINE: Use processCausa for all scraping
-      const resultado = await processCausa(page, context, ritConfig, outputDir);
+      const success = await processRit(page, context, ritConfig, outputDir, logDir);
       
-      if (resultado.success) {
+      if (success) {
         successCount++;
         // Guardar checkpoint después de cada causa exitosa
         saveLastRit(ritConfig.rit);

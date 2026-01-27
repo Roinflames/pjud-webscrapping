@@ -7,7 +7,7 @@ const { readCausaCSV, mapCsvToDB } = require('./read-csv');
 const { startBrowser } = require('./browser');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
 const { fillForm, openDetalle } = require('./form');
-const { extractTable, extractTableAsArray } = require('./table');
+const { extractTable } = require('./table');
 const { exportToJSON, exportToCSV, processTableData } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
 const { downloadEbook } = require('./ebook');
@@ -184,9 +184,7 @@ async function extractResultadosBasicos(page, config) {
     }
     
     // Extraer datos de la fila que corresponde al RIT buscado
-    const ritBuscado = config.rit;
-    const rolBuscado = config.rol;
-    const datos = await page.evaluate(({ ritBuscado, rolBuscado }) => {
+    const datos = await page.evaluate((ritBuscado, rolBuscado) => {
       // Buscar en todas las tablas posibles
       const tables = document.querySelectorAll('table, #tablaConsultas');
       
@@ -257,7 +255,7 @@ async function extractResultadosBasicos(page, config) {
       }
       
       return { rol: null, fecha: null, caratulado: null, encontrado: false };
-    }, { ritBuscado, rolBuscado });
+    }, config.rit, config.rol);
     
     // Si no encontramos en la tabla, usar los datos del config
     if (!datos.encontrado || !datos.rol) {
@@ -323,246 +321,111 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle haciendo CLICK DIRECTO en la lupa (simula click del usuario)
-    console.log(`   🔍 Buscando enlace de lupa para hacer click directo...`);
+    // PASO 2: Abrir el detalle usando el mismo flujo que el sitio (detalleCausaCivil(token))
+    console.log(`   🔍 Buscando icono de lupa para entrar al detalle...`);
     try {
-      // Buscar la fila del RIT y obtener información del enlace de detalle
-      const lupaInfo = await page.evaluate((ritBuscado) => {
+      // 1) Buscar el token del onclick "detalleCausaCivil('TOKEN')" en la fila del RIT
+      const onclickToken = await page.evaluate((ritBuscado) => {
         const tables = document.querySelectorAll('table, #tablaConsultas');
-
-        for (let tableIdx = 0; tableIdx < tables.length; tableIdx++) {
-          const table = tables[tableIdx];
+        
+        for (const table of tables) {
           const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
-
-          for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-            const row = rows[rowIdx];
+          
+          for (const row of rows) {
             const rowText = row.innerText || '';
             if (!rowText) continue;
 
-            // Buscar coincidencia por RIT completo o por rol
+            // Emparejar por RIT completo o por la parte numérica del RIT (rol)
             const partes = ritBuscado.split('-');
             const rolRit = partes.length >= 2 ? partes[1] : null;
             const coincideRit = rowText.includes(ritBuscado);
             const coincideRol = rolRit && rowText.includes(rolRit);
 
             if (coincideRit || coincideRol) {
-              // Buscar el enlace/icono de lupa dentro de la fila
-              const link = row.querySelector('a[onclick*="detalleCausaCivil"]')
-                        || row.querySelector('a.toggle-modal[title*="Detalle"]')
-                        || row.querySelector('a[href="#modalDetalleCivil"]')
-                        || row.querySelector('i.fa-search')?.closest('a');
+              // Buscar enlace con onclick detalleCausaCivil('TOKEN')
+              const link = row.querySelector('a[onclick*="detalleCausaCivil"]') 
+                        || row.querySelector('a.toggle-modal[title*="Detalle"]') 
+                        || row.querySelector('a[href="#modalDetalleCivil"]');
 
               if (link) {
-                // Agregar un atributo temporal para identificar el enlace
-                link.setAttribute('data-scraper-target', 'lupa-detalle');
+                const onclickAttr = link.getAttribute('onclick') || '';
+                const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                if (match && match[1]) {
+                  return match[1]; // TOKEN JWT que usa el sitio
+                }
+              }
 
-                return {
-                  found: true,
-                  tableIndex: tableIdx,
-                  rowIndex: rowIdx,
-                  rowText: rowText.substring(0, 100),
-                  linkHref: link.getAttribute('href'),
-                  linkOnclick: link.getAttribute('onclick') ? link.getAttribute('onclick').substring(0, 100) : null,
-                  hasIcon: !!row.querySelector('i.fa-search')
-                };
-              } else {
-                return {
-                  found: false,
-                  error: 'Fila encontrada pero sin enlace de lupa',
-                  rowText: rowText.substring(0, 100)
-                };
+              // Fallback: buscar el icono y su padre <a> con onclick
+              const icon = row.querySelector('i.fa-search.fa-lg, i.fa-search');
+              if (icon) {
+                const parentLink = icon.closest('a');
+                if (parentLink) {
+                  const onclickAttr = parentLink.getAttribute('onclick') || '';
+                  const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                  if (match && match[1]) {
+                    return match[1];
+                  }
+                }
               }
             }
           }
         }
-
-        return { found: false, error: 'Fila con RIT no encontrada en ninguna tabla' };
+        return null;
       }, config.rit);
 
-      if (!lupaInfo.found) {
-        console.error(`   ❌ No se encontró enlace de lupa: ${lupaInfo.error}`);
-        if (lupaInfo.rowText) {
-          console.error(`   📋 Texto de fila: ${lupaInfo.rowText}`);
-        }
-        throw new Error(`No se pudo encontrar enlace de detalle: ${lupaInfo.error}`);
-      }
-
-      console.log(`   ✅ Enlace de lupa encontrado en tabla ${lupaInfo.tableIndex}, fila ${lupaInfo.rowIndex}`);
-      console.log(`   📋 Fila: ${lupaInfo.rowText}`);
-
-      // CLICK DIRECTO en el enlace - ENFOQUE HÍBRIDO
-      console.log(`   🖱️  Haciendo click en la lupa...`);
-
-      // Capturar errores de JavaScript
-      const jsErrors = [];
-      page.on('console', msg => {
-        if (msg.type() === 'error') {
-          jsErrors.push(msg.text());
-        }
-      });
-      page.on('pageerror', error => {
-        jsErrors.push(`Page error: ${error.message}`);
-      });
-
-      // ENFOQUE 1: Click desde el contexto de la página (más natural para Bootstrap)
-      const clickResult = await page.evaluate(() => {
-        const link = document.querySelector('a[data-scraper-target="lupa-detalle"]');
-        if (!link) {
-          return { success: false, error: 'Enlace no encontrado' };
-        }
-
-        // Simular click completo con eventos
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true
+      if (!onclickToken) {
+        console.log('   ⚠️ No se encontró token de detalleCausaCivil en la tabla, intentando click simple en la lupa...');
+        // Último recurso: clickear el primer enlace de detalle (puede abrir modal vacío)
+        await page.click('a[onclick*="detalleCausaCivil"], a[href="#modalDetalleCivil"], i.fa-search').catch(() => {
+          throw new Error('No se pudo encontrar el icono/enlace de detalle');
         });
-
-        link.dispatchEvent(clickEvent);
-
-        // También intentar click directo
-        link.click();
-
-        return {
-          success: true,
-          href: link.getAttribute('href'),
-          onclick: link.getAttribute('onclick')?.substring(0, 100),
-          className: link.className
-        };
-      });
-
-      if (!clickResult.success) {
-        console.error(`   ❌ Error haciendo click: ${clickResult.error}`);
-        throw new Error(`Click falló: ${clickResult.error}`);
+      } else {
+        // 2) Ejecutar detalleCausaCivil(token) dentro del contexto de la página
+        console.log('   ✅ Token de detalleCausaCivil encontrado, ejecutando función en el navegador...');
+        await page.evaluate((token) => {
+          // La función puede estar en window o en el scope global
+          if (typeof window.detalleCausaCivil === 'function') {
+            window.detalleCausaCivil(token);
+          } else if (typeof detalleCausaCivil === 'function') {
+            detalleCausaCivil(token);
+          } else {
+            // Fallback: buscar cualquier función global que contenga 'detalleCausaCivil'
+            for (const key of Object.keys(window)) {
+              if (key.toLowerCase().includes('detallecausacivil') && typeof window[key] === 'function') {
+                window[key](token);
+                break;
+              }
+            }
+          }
+        }, onclickToken);
       }
 
-      console.log(`   ✅ Click ejecutado en la lupa (href: ${clickResult.href})`);
-
-      // CRÍTICO: Dar tiempo a que el AJAX se dispare después del click
-      console.log(`   ⏳ Esperando 5 segundos para que el modal cargue...`);
-      await page.waitForTimeout(5000);
-
-      if (jsErrors.length > 0) {
-        console.warn(`   ⚠️ Errores JavaScript detectados:`, jsErrors);
-      }
+      console.log(`   ✅ Detalle solicitado vía detalleCausaCivil`);
     } catch (error) {
       console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
       throw error;
     }
     
-    // PASO 3: Esperar a que se abra el modal de detalle Y que cargue la tabla
+    // PASO 3: Esperar a que se abra el modal de detalle
     console.log(`   ⏳ Esperando que se abra el detalle...`);
-    try {
-      // 1. Primero esperar que el modal exista en el DOM
-      await Promise.race([
-        page.waitForSelector('#modalDetalleCivil', { timeout: 30000, state: 'attached' }),
-        page.waitForSelector('#modalDetalleLaboral', { timeout: 30000, state: 'attached' }),
-        page.waitForSelector('.modal-body', { timeout: 30000, state: 'attached' })
-      ]);
-      console.log(`   ✅ Modal detectado en DOM`);
-
-      // DEBUG: Tomar screenshot para ver qué muestra el modal
-      await page.screenshot({ path: path.join(outputDir, `debug_modal_${ritClean}.png`), fullPage: true });
-      console.log(`   📸 Screenshot guardado: debug_modal_${ritClean}.png`);
-
-      // DEBUG: Capturar errores de console
-      const consoleErrors = [];
-      page.on('console', msg => {
-        if (msg.type() === 'error') {
-          consoleErrors.push(msg.text());
-        }
-      });
-
-      // 2. CRÍTICO: Esperar a que la tabla DENTRO del modal se cargue (AJAX)
-      // El modal se abre vacío y luego se llena via AJAX - necesitamos esperar el contenido
-      console.log(`   ⏳ Esperando contenido del modal (tabla de movimientos)...`);
-
-      // DEBUG: Ver qué hay en el modal mientras esperamos
-      const modalContentBeforeWait = await page.evaluate(() => {
-        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal-body');
-        return modal ? modal.innerHTML.substring(0, 2000) : 'Modal no encontrado';
-      });
-      console.log(`   📋 Contenido del modal ANTES de esperar tabla:`, modalContentBeforeWait.substring(0, 500));
-
-      await Promise.race([
-        page.waitForSelector('#modalDetalleCivil table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
-        page.waitForSelector('#modalDetalleLaboral table tbody tr:first-child', { timeout: 45000, state: 'attached' }),
-        page.waitForSelector('.modal-body table tbody tr:first-child', { timeout: 45000, state: 'attached' })
-      ]);
-
-      if (consoleErrors.length > 0) {
-        console.log(`   ⚠️ Errores de console detectados:`, consoleErrors);
-      }
-
-      // 3. Dar tiempo adicional para que todas las filas carguen
-      await page.waitForTimeout(3000);
-      console.log(`   ✅ Detalle abierto con tabla cargada`);
-    } catch (error) {
-      // Si falla, intentar verificar si el modal existe aunque no tenga tabla aún
-      const modalExists = await page.evaluate(() => {
-        return document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal-body') !== null;
-      });
-      
-      if (modalExists) {
-        console.log('   ⚠️ Modal detectado pero tabla aún no cargada, esperando adicional...');
-        await page.waitForTimeout(3000);
-        // Intentar una vez más
-        await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
-          timeout: 10000,
-          state: 'attached'
-        });
-        console.log(`   ✅ Tabla de detalle finalmente cargada`);
-      } else {
-        throw new Error(`Modal de detalle no se abrió: ${error.message}`);
-      }
-    }
-
-    // DIAGNÓSTICO: Verificar estructura del modal antes de extraer tabla
-    console.log(`   🔍 Diagnosticando estructura del modal...`);
-    const modalDiagnostic = await page.evaluate(() => {
-      const modals = [
-        document.querySelector('#modalDetalleCivil'),
-        document.querySelector('#modalDetalleLaboral'),
-        document.querySelector('.modal-body'),
-        document.querySelector('.modal')
-      ].filter(Boolean);
-
-      if (modals.length === 0) {
-        return { error: 'No se encontró ningún modal', modalsFound: 0 };
-      }
-
-      const modal = modals[0]; // Usar el primer modal encontrado
-      const tables = modal.querySelectorAll('table');
-      const tablesInfo = Array.from(tables).map(t => ({
-        className: t.className,
-        id: t.id,
-        rowCount: t.querySelectorAll('tbody tr').length,
-        firstRowHTML: t.querySelector('tbody tr') ? t.querySelector('tbody tr').innerHTML.substring(0, 300) : null
-      }));
-
-      return {
-        modalId: modal.id,
-        modalClass: modal.className,
-        tablesCount: tables.length,
-        tables: tablesInfo,
-        modalHTML: modal.innerHTML.substring(0, 1000) // Primeros 1000 chars del modal
-      };
+    await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
+      timeout: 20000 
     });
-
-    console.log(`   📋 Modal encontrado:`, JSON.stringify(modalDiagnostic, null, 2));
-
+    await page.waitForTimeout(1500); // Dar tiempo a que cargue completamente
+    console.log(`   ✅ Detalle abierto`);
+    
     // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);
-    const rows = await extractTableAsArray(page);
+    const rows = await extractTable(page);
     console.log(`   ✅ Extraídas ${rows.length} filas de movimientos`);
 
     // PASO 5: Crear subcarpeta para PDFs
     const pdfDir = path.join(outputDir, 'pdf');
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
-    // PASO 6: Descargar PDFs (pasar las rows ya extraídas)
+    // PASO 6: Descargar PDFs
     console.log(`   📄 Descargando PDFs...`);
-    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean, rows) || {};
+    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean) || {};
     console.log(`   ✅ PDFs descargados`);
 
     // PASO 7: Descargar eBook
@@ -575,25 +438,24 @@ async function processCausa(page, context, config, outputDir) {
     let ebookNombre = null;
     
     // Identificar PDF de demanda (buscar movimiento con "demanda" en descripción)
-    // extractTableAsArray retorna objetos con 'texto' (array de celdas) y 'datos_limpios'
+    // extractTable retorna objetos con 'raw' (array de celdas) o 'folio' (primera celda)
     const movDemanda = rows.find(r => {
-      // Buscar en texto (array de celdas) - índice 5 suele ser descripción del trámite
-      if (r.texto && Array.isArray(r.texto) && r.texto.length > 5) {
-        return r.texto[5] && r.texto[5].toLowerCase().includes('demanda');
+      // Buscar en raw (array de celdas) si existe, o en las propiedades del objeto
+      if (r.raw && Array.isArray(r.raw) && r.raw.length > 5) {
+        return r.raw[5] && r.raw[5].toLowerCase().includes('demanda');
       }
-      // Fallback: buscar en datos_limpios
-      if (r.datos_limpios && r.datos_limpios.desc_tramite) {
-        return r.datos_limpios.desc_tramite.toLowerCase().includes('demanda');
+      // Fallback: buscar en descripción si existe
+      if (r.descripcion) {
+        return r.descripcion.toLowerCase().includes('demanda');
       }
       return false;
     });
     
     if (movDemanda) {
       // Usar folio del movimiento (primera celda) para buscar en pdfMapping
-      const folioDemanda = movDemanda.datos_limpios?.folio || movDemanda.texto?.[0];
-      const indiceMov = parseInt(folioDemanda) || null;
-      if (indiceMov && pdfMapping[indiceMov] && pdfMapping[indiceMov].azul) {
-        demandaNombre = pdfMapping[indiceMov].azul_nombre || pdfMapping[indiceMov].azul;
+      const folioDemanda = movDemanda.folio || (movDemanda.raw && movDemanda.raw[0]);
+      if (folioDemanda && pdfMapping[folioDemanda] && pdfMapping[folioDemanda].azul) {
+        demandaNombre = pdfMapping[folioDemanda].azul;
       }
     }
     

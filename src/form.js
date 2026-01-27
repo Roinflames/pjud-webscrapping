@@ -165,44 +165,10 @@ async function fillForm(page, CONFIG) {
     }
     await page.waitForTimeout(200 + Math.random() * 300); // Optimizado
 
-    // 3. Tribunal: Seleccionar si está disponible en CONFIG
-    const tribunal = CONFIG.tribunal;
-    if (tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '') {
-      console.log(`📋 Tribunal: ${tribunal}`);
-      try {
-        // Esperar a que el campo se habilite (no esté disabled)
-        await page.waitForFunction(
-          () => {
-            const tribunalSelect = document.querySelector('#conTribunal');
-            return tribunalSelect && !tribunalSelect.disabled && tribunalSelect.options.length > 1;
-          },
-          { timeout: 15000 }
-        );
-        console.log('✅ Campo Tribunal habilitado');
-        
-        await page.waitForTimeout(300 + Math.random() * 400);
-        
-        // Verificar que la opción existe antes de seleccionar
-        const tribunalExists = await page.evaluate((tribunalValue) => {
-          const select = document.querySelector('#conTribunal');
-          if (!select) return false;
-          const options = Array.from(select.options);
-          return options.some(opt => opt.value === tribunalValue || opt.value === String(tribunalValue));
-        }, tribunal);
-        
-        if (tribunalExists) {
-          await page.selectOption('#conTribunal', tribunal);
-          console.log('✅ Tribunal seleccionado');
-        } else {
-          console.warn(`⚠️ Tribunal ${tribunal} no encontrado en las opciones, continuando sin tribunal...`);
-        }
-      } catch (error) {
-        console.warn(`⚠️ No se pudo seleccionar tribunal ${tribunal}, continuando sin tribunal: ${error.message}`);
-      }
-      await page.waitForTimeout(200 + Math.random() * 300);
-    } else {
-      console.log('📋 Tribunal: Omitido (no disponible en configuración)');
-    }
+    // 3. Tribunal: SIEMPRE omitido para optimizar velocidad
+    // Todas las causas con RIT son civiles, tribunal es opcional y ralentiza el proceso
+    console.log('📋 Tribunal: Omitido (optimización: siempre buscar sin tribunal)');
+    // No esperamos ni seleccionamos tribunal - ahorra 1-3 segundos por causa
 
     // 4. Esperar a que se habilite Tipo Causa y seleccionarlo
     console.log(`📋 Tipo Causa: ${CONFIG.tipoCausa}`);
@@ -372,135 +338,6 @@ async function fillForm(page, CONFIG) {
   }
 }
 
-/**
- * Abre el detalle de una causa específica haciendo match por caratulado y tribunal
- * @param {Page} page - Página de Playwright
- * @param {string} caratulado - Caratulado para hacer match (opcional)
- * @param {string} tribunalNombre - Nombre del tribunal para hacer match (opcional)
- */
-async function openDetalleEspecifico(page, caratulado, tribunalNombre) {
-  try {
-    console.log("🔍 Buscando causa específica...");
-    if (caratulado) console.log(`   📋 Caratulado: ${caratulado}`);
-    if (tribunalNombre) console.log(`   🏛️  Tribunal: ${tribunalNombre}`);
-
-    // Esperar a que la tabla de resultados tenga filas
-    await page.waitForFunction(() => {
-      const rows = document.querySelectorAll('table tbody tr');
-      return rows.length > 0;
-    }, { timeout: 15000 });
-
-    await page.waitForTimeout(1000);
-
-    // Buscar la fila que coincide con caratulado y/o tribunal
-    const clicked = await page.evaluate(({ caratulado, tribunalNombre }) => {
-      const rows = document.querySelectorAll('table tbody tr');
-
-      for (const row of rows) {
-        const cells = Array.from(row.querySelectorAll('td'));
-        if (cells.length < 4) continue;
-
-        // Extraer texto de las celdas (típicamente: [icono, rit, fecha, caratulado, tribunal])
-        const caratuladoCell = cells[3]?.innerText?.trim() || '';
-        const tribunalCell = cells[4]?.innerText?.trim() || '';
-
-        // Hacer match flexible (contiene o similar)
-        const matchCaratulado = !caratulado || caratuladoCell.includes(caratulado) || caratulado.includes(caratuladoCell);
-        const matchTribunal = !tribunalNombre || tribunalCell.includes(tribunalNombre) || tribunalNombre.includes(tribunalCell);
-
-        if (matchCaratulado && matchTribunal) {
-          // Encontrada la fila correcta
-          const link = row.querySelector('td a') || row.querySelector('a');
-          if (link) {
-            console.log('✅ Match encontrado:', caratuladoCell, '|', tribunalCell);
-
-            // Ejecutar el onclick handler manualmente (más confiable que click())
-            const onclickAttr = link.getAttribute('onclick');
-            if (onclickAttr) {
-              console.log('🔧 Ejecutando onclick handler...');
-              eval(onclickAttr); // Ejecutar el código JavaScript del onclick
-            } else {
-              link.click(); // Fallback si no hay onclick
-            }
-
-            return { success: true, caratulado: caratuladoCell, tribunal: tribunalCell };
-          }
-        }
-      }
-
-      return { success: false, message: 'No se encontró fila que coincida' };
-    }, { caratulado, tribunalNombre });
-
-    if (!clicked.success) {
-      await page.screenshot({ path: 'debug_no_match_detalle.png', fullPage: true });
-      throw new Error(`No se encontró causa con caratulado="${caratulado}" y tribunal="${tribunalNombre}"`);
-    }
-
-    console.log(`✅ Click ejecutado en: ${clicked.caratulado} - ${clicked.tribunal}`);
-
-    // Esperar modal con más tiempo y mejor diagnóstico
-    console.log("   ⏳ Esperando que se abra el modal...");
-    await page.waitForTimeout(3000); // Dar más tiempo para el render inicial
-
-    // Verificar si apareció CAPTCHA después del click
-    const captchaDetectado = await page.evaluate(() => {
-      return !!(
-        document.querySelector('iframe[src*="recaptcha"]') ||
-        document.querySelector('iframe[src*="hcaptcha"]') ||
-        document.querySelector('.g-recaptcha') ||
-        document.querySelector('.h-captcha') ||
-        document.querySelector('[data-sitekey]')
-      );
-    });
-
-    if (captchaDetectado) {
-      await page.screenshot({ path: 'captcha_detectado.png', fullPage: true });
-      throw new Error('🚨 CAPTCHA detectado después del click - requiere intervención manual');
-    }
-
-    try {
-      await page.waitForFunction(() => {
-        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
-        if (!modal) {
-          console.log('Modal no encontrado aún...');
-          return false;
-        }
-        const tabla = modal.querySelector('table tbody tr');
-        if (!tabla) {
-          console.log('Modal encontrado pero sin tabla...');
-          return false;
-        }
-        console.log('Modal con tabla detectado ✓');
-        return true;
-      }, { timeout: 30000 });
-
-      console.log("✅ Modal con contenido detectado");
-      console.log("✅ Detalle cargado.");
-    } catch (e) {
-      // Diagnóstico detallado si falla
-      const diagnostico = await page.evaluate(() => {
-        const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show, .modal[style*="display: block"]');
-        if (!modal) return { modalExists: false };
-        const style = window.getComputedStyle(modal);
-        const tablas = modal.querySelectorAll('table');
-        return {
-          modalExists: true,
-          modalDisplay: style.display,
-          modalVisibility: style.visibility,
-          tablesCount: tablas.length,
-          hasRows: tablas.length > 0 && tablas[0].querySelectorAll('tbody tr').length > 0,
-          rowsCount: tablas.length > 0 ? tablas[0].querySelectorAll('tbody tr').length : 0
-        };
-      });
-      console.log('   ⚠️ Diagnóstico de modal:', JSON.stringify(diagnostico, null, 2));
-      throw new Error(`Modal no cargó correctamente: ${JSON.stringify(diagnostico)}`);
-    }
-  } catch (error) {
-    await page.screenshot({ path: 'error_detalle_especifico.png', fullPage: true });
-    throw new Error(`Error abriendo detalle específico: ${error.message}`);
-  }
-}
-
 async function openDetalle(page) {
   try {
     console.log("🔍 Buscando enlace 'Detalle de la causa'...");
@@ -519,7 +356,7 @@ async function openDetalle(page) {
     // Buscar y hacer click usando JavaScript directamente
     // El enlace puede tener title="Detalle de la causa" o ser el primer <a> en la celda
     const clicked = await page.evaluate(() => {
-      // Intentar primero con el selector original (compatibilidad hacia atrás)
+      // Intentar primero con el selector original
       let link = document.querySelector('a[title="Detalle de la causa"]');
 
       if (!link) {
@@ -592,41 +429,8 @@ async function openDetalle(page) {
 
         if (modalState.exists && (modalState.display !== 'none' || modalState.hasShow)) {
           console.log("✅ Modal detectado (puede estar cargando contenido)");
-          // Esperar a que el contenido se cargue - intentar múltiples veces
-          let intentos = 0;
-          const maxIntentos = 10;
-          while (intentos < maxIntentos) {
-            await page.waitForTimeout(1000);
-            const tieneContenido = await page.evaluate(() => {
-              const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
-              if (!modal) return false;
-              const tabla = modal.querySelector('table tbody tr');
-              return tabla !== null;
-            });
-            
-            if (tieneContenido) {
-              console.log(`✅ Contenido del modal cargado después de ${intentos + 1} intentos`);
-              break;
-            }
-            intentos++;
-          }
-          
-          if (intentos >= maxIntentos) {
-            // Verificar una última vez
-            const ultimaVerificacion = await page.evaluate(() => {
-              const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
-              if (!modal) return { tieneTabla: false };
-              return {
-                tieneTabla: !!modal.querySelector('table tbody tr'),
-                innerHTML: modal.innerHTML.substring(0, 1000)
-              };
-            });
-            
-            if (!ultimaVerificacion.tieneTabla) {
-              await page.screenshot({ path: 'debug_modal_vacio.png', fullPage: true });
-              throw new Error(`Modal abierto pero sin contenido después de ${maxIntentos} intentos. HTML: ${ultimaVerificacion.innerHTML.substring(0, 200)}`);
-            }
-          }
+          // Esperar un poco más para que cargue
+          await page.waitForTimeout(3000);
         } else {
           await page.screenshot({ path: 'debug_sin_modal.png', fullPage: true });
           throw new Error('Modal no se abrió correctamente');
@@ -645,4 +449,4 @@ async function openDetalle(page) {
   }
 }
 
-module.exports = { fillForm, openDetalle, openDetalleEspecifico, resetForm };
+module.exports = { fillForm, openDetalle, resetForm };

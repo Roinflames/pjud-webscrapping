@@ -255,8 +255,31 @@
       "filesChanged": [
         "src/database/db-mariadb.js"
       ]
+    },
+    {
+      "version": 23,
+      "commitHash": "c7a2155555deefc326455ce12b6b43208215b19a",
+      "tag": "snapshot-v23",
+      "timestamp": 1769535346729,
+      "message": "Snapshot V23",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 24,
+      "commitHash": "b17818e6617b1c97d99db52824fbe140ef41593f",
+      "tag": "snapshot-v24",
+      "timestamp": 1769535635218,
+      "message": "Snapshot V24",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_23607_2015.json",
+        "src/table.js"
+      ]
     }
   ],
-  "nextVersion": 23,
-  "currentVersion": 22
+  "nextVersion": 25,
+  "currentVersion": 24
 }

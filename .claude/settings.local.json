@@ -21,7 +21,28 @@
       "Bash(node src/processRit.js C-123-2020 \"HDI SEGUROS S.A./CEPEDA\" \"7º Juzgado Civil de Santiago\")",
       "Bash(node src/process-csv-causas.js 1 --db)",
       "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as pdfs_totales FROM pdfs\")",
-      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as total_pdfs FROM pdfs; SELECT COUNT(*) as total_movimientos FROM movimientos;\")"
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as total_pdfs FROM pdfs; SELECT COUNT(*) as total_movimientos FROM movimientos;\")",
+      "Bash(mysql -u root -proot -D codi_ejamtest -e \"DESCRIBE tribunal LIMIT 10\")",
+      "Bash(mysql -u root -proot -D codi_ejamtest -e \"SELECT COD_TRIBUNAL, NOM_TRIBUNAL FROM tribunal WHERE NOM_TRIBUNAL LIKE ''%Iquique%'' OR NOM_TRIBUNAL LIKE ''%Casablanca%'' OR NOM_TRIBUNAL LIKE ''%Los Andes%'' OR NOM_TRIBUNAL LIKE ''%Punta Arenas%'' OR NOM_TRIBUNAL LIKE ''%Santiago%'' LIMIT 20\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"DESCRIBE tribunal LIMIT 10\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"DESCRIBE tribunal\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COD_TRIBUNAL, NOM_TRIBUNAL FROM tribunal WHERE NOM_TRIBUNAL LIKE ''%Iquique%'' OR NOM_TRIBUNAL LIKE ''%Casablanca%'' OR NOM_TRIBUNAL LIKE ''%Los Andes%'' OR NOM_TRIBUNAL LIKE ''%Punta Arenas%'' OR NOM_TRIBUNAL LIKE ''%Santiago%'' LIMIT 20\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SHOW TABLES\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"DESCRIBE causas\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT tribunal_id, tribunal_nombre FROM causas WHERE tribunal_nombre IS NOT NULL GROUP BY tribunal_id, tribunal_nombre LIMIT 10\")",
+      "Bash(node scripts/insertar_causas_test.js)",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT id, rit, caratulado, tribunal_id, tribunal_nombre, corte_id, scraping_exitoso FROM causas WHERE rit IN (''C-213-2023'', ''C-212-2023'', ''C-211-2023'', ''C-201-2021'', ''C-200-2020'') ORDER BY id\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT id, rit, caratulado, tribunal_id, tribunal_nombre, corte_id, scraping_exitoso FROM causas WHERE id >= 8 AND id <= 13 ORDER BY id\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT id, rit, caratulado, tribunal_id, tribunal_nombre, corte_id, scraping_exitoso FROM causas WHERE rit LIKE ''C-2%2023'' OR rit LIKE ''C-20%2021'' OR rit LIKE ''C-2%2020'' ORDER BY id DESC LIMIT 10\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT id, rit, caratulado, tribunal_id, tribunal_nombre FROM causas WHERE tribunal_id IN (''500'', ''501'', ''502'', ''503'', ''504'') ORDER BY id DESC\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT COUNT(*) as total FROM causas\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"SELECT id, rit, caratulado, tribunal_id FROM causas ORDER BY id DESC LIMIT 10\")",
+      "Bash(mysql -u root -D codi_ejamtest -e \"DELETE FROM causas; ALTER TABLE causas AUTO_INCREMENT = 1; SELECT ''Tabla limpiada'' as status;\")",
+      "Bash(PLAYWRIGHT_BROWSER=firefox node src/process-causas.js 5)",
+      "Bash(PLAYWRIGHT_BROWSER=firefox node src/process-causas.js 1)",
+      "Bash(node src/process-causas.js 1)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"fix: Mejorar validación de rowIndex y agregar reporte de test\")"
     ]
   }
 }

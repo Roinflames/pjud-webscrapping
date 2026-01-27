@@ -184,17 +184,17 @@ try {
     $totalPdfs = 0;
 
     foreach ($rows as $row) {
-        // Formato legacy para compatibilidad
+        // Formato legacy para compatibilidad (9 elementos por fila)
         $movimiento = [
-            $row['folio'] ?? '',
-            $row['tiene_pdf'] ? 'Descargar Documento' : '',
-            $row['folio'] ?? '',
-            $row['etapa'] ?? '',
-            $row['tramite'] ?? '',
-            $row['descripcion'] ?? '',
-            $row['fecha'] ?? '',
-            $row['foja'] ?? '',
-            ''
+            $row['folio'] ?? '',                                    // [0] Folio
+            $row['tiene_pdf'] ? 'Descargar Documento' : '',        // [1] Indicador PDF
+            $row['folio'] ?? '',                                    // [2] Anexo (mismo folio)
+            $row['etapa'] ?? '',                                    // [3] Etapa
+            $row['tramite'] ?? '',                                  // [4] Trámite
+            $row['descripcion'] ?? '',                              // [5] Descripción
+            $row['fecha'] ?? '',                                    // [6] Fecha
+            $row['foja'] ?? '',                                     // [7] Foja
+            ''                                                      // [8] Georef
         ];
 
         // Formato detallado con toda la información
@@ -510,9 +510,9 @@ function parsearCSV($archivoCsv, $rol) {
         return null;
     }
 
-    fgetcsv($handle, 0, ';'); // headers
+    fgetcsv($handle, 0, ';', '"', '\\'); // headers
 
-    while (($row = fgetcsv($handle, 0, ';')) !== false) {
+    while (($row = fgetcsv($handle, 0, ';', '"', '\\')) !== false) {
         $movimientos[] = [
             $row[6] ?? '',
             ($row[7] ?? '') === 'SI' ? 'Descargar Documento' : '',
@@ -529,8 +529,8 @@ function parsearCSV($archivoCsv, $rol) {
 
     if (count($movimientos) > 0) {
         $handle = fopen($archivoCsv, 'r');
-        fgetcsv($handle, 0, ';');
-        $primeraFila = fgetcsv($handle, 0, ';');
+        fgetcsv($handle, 0, ';', '"', '\\');
+        $primeraFila = fgetcsv($handle, 0, ';', '"', '\\');
         fclose($handle);
 
         $cabecera = [

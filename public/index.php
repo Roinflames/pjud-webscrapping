@@ -96,41 +96,8 @@ body { background:#f5f6f8; font-size:14px; }
                             </tr>
                         </thead>
 
-                        <tbody>
-                            <tr data-rit="C-16707-2019">
-                                <td>C-16707-2019</td>
-                                <td>20212</td>
-                                <td>Carlos Domingo Gutierrez Ramos</td>
-                                <td>8.462.961-8</td>
-                                <td>Tatiana Gonzalez</td>
-                                <td>Promotora CMR Falabella</td>
-                                <td>27 Juzgado Civil de Santiago</td>
-                                <td class="actions">
-                                    <button class="btn btn-sm btn-warning">⬇</button>
-                                    <button class="btn btn-sm btn-primary btn-ver-causa"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalDetalleCivil">👁</button>
-                                    <button class="btn btn-sm btn-success">📄</button>
-                                    <button class="btn btn-sm btn-danger">✖</button>
-                                </td>
-                            </tr>
-                            <tr data-rit="C-13786-2018">
-                                <td>C-13786-2018</td>
-                                <td>20213</td>
-                                <td>Prueba Scraping</td>
-                                <td>12.345.678-9</td>
-                                <td>Test Abogado</td>
-                                <td>Promotora CMR Falabella</td>
-                                <td>1 Juzgado Civil de Santiago</td>
-                                <td class="actions">
-                                    <button class="btn btn-sm btn-warning">⬇</button>
-                                    <button class="btn btn-sm btn-primary btn-ver-causa"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalDetalleCivil">👁</button>
-                                    <button class="btn btn-sm btn-success">📄</button>
-                                    <button class="btn btn-sm btn-danger">✖</button>
-                                </td>
-                            </tr>
+                        <tbody id="tablaCausas">
+                            <!-- Cargado dinámicamente desde MySQL via AJAX -->
                         </tbody>
 
                     </table>
@@ -240,27 +207,73 @@ body { background:#f5f6f8; font-size:14px; }
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Manejar clicks en botones de ver causa
+// Cargar causas desde MySQL
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.btn-ver-causa').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tr = this.closest('tr');
-            const rit = tr.dataset.rit;
-            if (rit) {
-                buscarCausa(rit);
-            }
-        });
-    });
+    cargarCausas();
 });
+
+async function cargarCausas() {
+    try {
+        const res = await fetch('api/listar_causas.php');
+        const data = await res.json();
+
+        if (!data.success) {
+            console.error('Error al cargar causas:', data.error);
+            return;
+        }
+
+        const tbody = document.getElementById('tablaCausas');
+        tbody.innerHTML = '';
+
+        data.causas.forEach(causa => {
+            const tr = document.createElement('tr');
+            tr.dataset.rit = causa.rit;
+            tr.innerHTML = `
+                <td>${causa.rit}</td>
+                <td>${causa.folio || '-'}</td>
+                <td>${causa.cliente || '-'}</td>
+                <td>${causa.rut || '-'}</td>
+                <td>${causa.abogado || '-'}</td>
+                <td>${causa.juzgado || '-'}</td>
+                <td>${causa.tribunal_nombre}</td>
+                <td class="actions">
+                    <button class="btn btn-sm btn-warning">⬇</button>
+                    <button class="btn btn-sm btn-primary btn-ver-causa"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDetalleCivil">👁</button>
+                    <button class="btn btn-sm btn-success">📄</button>
+                    <button class="btn btn-sm btn-danger">✖</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Agregar event listeners a los botones
+        document.querySelectorAll('.btn-ver-causa').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tr = this.closest('tr');
+                const rit = tr.dataset.rit;
+                if (rit) {
+                    buscarCausa(rit);
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error cargando causas:', error);
+    }
+}
 
 async function buscarCausa(rit) {
     const res = await fetch(`api/causa.php?rol=${encodeURIComponent(rit)}`);
-    const data = await res.json();
+    const respuesta = await res.json();
     const tbody = document.querySelector('#tablaHistoria tbody');
     tbody.innerHTML = '';
 
+    // Usar formato legacy para compatibilidad
+    const data = respuesta.legacy || respuesta;
+
     if (!Array.isArray(data)) {
-        if (data.error == 'Archivo de resultados no encontrado') {
+        if (respuesta.error == 'Archivo de resultados no encontrado') {
             tbody.innerHTML = '';
             return;
         }

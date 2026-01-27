@@ -344,10 +344,12 @@ function renderizarMovimientos() {
 
         let docCol = '';
         if (tienePdfAzul) {
-            docCol += `<button class="btn btn-sm" style="background:#0ea5e9;color:white;margin-right:4px;" title="PDF Principal (Azul)">📄</button>`;
+            const urlAzul = `api/descargar_pdf.php?rit=${encodeURIComponent(ritActual)}&folio=${encodeURIComponent(folio)}&color=azul`;
+            docCol += `<a href="${urlAzul}" target="_blank" class="btn btn-sm" style="background:#0ea5e9;color:white;margin-right:4px;" title="PDF Principal (Azul)">📄</a>`;
         }
         if (tienePdfRojo) {
-            docCol += `<button class="btn btn-sm" style="background:#ef4444;color:white;" title="PDF Anexo (Rojo)">📄</button>`;
+            const urlRojo = `api/descargar_pdf.php?rit=${encodeURIComponent(ritActual)}&folio=${encodeURIComponent(folio)}&color=rojo`;
+            docCol += `<a href="${urlRojo}" target="_blank" class="btn btn-sm" style="background:#ef4444;color:white;" title="PDF Anexo (Rojo)">📄</a>`;
         }
         if (!tienePdfAzul && !tienePdfRojo) {
             docCol = '<span style="color:#999;">-</span>';

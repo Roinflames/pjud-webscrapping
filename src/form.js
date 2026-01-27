@@ -379,7 +379,16 @@ async function openDetalleEspecifico(page, caratulado, tribunalNombre) {
           const link = row.querySelector('td a') || row.querySelector('a');
           if (link) {
             console.log('✅ Match encontrado:', caratuladoCell, '|', tribunalCell);
-            link.click();
+
+            // Ejecutar el onclick handler manualmente (más confiable que click())
+            const onclickAttr = link.getAttribute('onclick');
+            if (onclickAttr) {
+              console.log('🔧 Ejecutando onclick handler...');
+              eval(onclickAttr); // Ejecutar el código JavaScript del onclick
+            } else {
+              link.click(); // Fallback si no hay onclick
+            }
+
             return { success: true, caratulado: caratuladoCell, tribunal: tribunalCell };
           }
         }

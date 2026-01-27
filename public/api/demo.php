@@ -1,34 +1,30 @@
 <?php
 /**
- * Vista /demo que consulta directamente MySQL (sin usar APIs HTTP internas)
- * Las APIs en public/api/ deben usarse SOLO para comunicación externa
+ * Vista /demo que usa arquitectura MVC personalizada (Entity/Repository/Controller)
  *
- * Este archivo usa SSR (Server-Side Rendering) y consultas directas a BD
+ * IMPORTANTE: Este archivo NO usa APIs HTTP internas.
+ * Consulta directamente la base de datos usando los repositorios.
+ * Las APIs en public/api/ deben usarse SOLO para comunicación externa.
  */
 
-// Cargar variables de entorno
-$dbHost = getenv('DB_HOST') ?: 'localhost';
-$dbName = getenv('DB_NAME') ?: 'codi_ejamtest';
-$dbUser = getenv('DB_USER') ?: 'root';
-$dbPass = getenv('DB_PASS') ?: '';
+// Cargar autoloader de las clases del proyecto
+require_once __DIR__ . '/../src/autoload.php';
 
-// Conectar a MySQL directamente
-try {
-    $pdo = new PDO(
-        "mysql:host={$dbHost};dbname={$dbName};charset=utf8",
-        $dbUser,
-        $dbPass,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 3
-        ]
-    );
-} catch (PDOException $e) {
-    die("Error de conexión a base de datos: " . $e->getMessage());
-}
+use App\Repository\CausaRepository;
+use App\Repository\MovimientoRepository;
+use App\Repository\EbookRepository;
+use App\Repository\PDFRepository;
+
+// Inicializar repositorios
+$causaRepository = new CausaRepository();
+$movimientoRepository = new MovimientoRepository();
+$ebookRepository = new EbookRepository();
+$pdfRepository = new PDFRepository();
+
+$dbError = null;
 
 // === ENDPOINT INTERNO: Detalle de causa ===
-// Si se solicita detalle de causa via AJAX interno, responder con JSON
+// Responde con JSON para AJAX interno del mismo archivo
 if (isset($_GET['action']) && $_GET['action'] === 'detalle_causa') {
     header('Content-Type: application/json; charset=utf-8');
 
@@ -40,10 +36,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'detalle_causa') {
     }
 
     try {
-        // Consultar causa
-        $stmt = $pdo->prepare("SELECT * FROM causas WHERE rit = :rit LIMIT 1");
-        $stmt->execute(['rit' => $rit]);
-        $causa = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Usar repositorios en lugar de PDO directo
+        $causa = $causaRepository->findByRit($rit);
 
         if (!$causa) {
             http_response_code(404);
@@ -51,72 +45,41 @@ if (isset($_GET['action']) && $_GET['action'] === 'detalle_causa') {
             exit;
         }
 
-        // Consultar movimientos
-        $stmt = $pdo->prepare("
-            SELECT
-                m.*,
-                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'azul') > 0 as tiene_pdf_azul,
-                (SELECT COUNT(*) FROM pdfs p WHERE p.movimiento_id = m.id AND p.tipo = 'rojo') > 0 as tiene_pdf_rojo
-            FROM movimientos m
-            WHERE m.rit = :rit
-            ORDER BY m.folio ASC
-        ");
-        $stmt->execute(['rit' => $rit]);
-        $movimientos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Obtener movimientos con info de PDFs
+        $movimientos = $movimientoRepository->findByRit($rit, true);
 
-        // Consultar cuadernos
-        $stmt = $pdo->prepare("
-            SELECT DISTINCT id_cuaderno, nombre
-            FROM movimientos
-            WHERE rit = :rit AND id_cuaderno IS NOT NULL
-            ORDER BY id_cuaderno
-        ");
-        $stmt->execute(['rit' => $rit]);
-        $cuadernos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Obtener cuadernos
+        $cuadernos = $movimientoRepository->getCuadernosByRit($rit);
 
-        // Consultar ebook
-        $stmt = $pdo->prepare("SELECT * FROM ebooks WHERE rit = :rit LIMIT 1");
-        $stmt->execute(['rit' => $rit]);
-        $ebook = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Obtener ebook
+        $ebook = $ebookRepository->findByRit($rit);
 
         // Preparar respuesta
         $response = [
             'causa' => [
-                'rit' => $causa['rit'],
-                'caratulado' => $causa['caratulado'],
-                'tribunal' => $causa['tribunal_nombre'],
-                'fechaIngreso' => $causa['fecha_ingreso'],
-                'estado' => $causa['estado'] ?: 'EN_TRAMITE',
-                'etapa' => $causa['etapa']
+                'rit' => $causa->getRit(),
+                'caratulado' => $causa->getCaratulado(),
+                'tribunal' => $causa->getTribunalNombre(),
+                'fechaIngreso' => $causa->getFechaIngreso(),
+                'estado' => $causa->getEstado() ?: 'EN_TRAMITE',
+                'etapa' => $causa->getEtapa()
             ],
             'movimientos' => array_map(function($mov) {
-                return [
-                    'folio' => $mov['folio'],
-                    'fecha' => $mov['fecha'],
-                    'etapa' => $mov['etapa'],
-                    'tramite' => $mov['tramite'],
-                    'descripcion' => $mov['descripcion'],
-                    'foja' => $mov['foja'],
-                    'id_pagina' => $mov['id_pagina'],
-                    'id_cuaderno' => $mov['id_cuaderno'],
-                    'cuaderno_nombre' => $mov['nombre'],
-                    'tiene_pdf_azul' => (bool)$mov['tiene_pdf_azul'],
-                    'tiene_pdf_rojo' => (bool)$mov['tiene_pdf_rojo']
-                ];
+                return $mov->toArray();
             }, $movimientos),
             'cuadernos' => $cuadernos,
-            'totalPdfs' => $causa['total_pdfs'] ?? 0,
+            'totalPdfs' => $causa->getTotalPdfs(),
             'tieneEbook' => !empty($ebook),
             'ebook' => $ebook ? [
-                'nombre' => $ebook['nombre_archivo'],
-                'ruta' => $ebook['ruta_relativa']
+                'nombre' => $ebook->getNombreArchivo(),
+                'ruta' => $ebook->getRutaRelativa()
             ] : null
         ];
 
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;
 
-    } catch (PDOException $e) {
+    } catch (\Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Error de base de datos: ' . $e->getMessage()]);
         exit;
@@ -135,54 +98,42 @@ if (isset($_GET['action']) && $_GET['action'] === 'descargar_pdf') {
     }
 
     try {
-        // Buscar PDF en base de datos
-        $stmt = $pdo->prepare("
-            SELECT p.contenido_base64, p.nombre_archivo, p.tamano_bytes
-            FROM pdfs p
-            JOIN movimientos m ON p.movimiento_id = m.id
-            WHERE m.rit = :rit AND m.folio = :folio AND p.tipo = :color
-            LIMIT 1
-        ");
-        $stmt->execute(['rit' => $rit, 'folio' => $folio, 'color' => $color]);
-        $pdf = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Usar repositorio en lugar de PDO directo
+        $pdf = $pdfRepository->findByRitFolioTipo($rit, $folio, $color);
 
-        if (!$pdf || !$pdf['contenido_base64']) {
+        if (!$pdf || !$pdf->getContenidoBase64()) {
             http_response_code(404);
             die('PDF no encontrado en base de datos');
         }
 
         // Servir PDF
         header('Content-Type: application/pdf');
-        header('Content-Disposition: inline; filename="' . $pdf['nombre_archivo'] . '"');
-        header('Content-Length: ' . $pdf['tamano_bytes']);
-        echo base64_decode($pdf['contenido_base64']);
+        header('Content-Disposition: inline; filename="' . $pdf->getNombreArchivo() . '"');
+        header('Content-Length: ' . $pdf->getTamanoBytes());
+        echo base64_decode($pdf->getContenidoBase64());
         exit;
 
-    } catch (PDOException $e) {
+    } catch (\Exception $e) {
         http_response_code(500);
         die('Error de base de datos: ' . $e->getMessage());
     }
 }
 
 // === RENDERIZADO HTML (SSR) ===
-// Cargar causas guardadas desde MySQL
+// Cargar causas guardadas usando repositorio
 try {
-    $stmt = $pdo->query("
-        SELECT
-            rit,
-            caratulado,
-            tribunal_nombre,
-            fecha_ingreso,
-            estado,
-            total_pdfs,
-            (SELECT COUNT(*) FROM ebooks e WHERE e.rit = causas.rit) > 0 as tiene_ebook
-        FROM causas
-        ORDER BY created_at DESC
-        LIMIT 50
-    ");
-    $causasGuardadas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $causasGuardadas = [];
+    $causasGuardadas = $causaRepository->findAll();
+
+    // Verificar si tienen ebook (agregar flag)
+    $causasData = array_map(function($causa) use ($ebookRepository) {
+        $ebook = $ebookRepository->findByRit($causa->getRit());
+        $causaArray = $causa->toArray();
+        $causaArray['tiene_ebook'] = !empty($ebook);
+        return $causaArray;
+    }, $causasGuardadas);
+
+} catch (\Exception $e) {
+    $causasData = [];
     $dbError = $e->getMessage();
 }
 
@@ -192,22 +143,15 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Causas - Sistema Legal</title>
+    <title>Demo - Sistema Legal (Entity/Repository Pattern)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Reusando los mismos estilos del demo.html original */
         :root {
             --primary: #4f46e5;
             --primary-dark: #3730a3;
-            --primary-light: #818cf8;
-            --secondary: #0ea5e9;
-            --secondary-dark: #0284c7;
             --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #06b6d4;
             --bg-page: #f8fafc;
             --bg-card: #ffffff;
             --bg-header: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
@@ -215,13 +159,11 @@ try {
             --text-primary: #1e293b;
             --text-secondary: #64748b;
             --text-muted: #94a3b8;
-            --text-light: #f8fafc;
             --border-color: #e2e8f0;
             --border-light: #f1f5f9;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -277,17 +219,10 @@ try {
             font-size: 22px;
             font-weight: 700;
             margin: 0;
-            letter-spacing: -0.5px;
         }
         .logo-text span {
             font-size: 12px;
             opacity: 0.9;
-            font-weight: 400;
-        }
-        .user-section {
-            display: flex;
-            align-items: center;
-            gap: 20px;
         }
         .user-badge {
             background: rgba(255,255,255,0.15);
@@ -308,12 +243,7 @@ try {
             padding: 12px 20px;
             font-size: 13px;
             font-weight: 500;
-            border-radius: 0;
             transition: all 0.2s;
-        }
-        .nav-tabs-pjud .nav-link:hover {
-            color: white;
-            background: rgba(255,255,255,0.1);
         }
         .nav-tabs-pjud .nav-link.active {
             color: white;
@@ -335,94 +265,6 @@ try {
             align-items: center;
             gap: 10px;
             font-size: 13px;
-        }
-        .search-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-            margin-bottom: 25px;
-        }
-        .search-card-header {
-            background: var(--primary);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .search-card-header h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .search-card-body { padding: 25px; }
-        .form-row-pjud {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .form-group-pjud {
-            display: flex;
-            flex-direction: column;
-        }
-        .form-group-pjud label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-        .form-control-pjud {
-            padding: 10px 14px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.2s;
-            background: white;
-        }
-        .form-control-pjud:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            padding-top: 15px;
-            border-top: 1px solid var(--border-color);
-        }
-        .btn-pjud {
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-        }
-        .btn-pjud-primary {
-            background: var(--primary);
-            color: white;
-        }
-        .btn-pjud-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-        .btn-pjud-secondary {
-            background: var(--bg-page);
-            color: var(--text-secondary);
-            border: 2px solid var(--border-color);
         }
         .results-card {
             background: var(--bg-card);
@@ -458,7 +300,6 @@ try {
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: var(--text-secondary);
             border-bottom: 2px solid var(--border-color);
         }
@@ -466,10 +307,6 @@ try {
             padding: 12px 15px;
             border-bottom: 1px solid var(--border-light);
             font-size: 13px;
-            vertical-align: middle;
-        }
-        .table-pjud tbody tr {
-            transition: background 0.15s;
         }
         .table-pjud tbody tr:hover {
             background: rgba(79, 70, 229, 0.03);
@@ -477,7 +314,6 @@ try {
         .action-icons {
             display: flex;
             gap: 8px;
-            align-items: center;
         }
         .action-btn {
             width: 32px;
@@ -495,12 +331,12 @@ try {
             background: #3b82f6;
             color: white;
         }
-        .action-btn.btn-detail:hover {
-            background: #2563eb;
-            transform: scale(1.1);
-        }
         .action-btn.btn-pdf-blue {
             background: #0ea5e9;
+            color: white;
+        }
+        .action-btn.btn-pdf-red {
+            background: #ef4444;
             color: white;
         }
         .action-btn.btn-ebook {
@@ -514,7 +350,6 @@ try {
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
         .status-badge.en-tramite {
             background: #dbeafe;
@@ -523,23 +358,6 @@ try {
         .status-badge.terminada {
             background: #dcfce7;
             color: #166534;
-        }
-        .pjud-footer {
-            background: var(--bg-sidebar);
-            color: var(--text-light);
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            margin-top: 40px;
-        }
-        .alert-info-custom {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 13px;
         }
         .alert-success-custom {
             background: #d4edda;
@@ -550,11 +368,26 @@ try {
             margin-bottom: 20px;
             font-size: 13px;
         }
-        .modal-backdrop.show { opacity: 0.5; }
+        .alert-danger-custom {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .pjud-footer {
+            background: var(--bg-sidebar);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            margin-top: 40px;
+        }
         .modal-pjud .modal-content {
             border: none;
             border-radius: 12px;
-            overflow: hidden;
         }
         .modal-pjud .modal-header {
             background: var(--primary);
@@ -569,12 +402,6 @@ try {
         .modal-pjud .close {
             color: white;
             opacity: 0.8;
-            text-shadow: none;
-        }
-        .modal-pjud .modal-body {
-            padding: 0;
-            max-height: 70vh;
-            overflow-y: auto;
         }
         .detail-section {
             padding: 20px;
@@ -591,16 +418,11 @@ try {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
         }
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
         .detail-label {
             font-size: 11px;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
         .detail-value {
@@ -622,27 +444,20 @@ try {
             text-transform: uppercase;
             color: var(--text-secondary);
             border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
         }
         .movements-table td {
             padding: 10px 12px;
             border-bottom: 1px solid var(--border-light);
-            vertical-align: middle;
         }
         .folio-badge {
-            display: inline-block;
             background: var(--primary);
             color: white;
             padding: 3px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: 600;
-            min-width: 30px;
-            text-align: center;
         }
         .etapa-tag {
-            display: inline-block;
             background: #e0e7ff;
             color: #4338ca;
             padding: 3px 8px;
@@ -650,14 +465,14 @@ try {
             font-size: 10px;
             font-weight: 600;
         }
-        .documentos-cell {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-        .action-btn.btn-pdf-red {
-            background: #ef4444;
+        .badge-info {
+            background: #0ea5e9;
             color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -666,7 +481,7 @@ try {
         <div class="header-top">
             <div class="container">
                 <span><i class="fas fa-phone-alt"></i> Soporte: +56 2 1234 5678</span>
-                <span><i class="fas fa-clock"></i> Última actualización: <?= date('d/m/Y H:i:s') ?></span>
+                <span><i class="fas fa-clock"></i> <?= date('d/m/Y H:i:s') ?></span>
             </div>
         </div>
         <div class="header-main">
@@ -683,7 +498,7 @@ try {
                 <div class="user-section">
                     <div class="user-badge">
                         <i class="fas fa-user-circle"></i>
-                        <span>Modo Invitado</span>
+                        <span>Modo Demo</span>
                     </div>
                 </div>
             </div>
@@ -704,52 +519,30 @@ try {
             <i class="fas fa-home"></i>
             <a href="#">Inicio</a>
             <span>/</span>
-            <a href="#">Consultas</a>
-            <span>/</span>
-            <span>Consulta de Causas</span>
+            <span>Demo - Arquitectura Entity/Repository</span>
         </div>
 
-        <?php if (!empty($dbError)): ?>
-        <div class="alert-info-custom">
+        <?php if ($dbError): ?>
+        <div class="alert-danger-custom">
             <i class="fas fa-exclamation-triangle"></i>
             <strong>Error de conexión:</strong> <?= htmlspecialchars($dbError) ?>
         </div>
         <?php else: ?>
         <div class="alert-success-custom">
             <i class="fas fa-check-circle"></i>
-            <strong>Sistema operativo:</strong> Conectado a MySQL directamente (sin usar APIs HTTP internas).
-            Causas cargadas: <?= count($causasGuardadas) ?>
+            <strong>Sistema operativo:</strong>
+            <span class="badge-info">Arquitectura Entity/Repository</span>
+            <span class="badge-info">Sin APIs HTTP internas</span>
+            <span class="badge-info">Consultas directas a MySQL</span>
+            Causas cargadas: <?= count($causasData) ?>
         </div>
         <?php endif; ?>
 
-        <!-- Formulario de Búsqueda -->
-        <div class="search-card">
-            <div class="search-card-header">
-                <h3><i class="fas fa-search"></i> Búsqueda de Causas</h3>
-                <span class="badge badge-light">Civil</span>
-            </div>
-            <div class="search-card-body">
-                <form id="searchForm" method="GET">
-                    <div class="form-row-pjud">
-                        <div class="form-group-pjud">
-                            <label>RIT / Rol</label>
-                            <input type="text" class="form-control-pjud" name="search_rit" placeholder="Ej: C-3030-2017" required>
-                        </div>
-                    </div>
-                    <div class="btn-row">
-                        <button type="submit" class="btn-pjud btn-pjud-primary">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Causas Guardadas en Sistema -->
+        <!-- Causas Guardadas -->
         <div class="results-card">
             <div class="results-card-header" style="background: #10b981;">
-                <h3><i class="fas fa-database"></i> Causas Guardadas en Sistema (MySQL)</h3>
-                <span class="results-badge"><?= count($causasGuardadas) ?> causa(s)</span>
+                <h3><i class="fas fa-database"></i> Causas en Base de Datos (via Repositorios)</h3>
+                <span class="results-badge"><?= count($causasData) ?> causa(s)</span>
             </div>
             <div style="overflow-x: auto;">
                 <table class="table-pjud">
@@ -764,7 +557,7 @@ try {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($causasGuardadas as $causa): ?>
+                        <?php foreach ($causasData as $causa): ?>
                         <tr>
                             <td>
                                 <div class="action-icons">
@@ -803,11 +596,11 @@ try {
                         </tr>
                         <?php endforeach; ?>
 
-                        <?php if (empty($causasGuardadas)): ?>
+                        <?php if (empty($causasData)): ?>
                         <tr>
                             <td colspan="6" class="text-center py-4">
-                                <i class="fas fa-database" style="font-size: 40px; color: #ccc; margin-bottom: 15px; display: block;"></i>
-                                <p style="color: #999; margin: 0;">No hay causas en la base de datos</p>
+                                <i class="fas fa-database" style="font-size: 40px; color: #ccc; display: block; margin-bottom: 15px;"></i>
+                                <p style="color: #999;">No hay causas en la base de datos</p>
                             </td>
                         </tr>
                         <?php endif; ?>
@@ -817,7 +610,7 @@ try {
         </div>
     </main>
 
-    <!-- Modal Detalle de Causa -->
+    <!-- Modal Detalle -->
     <div class="modal fade modal-pjud" id="modalDetalle" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -834,28 +627,28 @@ try {
                     <div class="detail-section">
                         <h5><i class="fas fa-info-circle"></i> Información General</h5>
                         <div class="detail-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">RIT/Rol</span>
-                                <span class="detail-value" id="detailRit">-</span>
+                            <div>
+                                <div class="detail-label">RIT/Rol</div>
+                                <div class="detail-value" id="detailRit">-</div>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Caratulado</span>
-                                <span class="detail-value" id="detailCaratulado">-</span>
+                            <div>
+                                <div class="detail-label">Caratulado</div>
+                                <div class="detail-value" id="detailCaratulado">-</div>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Tribunal</span>
-                                <span class="detail-value" id="detailTribunal">-</span>
+                            <div>
+                                <div class="detail-label">Tribunal</div>
+                                <div class="detail-value" id="detailTribunal">-</div>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Fecha de Ingreso</span>
-                                <span class="detail-value" id="detailFechaIngreso">-</span>
+                            <div>
+                                <div class="detail-label">Fecha de Ingreso</div>
+                                <div class="detail-value" id="detailFechaIngreso">-</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="detail-section">
-                        <h5><i class="fas fa-list"></i> Historial de Movimientos Procesales</h5>
-                        <div class="table-wrapper" style="max-height: 420px; overflow: auto;">
+                        <h5><i class="fas fa-list"></i> Historial de Movimientos</h5>
+                        <div style="max-height: 420px; overflow: auto;">
                             <table class="movements-table">
                                 <thead>
                                     <tr>
@@ -864,13 +657,13 @@ try {
                                         <th style="width: 95px;">Fecha</th>
                                         <th style="width: 100px;">Etapa</th>
                                         <th style="width: 110px;">Trámite</th>
-                                        <th>Descripción del Trámite</th>
+                                        <th>Descripción</th>
                                         <th style="width: 60px;">Foja</th>
                                     </tr>
                                 </thead>
                                 <tbody id="movimientosBody">
                                     <tr>
-                                        <td colspan="7" class="text-center">Seleccione una causa para ver movimientos</td>
+                                        <td colspan="7" class="text-center">Cargando...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -883,8 +676,8 @@ try {
 
     <footer class="pjud-footer">
         <p>
-            <i class="fas fa-shield-alt"></i> Sistema de Consulta de Causas |
-            <strong>Consulta directa a MySQL (sin APIs HTTP internas)</strong> |
+            <i class="fas fa-code"></i> <strong>Arquitectura: Entity/Repository Pattern (NO Symfony/Doctrine)</strong> |
+            Consultas directas a MySQL (sin APIs HTTP internas) |
             &copy; 2024-2026
         </p>
     </footer>
@@ -892,16 +685,11 @@ try {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ====================================================================
-        // IMPORTANTE: Este JavaScript ya NO hace llamadas a APIs HTTP externas
-        // Todas las consultas son internas al mismo archivo demo.php
-        // ====================================================================
-
         /**
-         * Ver detalle de causa (consulta interna, mismo archivo)
+         * Ver detalle de causa
+         * IMPORTANTE: Consulta al mismo archivo demo.php (endpoint interno), NO a API HTTP externa
          */
         function verDetalle(rit) {
-            // Consultar detalle usando el mismo archivo demo.php con parámetro action
             fetch('<?= $_SERVER['PHP_SELF'] ?>?action=detalle_causa&rit=' + encodeURIComponent(rit))
                 .then(response => response.json())
                 .then(data => {
@@ -910,7 +698,7 @@ try {
                         return;
                     }
 
-                    // Llenar modal con datos
+                    // Llenar modal
                     document.getElementById('modalRit').textContent = data.causa.rit;
                     document.getElementById('detailRit').textContent = data.causa.rit;
                     document.getElementById('detailCaratulado').textContent = data.causa.caratulado || '-';
@@ -923,20 +711,20 @@ try {
                         <tr>
                             <td><span class="folio-badge">${mov.folio || '-'}</span></td>
                             <td>
-                                <div class="documentos-cell">
+                                <div style="display:flex;gap:6px;">
                                     ${mov.tiene_pdf_azul ? `
                                         <button class="action-btn btn-pdf-blue"
                                                 style="width:26px;height:26px;font-size:12px;"
-                                                onclick="abrirPDF('${data.causa.rit}', ${mov.folio}, 'azul')"
-                                                title="Ver PDF Principal">
+                                                onclick="abrirPDF('${data.causa.rit}', '${mov.folio}', 'azul')"
+                                                title="PDF Principal">
                                             <i class="fas fa-file-pdf"></i>
                                         </button>
                                     ` : ''}
                                     ${mov.tiene_pdf_rojo ? `
                                         <button class="action-btn btn-pdf-red"
                                                 style="width:26px;height:26px;font-size:12px;"
-                                                onclick="abrirPDF('${data.causa.rit}', ${mov.folio}, 'rojo')"
-                                                title="Ver PDF Anexo">
+                                                onclick="abrirPDF('${data.causa.rit}', '${mov.folio}', 'rojo')"
+                                                title="PDF Anexo">
                                             <i class="fas fa-file-pdf"></i>
                                         </button>
                                     ` : ''}
@@ -951,17 +739,17 @@ try {
                         </tr>
                     `).join('');
 
-                    // Mostrar modal
                     $('#modalDetalle').modal('show');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al cargar detalle de la causa');
+                    alert('Error al cargar detalle');
                 });
         }
 
         /**
-         * Abrir PDF (consulta interna, mismo archivo)
+         * Abrir PDF
+         * IMPORTANTE: Consulta al mismo archivo demo.php (endpoint interno), NO a API HTTP externa
          */
         function abrirPDF(rit, folio, color) {
             const url = '<?= $_SERVER['PHP_SELF'] ?>?action=descargar_pdf&rit=' +

@@ -82,7 +82,7 @@ async function extractTableAsArray(page) {
   
   console.log(`🔍 Diagnóstico de tabla:`, JSON.stringify(diagnosticInfo, null, 2));
 
-  return await page.$$eval(
+  const rows = await page.$$eval(
     'table.table.table-bordered.table-striped.table-hover tbody tr',
     trs =>
       trs.map((tr, rowIndex) => {
@@ -151,7 +151,7 @@ async function extractTableAsArray(page) {
         };
 
         // Si hay forms, usarlos; si no, usar los enlaces encontrados
-        const pdfs = forms.length > 0 
+        const pdfs = forms.length > 0
           ? forms.map((f, i) => ({
               linkIndex: i,
               tipo: i === 0 ? 'P' : 'R',
@@ -168,7 +168,7 @@ async function extractTableAsArray(page) {
             }));
 
         return {
-          rowIndex: rowIndex, // Guardar índice original para referencia
+          originalRowIndex: rowIndex, // Índice original en el DOM (ANTES del filtrado)
           texto,
           datos_limpios,
           forms,
@@ -176,7 +176,14 @@ async function extractTableAsArray(page) {
           pdfLinks: pdfLinks // Guardar también los enlaces encontrados
         };
       })
-  ).then(r => r.filter(Boolean));
+  );
+
+  // Filtrar filas nulas y recalcular rowIndex basado en la posición final
+  const filteredRows = rows.filter(Boolean);
+  return filteredRows.map((row, index) => ({
+    ...row,
+    rowIndex: row.originalRowIndex // Mantener el índice original del DOM para referencia confiable
+  }));
 }
 
 /**

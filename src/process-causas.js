@@ -4,11 +4,10 @@ const fs = require('fs');
 const path = require('path');
 
 const { readCausaCSV, mapCsvToDB } = require('./read-csv');
-const { getAllCausas } = require('./database/db-mariadb');
 const { startBrowser } = require('./browser');
 const { closeModalIfExists, goToConsultaCausas } = require('./navigation');
-const { fillForm, openDetalle, openDetalleEspecifico } = require('./form');
-const { extractTable, extractTableAsArray } = require('./table');
+const { fillForm, openDetalle } = require('./form');
+const { extractTable } = require('./table');
 const { exportToJSON, exportToCSV, processTableData } = require('./exporter');
 const { downloadPDFsFromTable } = require('./pdfDownloader');
 const { downloadEbook } = require('./ebook');
@@ -169,56 +168,6 @@ function csvToScrapingConfig(csvCausa) {
   };
 }
 
-/**
- * Convierte una causa de la base de datos a configuración para scraping
- */
-function dbCausaToScrapingConfig(dbCausa) {
-  const { rol, año } = extractRolAnio(dbCausa.rit);
-  const tipoCausa = extractTipoCausa(dbCausa.rit);
-  
-  // Extraer tribunal de la BD
-  const tribunal = dbCausa.tribunal_id || null;
-  
-  // Obtener corte: primero de la BD, luego del mapeo de tribunales, finalmente default
-  let corte = dbCausa.corte_id || null;
-  let corteSource = 'BD';
-  
-  if (!corte || corte === 'NULL' || String(corte).trim() === '') {
-    // Si no hay corte en BD, buscarlo en el mapeo usando el tribunal
-    if (tribunal) {
-      corte = getCorteFromTribunal(tribunal);
-      if (corte) {
-        corteSource = 'mapeo';
-      } else {
-        console.warn(`   ⚠️ Tribunal ${tribunal} no encontrado en el mapeo de tribunales`);
-      }
-    }
-    
-    // Si aún no hay corte, usar default '90' (C.A. de Santiago)
-    if (!corte) {
-      corte = '90';
-      corteSource = 'default';
-      if (tribunal) {
-        console.warn(`   ⚠️ Usando corte por defecto '90' para tribunal ${tribunal} (no encontrado en mapeo)`);
-      }
-    }
-  }
-  
-  return {
-    rit: dbCausa.rit,
-    competencia: String(dbCausa.competencia_id || '3'), // Usar de BD o default Civil
-    corte: String(corte), // Obtenido de BD, mapeo o default
-    tribunal: tribunal ? String(tribunal) : null, // De la BD
-    tipoCausa: tipoCausa || dbCausa.tipo_causa || 'C', // Extraído del RIT o de BD
-    rol: rol, // Rol extraído del RIT
-    año: año, // Año extraído del RIT
-    caratulado: dbCausa.caratulado || '',
-    // Datos originales de BD
-    causa_id: dbCausa.id,
-    agenda_id: dbCausa.agenda_id || null
-  };
-}
-
 // Extraer datos básicos de la tabla de resultados (Rol, Fecha, Caratulado)
 async function extractResultadosBasicos(page, config) {
   try {
@@ -235,7 +184,7 @@ async function extractResultadosBasicos(page, config) {
     }
     
     // Extraer datos de la fila que corresponde al RIT buscado
-    const datos = await page.evaluate(({ ritBuscado, rolBuscado }) => {
+    const datos = await page.evaluate((ritBuscado, rolBuscado) => {
       // Buscar en todas las tablas posibles
       const tables = document.querySelectorAll('table, #tablaConsultas');
       
@@ -306,7 +255,7 @@ async function extractResultadosBasicos(page, config) {
       }
       
       return { rol: null, fecha: null, caratulado: null, encontrado: false };
-    }, { ritBuscado: config.rit, rolBuscado: config.rol });
+    }, config.rit, config.rol);
     
     // Si no encontramos en la tabla, usar los datos del config
     if (!datos.encontrado || !datos.rol) {
@@ -372,157 +321,112 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle usando la función estándar openDetalle
-    // (ya se comprobó que abre correctamente el modal y la tabla de movimientos)
-    console.log(`   🔍 Abriendo detalle de la causa...`);
-    await openDetalle(page);
-    console.log(`   ✅ Detalle abierto y verificado`);
+    // PASO 2: Abrir el detalle usando el mismo flujo que el sitio (detalleCausaCivil(token))
+    console.log(`   🔍 Buscando icono de lupa para entrar al detalle...`);
+    try {
+      // 1) Buscar el token del onclick "detalleCausaCivil('TOKEN')" en la fila del RIT
+      const onclickToken = await page.evaluate((ritBuscado) => {
+        const tables = document.querySelectorAll('table, #tablaConsultas');
+        
+        for (const table of tables) {
+          const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
+          
+          for (const row of rows) {
+            const rowText = row.innerText || '';
+            if (!rowText) continue;
+
+            // Emparejar por RIT completo o por la parte numérica del RIT (rol)
+            const partes = ritBuscado.split('-');
+            const rolRit = partes.length >= 2 ? partes[1] : null;
+            const coincideRit = rowText.includes(ritBuscado);
+            const coincideRol = rolRit && rowText.includes(rolRit);
+
+            if (coincideRit || coincideRol) {
+              // Buscar enlace con onclick detalleCausaCivil('TOKEN')
+              const link = row.querySelector('a[onclick*="detalleCausaCivil"]') 
+                        || row.querySelector('a.toggle-modal[title*="Detalle"]') 
+                        || row.querySelector('a[href="#modalDetalleCivil"]');
+
+              if (link) {
+                const onclickAttr = link.getAttribute('onclick') || '';
+                const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                if (match && match[1]) {
+                  return match[1]; // TOKEN JWT que usa el sitio
+                }
+              }
+
+              // Fallback: buscar el icono y su padre <a> con onclick
+              const icon = row.querySelector('i.fa-search.fa-lg, i.fa-search');
+              if (icon) {
+                const parentLink = icon.closest('a');
+                if (parentLink) {
+                  const onclickAttr = parentLink.getAttribute('onclick') || '';
+                  const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
+                  if (match && match[1]) {
+                    return match[1];
+                  }
+                }
+              }
+            }
+          }
+        }
+        return null;
+      }, config.rit);
+
+      if (!onclickToken) {
+        console.log('   ⚠️ No se encontró token de detalleCausaCivil en la tabla, intentando click simple en la lupa...');
+        // Último recurso: clickear el primer enlace de detalle (puede abrir modal vacío)
+        await page.click('a[onclick*="detalleCausaCivil"], a[href="#modalDetalleCivil"], i.fa-search').catch(() => {
+          throw new Error('No se pudo encontrar el icono/enlace de detalle');
+        });
+      } else {
+        // 2) Ejecutar detalleCausaCivil(token) dentro del contexto de la página
+        console.log('   ✅ Token de detalleCausaCivil encontrado, ejecutando función en el navegador...');
+        await page.evaluate((token) => {
+          // La función puede estar en window o en el scope global
+          if (typeof window.detalleCausaCivil === 'function') {
+            window.detalleCausaCivil(token);
+          } else if (typeof detalleCausaCivil === 'function') {
+            detalleCausaCivil(token);
+          } else {
+            // Fallback: buscar cualquier función global que contenga 'detalleCausaCivil'
+            for (const key of Object.keys(window)) {
+              if (key.toLowerCase().includes('detallecausacivil') && typeof window[key] === 'function') {
+                window[key](token);
+                break;
+              }
+            }
+          }
+        }, onclickToken);
+      }
+
+      console.log(`   ✅ Detalle solicitado vía detalleCausaCivil`);
+    } catch (error) {
+      console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
+      throw error;
+    }
     
-    // PASO 4: Extraer tabla de movimientos (con forms para PDFs)
+    // PASO 3: Esperar a que se abra el modal de detalle
+    console.log(`   ⏳ Esperando que se abra el detalle...`);
+    await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
+      timeout: 20000 
+    });
+    await page.waitForTimeout(1500); // Dar tiempo a que cargue completamente
+    console.log(`   ✅ Detalle abierto`);
+    
+    // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);
-    const rows = await extractTableAsArray(page);
+    const rows = await extractTable(page);
     console.log(`   ✅ Extraídas ${rows.length} filas de movimientos`);
 
     // PASO 5: Crear subcarpeta para PDFs
     const pdfDir = path.join(outputDir, 'pdf');
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
 
-    // PASO 6: Descargar PDFs (pasar las filas ya extraídas para evitar duplicar trabajo)
+    // PASO 6: Descargar PDFs
     console.log(`   📄 Descargando PDFs...`);
-    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean, rows) || {};
+    const pdfMapping = await downloadPDFsFromTable(page, context, pdfDir, ritClean) || {};
     console.log(`   ✅ PDFs descargados`);
-
-    // PASO 6a: Procesar datos estructurados (necesario antes de guardar en BD)
-    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
-
-    // PASO 6b: Guardar datos en base de datos
-    try {
-      const { upsertCausa, getCausaByRit, insertMovimientosBatch, registrarPdf, registrarEbook, query } = require('./database/db-mariadb');
-      
-      // Obtener o crear causa en BD
-      const causaData = {
-        rit: config.rit,
-        tipo_causa: config.tipoCausa || 'C',
-        rol: datosAGuardar.rol || config.rol || '',
-        anio: config.año || '',
-        competencia_id: parseInt(config.competencia) || 3,
-        competencia_nombre: 'Civil',
-        corte_id: parseInt(config.corte) || 90,
-        corte_nombre: '',
-        tribunal_id: config.tribunal ? parseInt(config.tribunal) : null,
-        tribunal_nombre: datosAGuardar.caratulado ? datosAGuardar.caratulado.split('/')[1]?.trim() : '',
-        caratulado: datosAGuardar.caratulado || config.caratulado || '',
-        fecha_ingreso: datosAGuardar.fecha || null,
-        estado: 'ACTIVA',
-        etapa: '',
-        total_movimientos: rows.length,
-        total_pdfs: Object.keys(pdfMapping).reduce((acc, k) => {
-          const pdfs = pdfMapping[k];
-          return acc + (pdfs.azul_base64 ? 1 : 0) + (pdfs.rojo_base64 ? 1 : 0);
-        }, 0),
-        scraping_exitoso: true
-      };
-      
-      await upsertCausa(causaData);
-      const causa = await getCausaByRit(config.rit);
-      const causaId = causa?.id;
-      
-      if (causaId) {
-        console.log(`   💾 Guardando movimientos y PDFs en base de datos...`);
-        
-        // Preparar movimientos para guardar
-        const movimientosParaBD = datosProcesados.movimientos.map(mov => {
-          const indice = mov.indice || mov.folio;
-          const pdfs = pdfMapping[indice] || {};
-          
-          return {
-            rit: config.rit,
-            indice: parseInt(indice) || null,
-            folio: mov.folio || indice || null,
-            etapa: mov.etapa || null,
-            tramite: mov.tramite || null,
-            descripcion: mov.descripcion || mov.desc_tramite || null,
-            fecha: mov.fecha || mov.fec_tramite || null,
-            foja: mov.foja || null,
-            tiene_pdf: !!(pdfs.azul_base64 || pdfs.rojo_base64),
-            pdf_principal: pdfs.azul_nombre || null,
-            pdf_anexo: pdfs.rojo_nombre || null,
-            pdf_descargado: !!(pdfs.azul_base64 || pdfs.rojo_base64)
-          };
-        });
-        
-        // Guardar movimientos
-        await insertMovimientosBatch(movimientosParaBD, causaId, config.rit);
-        console.log(`   ✅ ${movimientosParaBD.length} movimientos guardados`);
-        
-        // Guardar PDFs asociados a cada movimiento
-        for (const [indiceStr, pdfData] of Object.entries(pdfMapping)) {
-          const indice = parseInt(indiceStr);
-          if (!indice) continue;
-          
-          // Buscar movimiento_id por indice y rit
-          const [movRows] = await query(
-            'SELECT id FROM movimientos WHERE rit = ? AND indice = ? LIMIT 1',
-            [config.rit, indice]
-          );
-          
-          const movimientoId = movRows.length > 0 ? movRows[0].id : null;
-          
-          // Guardar PDF principal (azul) si existe
-          if (pdfData.azul_base64 && pdfData.azul_nombre) {
-            const tamanoBytes = Buffer.from(pdfData.azul_base64, 'base64').length;
-            await registrarPdf(causaId, movimientoId, config.rit, {
-              tipo: 'PRINCIPAL',
-              nombre_archivo: pdfData.azul_nombre,
-              contenido_base64: pdfData.azul_base64,
-              tamano_bytes: tamanoBytes,
-              descargado: true,
-              fecha_descarga: new Date()
-            });
-          }
-          
-          // Guardar PDF anexo (rojo) si existe
-          if (pdfData.rojo_base64 && pdfData.rojo_nombre) {
-            const tamanoBytes = Buffer.from(pdfData.rojo_base64, 'base64').length;
-            await registrarPdf(causaId, movimientoId, config.rit, {
-              tipo: 'ANEXO',
-              nombre_archivo: pdfData.rojo_nombre,
-              contenido_base64: pdfData.rojo_base64,
-              tamano_bytes: tamanoBytes,
-              descargado: true,
-              fecha_descarga: new Date()
-            });
-          }
-        }
-        
-        console.log(`   ✅ PDFs guardados en base de datos`);
-        
-        // Guardar eBook si existe
-        if (ebookNombre) {
-          const ebookPath = path.join(pdfDir, ebookNombre);
-          if (fs.existsSync(ebookPath)) {
-            const ebookBase64 = require('./pdfDownloader').fileToBase64(ebookPath);
-            if (ebookBase64) {
-              const tamanoBytes = Buffer.from(ebookBase64, 'base64').length;
-              await registrarEbook(causaId, config.rit, {
-                nombre_archivo: ebookNombre,
-                contenido_base64: ebookBase64,
-                tamano_bytes: tamanoBytes,
-                descargado: true,
-                fecha_descarga: new Date()
-              });
-              console.log(`   ✅ eBook guardado en base de datos`);
-            }
-          }
-        }
-      } else {
-        console.warn(`   ⚠️ No se pudo obtener causa_id, datos no guardados en BD`);
-      }
-    } catch (dbError) {
-      console.warn(`   ⚠️ Error guardando en BD: ${dbError.message}`);
-      console.error(dbError);
-      // Continuar aunque falle el guardado en BD
-    }
 
     // PASO 7: Descargar eBook
     console.log(`   📚 Descargando eBook...`);
@@ -561,7 +465,10 @@ async function processCausa(page, context, config, outputDir) {
       ebookNombre = `${ritClean}_ebook.pdf`;
     }
 
-    // PASO 9: Crear payload completo para JSON (datosProcesados ya está definido en PASO 6a)
+    // PASO 9: Procesar datos estructurados
+    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
+
+    // PASO 10: Crear payload completo para JSON
     const payload = {
       rit: config.rit,
       metadata: {
@@ -707,90 +614,41 @@ function isValidForScraping(csvCausa) {
   return true;
 }
 
-// Procesar múltiples causas desde la base de datos
-async function processMultipleCausas(limit = 10, requireTribunal = true, useDatabase = true) {
+// Procesar múltiples causas
+async function processMultipleCausas(limit = 10, requireTribunal = true) {
+  console.log('📂 Leyendo CSV de causas...');
+  
   // Cargar mapeo de tribunales a cortes al inicio
   console.log('🔍 Cargando mapeo de tribunales a cortes...');
   loadTribunalToCorteMap();
   
-  let causas = [];
-  let causasValidas = [];
+  const causas = readCausaCSV();
   
-  if (useDatabase) {
-    console.log('📂 Leyendo causas desde la base de datos...');
-    try {
-      // Obtener causas de la BD (priorizar las que no han sido scraped o necesitan actualización)
-      causas = await getAllCausas({ 
-        pendientes: true, // Solo causas que no han sido scraped o necesitan actualización
-        limit: limit * 2 // Obtener más para filtrar
-      });
-      
-      console.log(`✅ ${causas.length} causas obtenidas de la base de datos`);
-      
-      // Convertir causas de BD a formato para scraping
-      causasValidas = causas
-        .filter(c => c.rit && c.rit.trim() !== '') // Debe tener RIT
-        .map(c => ({
-          ...c,
-          // Asegurar que tenga los campos necesarios
-          tribunal: c.tribunal_id || null,
-          tribunal_id: c.tribunal_id || null,
-          corte: c.corte_id || null,
-          corte_id: c.corte_id || null
-        }));
-      
-      // Filtrar solo las que tienen tribunal si es requerido
-      if (requireTribunal) {
-        causasValidas = causasValidas.filter(c => {
-          const tribunal = c.tribunal_id;
-          return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
-        });
-      }
-      
-      console.log(`\n📊 Causas válidas de BD: ${causasValidas.length}`);
-      console.log(`   Con tribunal/juzgado: ${causasValidas.filter(c => c.tribunal_id).length}`);
-      console.log(`   Sin tribunal/juzgado: ${causasValidas.filter(c => !c.tribunal_id).length}`);
-      console.log(`   ⚠️  IMPORTANTE: Solo se procesarán causas que tengan TRIBUNAL/JUZGADO`);
-      console.log(`   ℹ️  CORTE: Se usará valor por defecto '90' si no está en la BD`);
-      
-    } catch (error) {
-      console.error('❌ Error leyendo causas de la BD:', error.message);
-      console.log('📂 Fallback: Leyendo CSV de causas...');
-      useDatabase = false;
-    }
-  }
+  // Filtrar solo las válidas para scraping
+  let causasValidas = causas.filter(c => isValidForScraping(c));
   
-  // Fallback a CSV si no se pudo leer de BD o si useDatabase es false
-  if (!useDatabase || causasValidas.length === 0) {
-    console.log('📂 Leyendo CSV de causas...');
-    causas = readCausaCSV();
-    
-    // Filtrar solo las válidas para scraping
-    causasValidas = causas.filter(c => isValidForScraping(c));
-    
-    // Mostrar estadísticas de causas válidas
-    const causasConTribunal = causasValidas.filter(c => {
-      const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
-      return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
-    });
-    
-    console.log(`\n📊 Causas válidas: ${causasValidas.length}`);
-    console.log(`   Con tribunal/juzgado: ${causasConTribunal.length}`);
-    console.log(`   Sin tribunal/juzgado: ${causasValidas.length - causasConTribunal.length}`);
-    console.log(`   ⚠️  Nota: Todas las causas con RIT son civiles (competencia = 3)`);
-    console.log(`   ⚠️  IMPORTANTE: Solo se procesarán causas que tengan TRIBUNAL/JUZGADO`);
-    console.log(`   ℹ️  CORTE: Se usará valor por defecto '90' si no está en el CSV`);
-    
-    // Filtrar solo las que tienen tribunal (corte puede ser default)
-    causasValidas = causasValidas.filter(c => {
-      const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
-      return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
-    });
-    
-    const causasDescartadas = causas.length - causasValidas.length;
-    if (causasDescartadas > 0) {
-      console.log(`   ⚠️  Se descartaron ${causasDescartadas} causas por falta de TRIBUNAL/JUZGADO`);
-    }
+  // Mostrar estadísticas de causas válidas
+  const causasConTribunal = causasValidas.filter(c => {
+    const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
+    return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
+  });
+  
+  console.log(`\n📊 Causas válidas: ${causasValidas.length}`);
+  console.log(`   Con tribunal/juzgado: ${causasConTribunal.length}`);
+  console.log(`   Sin tribunal/juzgado: ${causasValidas.length - causasConTribunal.length}`);
+  console.log(`   ⚠️  Nota: Todas las causas con RIT son civiles (competencia = 3)`);
+  console.log(`   ⚠️  IMPORTANTE: Solo se procesarán causas que tengan TRIBUNAL/JUZGADO`);
+  console.log(`   ℹ️  CORTE: Se usará valor por defecto '90' si no está en el CSV`);
+  
+  // Filtrar solo las que tienen tribunal (corte puede ser default)
+  causasValidas = causasValidas.filter(c => {
+    const tribunal = c.tribunal || c.tribunal_id || c.juzgado || c.juzgado_id;
+    return tribunal && tribunal !== 'NULL' && String(tribunal).trim() !== '';
+  });
+  
+  const causasDescartadas = causas.length - causasValidas.length;
+  if (causasDescartadas > 0) {
+    console.log(`   ⚠️  Se descartaron ${causasDescartadas} causas por falta de TRIBUNAL/JUZGADO`);
   }
   
   console.log(`\n📊 Causas válidas para procesar: ${causasValidas.length}`);
@@ -802,37 +660,13 @@ async function processMultipleCausas(limit = 10, requireTribunal = true, useData
   const logDir = path.resolve(__dirname, 'logs');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
   
-  // Validar que la URL esté configurada
-  const ojvUrl = process.env.OJV_URL || 'https://oficinajudicialvirtual.pjud.cl/home/index.php';
-  if (!ojvUrl) {
-    throw new Error('OJV_URL no configurada. Crea un archivo .env con: OJV_URL=https://oficinajudicialvirtual.pjud.cl/home/index.php');
-  }
-  
-  console.log('🌐 URL configurada:', ojvUrl);
- 
-  // Ejecutar navegador en modo NO headless para ver la interacción
-  const { browser, context, page } = await startBrowser(ojvUrl, {
-    headless: false,
-    slowMo: 250 // pequeño delay para poder observar los pasos
-  });
+  const { browser, context, page } = await startBrowser(process.env.OJV_URL);
   
   try {
-    // Esperar un poco más para que la página cargue completamente
-    await page.waitForTimeout(3000);
-    
-    // Verificar página inicial con mejor diagnóstico
+    // Verificar página inicial
     const bodyContent = await page.evaluate(() => document.body.innerText);
-    const pageTitle = await page.title();
-    const pageUrl = page.url();
-    
-    console.log('📄 URL actual:', pageUrl);
-    console.log('📄 Título de la página:', pageTitle);
-    console.log('📄 Contenido del body (primeros 200 chars):', bodyContent ? bodyContent.substring(0, 200) : 'VACÍO');
-    
     if (!bodyContent || bodyContent.trim().length === 0) {
-      // Tomar screenshot para diagnóstico
-      await page.screenshot({ path: path.join(logDir, `error_pagina_blanca_${Date.now()}.png`), fullPage: true });
-      throw new Error(`La página está en blanco. URL: ${pageUrl}, Título: ${pageTitle}. Verifica que la URL sea correcta y que no requiera autenticación.`);
+      throw new Error('La página está en blanco');
     }
     
     await closeModalIfExists(page);
@@ -850,17 +684,16 @@ async function processMultipleCausas(limit = 10, requireTribunal = true, useData
     const causasAProcesar = causasValidas.slice(0, limit);
     
     for (let i = 0; i < causasAProcesar.length; i++) {
-      const causa = causasAProcesar[i];
-      // Usar la función apropiada según si viene de BD o CSV
-      const config = useDatabase ? dbCausaToScrapingConfig(causa) : csvToScrapingConfig(causa);
+      const csvCausa = causasAProcesar[i];
+      const config = csvToScrapingConfig(csvCausa);
       
-      console.log(`\n[${i + 1}/${causasAProcesar.length}] Procesando causa ID: ${causa.id || causa.causa_id}`);
+      console.log(`\n[${i + 1}/${causasAProcesar.length}] Procesando causa ID: ${csvCausa.causa_id}`);
       
       // Validar que tenga tribunal antes de procesar (corte puede ser default)
       if (!config.tribunal || config.tribunal === 'NULL' || String(config.tribunal).trim() === '') {
         console.log(`   ⚠️ Causa saltada: No tiene TRIBUNAL/JUZGADO (RIT: ${config.rit})`);
         resultados.push({
-          causa_id: causa.id || causa.causa_id,
+          causa_id: csvCausa.causa_id,
           rit: config.rit,
           success: false,
           error: 'Falta campo TRIBUNAL/JUZGADO',
@@ -869,11 +702,11 @@ async function processMultipleCausas(limit = 10, requireTribunal = true, useData
         continue;
       }
       
-      // Validar que tenga corte (si no está, ya tiene default '90')
+      // Validar que tenga corte (si no está en CSV, ya tiene default '90')
       if (!config.corte || config.corte === 'NULL' || String(config.corte).trim() === '') {
         console.log(`   ⚠️ Causa saltada: No tiene CORTE (RIT: ${config.rit})`);
         resultados.push({
-          causa_id: causa.id || causa.causa_id,
+          causa_id: csvCausa.causa_id,
           rit: config.rit,
           success: false,
           error: 'Falta campo CORTE',
@@ -884,7 +717,7 @@ async function processMultipleCausas(limit = 10, requireTribunal = true, useData
       
       const resultado = await processCausa(page, context, config, outputDir);
       resultados.push({
-        causa_id: causa.id || causa.causa_id,
+        causa_id: csvCausa.causa_id,
         rit: config.rit,
         ...resultado
       });
@@ -965,7 +798,6 @@ module.exports = {
   processCausa, 
   processMultipleCausas, 
   csvToScrapingConfig,
-  dbCausaToScrapingConfig,
   isValidForScraping,
   loadTribunalToCorteMap,
   getCorteFromTribunal,

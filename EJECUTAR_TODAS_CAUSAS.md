@@ -10,12 +10,12 @@ El scraping ahora se ejecuta en **modo headless** (sin abrir ventana del navegad
 
 ### Procesar TODAS las causas:
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 ### Procesar un número específico de causas:
 ```bash
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 ```
 
 ---

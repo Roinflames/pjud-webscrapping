@@ -92,17 +92,17 @@ RIT: "C-13786-2018"
 
 ## 🚀 Procesar Múltiples Causas
 
-### Script creado: `src/process-csv-causas.js`
+### Script creado: `src/process-causas.js`
 
 ```bash
 # Procesar 5 causas (default)
-node src/process-csv-causas.js
+node src/process-causas.js
 
 # Procesar 10 causas
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 
 # Procesar 50 causas
-node src/process-csv-causas.js 50
+node src/process-causas.js 50
 ```
 
 **Qué hace:**
@@ -157,7 +157,7 @@ WHERE c.id_causa IS NOT NULL;
 ## 🔧 Scripts Disponibles
 
 1. **`src/read-csv.js`** - Lee y analiza el CSV
-2. **`src/process-csv-causas.js`** - Procesa múltiples causas del CSV
+2. **`src/process-causas.js`** - Procesa múltiples causas del CSV
 3. **`src/index.js`** - Procesa una sola causa (desde pjud_config.json)
 
 

@@ -45,7 +45,7 @@ Ahora puedes procesar el CSV filtrado con confianza:
 node src/validate-csv-for-scraping.js
 
 # Procesar causas válidas
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 ```
 
 **Todas las 3,221 causas restantes están listas para scraping consecutivo.**

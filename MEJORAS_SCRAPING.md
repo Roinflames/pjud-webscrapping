@@ -94,12 +94,12 @@ Los movimientos ahora se extraen con estructura clara y se guardan en archivo se
 
 ### Ejecutar con todas las causas:
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 ### Ejecutar con límite:
 ```bash
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 ```
 
 ---

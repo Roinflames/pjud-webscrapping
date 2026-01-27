@@ -78,7 +78,10 @@ try {
 
     if (!$pdf) {
         http_response_code(404);
-        die('PDF no encontrado para este movimiento y tipo');
+        // Mensaje más descriptivo
+        $mensaje = "PDF no encontrado para RIT: $rit, Folio: $folio, Color: $color (Tipo: $tipoPdf)";
+        $mensaje .= "\n\nNota: No todos los movimientos tienen PDF rojo (anexo). Verifica que el movimiento tenga un PDF de este tipo.";
+        die($mensaje);
     }
 
     // Si hay contenido en base64, servirlo

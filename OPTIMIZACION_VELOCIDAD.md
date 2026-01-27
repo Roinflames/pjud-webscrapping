@@ -65,7 +65,7 @@ Aunque reducimos los delays, mantenemos:
 Los delays están optimizados pero puedes ajustarlos si es necesario:
 
 ### Archivos modificados:
-- `src/process-csv-causas.js` - Delays entre causas
+- `src/process-causas.js` - Delays entre causas
 - `src/pdfDownloader.js` - Extracción masiva de URLs
 - `src/form.js` - Delays en formulario
 - `src/navigation.js` - Delays en navegación
@@ -77,7 +77,7 @@ Los delays están optimizados pero puedes ajustarlos si es necesario:
 El comando sigue siendo el mismo:
 
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 Ahora será **mucho más rápido** sin aumentar el riesgo de baneos! ⚡

@@ -1,8 +1,14 @@
 /**
  * WORKER DE COLA DE SCRAPING
  * 
- * Este script escucha la tabla pjud_cola_scraping y ejecuta el scraping
- * automáticamente cuando detecta RITs pendientes.
+ * ⚠️ STANDARD COMPLIANCE: This worker now delegates scraping to processCausa engine.
+ * See docs/scraping-standard.md for the single-engine rule.
+ * 
+ * This worker:
+ * - Listens to pjud_cola_scraping table
+ * - Converts queue items to ScrapingConfig
+ * - Calls processCausa (the engine) for scraping
+ * - Post-processes: imports to intermedia table, marks queue items as done
  * 
  * Uso:
  *   node src/worker_cola_scraping.js
@@ -13,13 +19,10 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const path = require('path');
+const fs = require('fs');
 const { startBrowser } = require('./browser');
-const { downloadPDFsFromTable } = require('./pdfDownloader');
-const { downloadEbook } = require('./ebook');
-const { fillForm, openDetalle, resetForm } = require('./form');
-const { extractTable } = require('./table');
-const { closeModalIfExists } = require('./navigation');
-const { processTableData } = require('./dataProcessor');
+const { goToConsultaCausas } = require('./navigation');
+const { processCausa } = require('./process-causas');
 const { importarAMovimientosIntermedia } = require('./importar_intermedia_sql');
 const { validarParaScraping } = require('./utils/validacion-pjud');
 const { crearTablaCola } = require('./utils/crear-tabla-cola');
@@ -137,102 +140,61 @@ async function procesarRIT(colaItem) {
     await marcarProcesando(connection, colaItem.rit);
     
     // Usar configuración validada
-    const config = validacion.config;
+    const scrapingConfig = validacion.config;
     
     // Inicializar navegador si no está abierto
     if (!browser) {
       console.log('🌐 Iniciando navegador...');
-      const browserData = await startBrowser('https://oficinajudicialvirtual.pjud.cl/indexN.php');
+      const browserData = await startBrowser(process.env.OJV_URL || 'https://oficinajudicialvirtual.pjud.cl/indexN.php');
       browser = browserData.browser;
       context = browserData.context;
       page = browserData.page;
       
-      // Manejo inicial de sesión
-      await closeModalIfExists(page);
-      const currentUrl = page.url();
-      
-      if (currentUrl.includes('home/index.php')) {
-        console.log('🔐 Estableciendo sesión de invitado...');
-        await page.evaluate(async () => {
-          const response = await fetch('../includes/sesion-invitado.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'nombreAcceso=CC'
-          });
-          localStorage.setItem('logged-in', 'true');
-          return response.ok;
-        });
-        await page.goto('https://oficinajudicialvirtual.pjud.cl/indexN.php', { 
-          waitUntil: 'domcontentloaded' 
-        });
-      }
+      // Navegar a consulta causas
+      await goToConsultaCausas(page);
     }
     
-    // Ejecutar scraping
-    console.log(`📝 Llenando formulario para RIT: ${config.rit}...`);
-    await fillForm(page, config);
-    await openDetalle(page);
-    
-    // Extraer tabla
-    const rows = await extractTable(page);
-    if (!rows || rows.length === 0) {
-      throw new Error('No se pudieron extraer movimientos de la tabla');
-    }
-    
-    // Descargar PDFs
+    // ✅ DELEGATE TO ENGINE: Use processCausa for all scraping
     const outputDir = path.resolve(__dirname, 'outputs');
-    if (!require('fs').existsSync(outputDir)) {
-      require('fs').mkdirSync(outputDir, { recursive: true });
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
     
-    const pdfMapping = await downloadPDFsFromTable(page, context, outputDir, config.rit) || {};
-
+    console.log(`📝 Ejecutando scraping para RIT: ${scrapingConfig.rit} (via processCausa engine)...`);
+    const resultado = await processCausa(page, context, scrapingConfig, outputDir);
     
-    // Descargar eBook
-    await downloadEbook(page, context, config, outputDir);
-    
-    // Identificar PDF de demanda
-    const ritClean = config.rit.replace(/[^a-zA-Z0-9]/g, '_');
-    let demandaNombre = null;
-    const movDemanda = rows.find(r => 
-      r.texto && r.texto[5] && r.texto[5].toLowerCase().includes('demanda')
-    );
-    if (movDemanda) {
-      const indiceMov = parseInt(movDemanda.texto[0]) || null;
-      if (indiceMov && pdfMapping[indiceMov] && pdfMapping[indiceMov].azul) {
-        const pdfPrincipal = pdfMapping[indiceMov].azul;
-        const oldPath = path.join(outputDir, pdfPrincipal);
-        const newPath = path.join(outputDir, `${ritClean}_demanda.pdf`);
-        if (require('fs').existsSync(oldPath)) {
-          require('fs').copyFileSync(oldPath, newPath);
-          demandaNombre = `${ritClean}_demanda.pdf`;
-          console.log(`   ✅ PDF de demanda guardado: ${demandaNombre}`);
-        }
-      }
+    if (!resultado.success) {
+      throw new Error(resultado.error || 'Error desconocido en scraping');
     }
     
-    // Verificar eBook
-    const ebookNombre = require('fs').existsSync(path.join(outputDir, `${ritClean}_ebook.pdf`)) 
-      ? `${ritClean}_ebook.pdf` 
-      : null;
+    // Post-process: Read JSON generated by processCausa and import to intermedia table
+    const ritClean = scrapingConfig.rit.replace(/[^a-zA-Z0-9]/g, '_');
+    const jsonPath = path.join(outputDir, 'causas', `${ritClean}.json`);
     
-    // Procesar datos
-    const datosProcesados = processTableData(rows, config.rit, pdfMapping);
+    if (!fs.existsSync(jsonPath)) {
+      throw new Error(`JSON generado por processCausa no encontrado en: ${jsonPath}`);
+    }
     
-    // Importar a SQL (con guardado de SQL)
+    const payload = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+    
+    // Identificar demanda y ebook desde el payload
+    const demandaNombre = payload.demanda || null;
+    const ebookNombre = payload.ebook || null;
+    
+    // Importar a SQL intermedia (con guardado de SQL)
     await importarAMovimientosIntermedia(
-      config.rit, 
-      datosProcesados, 
-      config, 
-      pdfMapping, 
+      scrapingConfig.rit, 
+      {
+        movimientos: payload.movimientos || [],
+        cabecera: payload.cabecera || {},
+        estado_actual: payload.estado_actual || {}
+      }, 
+      scrapingConfig, 
+      payload.pdf_mapping || {}, 
       true,  // guardarSQL
       demandaNombre, 
       ebookNombre
     );
-    
-    // Volver al formulario para siguiente RIT
-    await resetForm(page);
-    await page.waitForTimeout(2000);
     
     // Marcar como completado
     await marcarCompletado(connection, colaItem.rit, true);

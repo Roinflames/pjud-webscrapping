@@ -1,0 +1,28 @@
+{
+  "sessions": [
+    {
+      "id": "48da5cae-85e0-4ac6-a87e-550da4c17c04",
+      "name": "Session 1",
+      "createdAt": 1769479250848,
+      "lastUsed": 1769512310573,
+      "model": "sonnet",
+      "wasPreExisting": false,
+      "terminalId": "d31c1e5b-dd83-44a9-99a5-18bd6eaf298e"
+    },
+    {
+      "id": "dd6d18b1-1fb0-4a70-a6e9-117e8c7e290c",
+      "name": "Session 2",
+      "createdAt": 1769481849557,
+      "lastUsed": 1769522671070,
+      "model": "sonnet",
+      "wasPreExisting": true,
+      "terminalId": "5191efa6-5b5d-4c16-8d3b-1a8826746207"
+    }
+  ],
+  "defaultModel": "sonnet",
+  "mcpPreferences": {
+    "enableDesktop": true,
+    "enableCode": true,
+    "selectedServers": []
+  }
+}

@@ -102,7 +102,7 @@ start-monitoring.ps1   # Script PowerShell para Windows
 {
   "scripts": {
     "metrics": "node src/monitoring/metrics-server.js",
-    "scrape": "node src/process-csv-causas.js",
+    "scrape": "node src/process-causas.js",
     "scrape:single": "node src/index.js",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",

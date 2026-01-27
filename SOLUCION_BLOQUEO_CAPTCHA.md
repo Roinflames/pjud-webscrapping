@@ -42,7 +42,7 @@ El PJUD ha implementado reCAPTCHA y posiblemente ha bloqueado la IP debido a dem
 ```
 
 ### Opción 3: Reducir Velocidad Manualmente
-Edita `src/process-csv-causas.js` y aumenta los delays:
+Edita `src/process-causas.js` y aumenta los delays:
 ```javascript
 // Línea ~270: Aumentar delay entre causas
 const delay = 10000 + Math.random() * 20000; // 10-30 segundos
@@ -51,7 +51,7 @@ const delay = 10000 + Math.random() * 20000; // 10-30 segundos
 ### Opción 4: Procesar en Lotes Pequeños
 ```bash
 # Procesa solo 10-20 causas a la vez
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 ```
 
 ## 📋 Archivos Modificados
@@ -64,7 +64,7 @@ node src/process-csv-causas.js 10
    - Rotación de user-agents
    - Headers HTTP adicionales
 
-3. **`src/process-csv-causas.js`**
+3. **`src/process-causas.js`**
    - Verificación de CAPTCHA después de cada causa
    - Delays aumentados significativamente
    - Guardado de causas pendientes
@@ -110,11 +110,11 @@ El script ahora:
 
 ```bash
 # Procesar solo 10 causas con delays largos
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 
 # Si funciona bien, aumentar gradualmente
-node src/process-csv-causas.js 50
-node src/process-csv-causas.js 100
+node src/process-causas.js 50
+node src/process-causas.js 100
 ```
 
 ---

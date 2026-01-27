@@ -78,7 +78,7 @@ Después de procesar cada causa:
 - ✅ Manejo de campos deshabilitados
 - ✅ Delays aumentados entre campos (500-1000ms)
 
-### `src/process-csv-causas.js`:
+### `src/process-causas.js`:
 - ✅ Cierre de modales después de cada causa
 - ✅ Verificación de URL antes de continuar
 - ✅ Manejo mejorado de errores
@@ -90,7 +90,7 @@ Después de procesar cada causa:
 Ejecuta de nuevo el scraping:
 
 ```bash
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 ```
 
 Ahora debería funcionar correctamente, esperando a que cada campo se habilite antes de intentar seleccionarlo.

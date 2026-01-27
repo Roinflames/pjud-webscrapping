@@ -57,7 +57,7 @@ El scraping ahora:
 El comando sigue siendo el mismo:
 
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 Ahora será **más rápido** al omitir siempre el tribunal! ⚡

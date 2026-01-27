@@ -90,7 +90,7 @@ Ahora verás:
 El comando sigue siendo el mismo:
 
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 Ahora será mucho más rápido y eficiente! ⚡

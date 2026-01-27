@@ -16,9 +16,9 @@ Sistema RPA (Robotic Process Automation) para extraer información de causas jud
 npm run scrape:single          # node src/index.js
 
 # Batch processing (production, headless=true)
-npm run scrape                 # node src/process-csv-causas.js
-node src/process-csv-causas.js 10    # Process 10 causas
-node src/process-csv-causas.js 0     # Process all (3,221 causas)
+npm run scrape                 # node src/process-causas.js
+node src/process-causas.js 10    # Process 10 causas
+node src/process-causas.js 0     # Process all (3,221 causas)
 
 # Monitoring stack
 npm run docker:up              # Start Prometheus + Grafana + AlertManager

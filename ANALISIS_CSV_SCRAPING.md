@@ -135,7 +135,7 @@ Problemas específicos:
    node src/validate-csv-for-scraping.js
    
    # Procesar solo causas válidas
-   node src/process-csv-causas.js 100
+   node src/process-causas.js 100
    ```
 
 ---

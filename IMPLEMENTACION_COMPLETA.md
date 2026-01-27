@@ -233,7 +233,7 @@ CREATE TABLE cuadernos (...)
 
 ### 1. Conectar Scraper a MySQL
 ```javascript
-// En src/process-csv-causas.js
+// En src/process-causas.js
 const mysql = require('mysql2/promise');
 
 async function guardarCausaEnBD(causa, movimientos, pdfs) {

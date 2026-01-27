@@ -62,7 +62,7 @@ if (!hasForm) {
 }
 ```
 
-### `src/process-csv-causas.js`:
+### `src/process-causas.js`:
 ```javascript
 // Verificar que estamos en el formulario (no navegar si ya estamos ahí)
 const hasForm = await page.$('#competencia') !== null;
@@ -83,7 +83,7 @@ if (!hasForm && !currentUrl.includes('consulta')) {
 Ejecuta de nuevo:
 
 ```bash
-node src/process-csv-causas.js 5
+node src/process-causas.js 5
 ```
 
 Ahora debería:

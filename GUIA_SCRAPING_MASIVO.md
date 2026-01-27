@@ -33,16 +33,16 @@ npm run scrape:batch 0
 
 ```bash
 # Procesar 10 causas (por defecto)
-node src/process-csv-causas.js
+node src/process-causas.js
 
 # Procesar 50 causas
-node src/process-csv-causas.js 50
+node src/process-causas.js 50
 
 # Procesar 100 causas
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 
 # Procesar TODAS las causas (0 = todas)
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 ---
@@ -53,10 +53,10 @@ Si el scraping se detuvo (por error, bloqueo, etc.), puedes reanudar desde donde
 
 ```bash
 # Reanudar desde el último checkpoint
-node src/process-csv-causas.js 0 --resume
+node src/process-causas.js 0 --resume
 
 # O con la forma corta
-node src/process-csv-causas.js 0 -r
+node src/process-causas.js 0 -r
 ```
 
 **Nota**: El checkpoint guarda solo las causas exitosas, así que las que fallaron se reintentarán automáticamente.
@@ -67,25 +67,25 @@ node src/process-csv-causas.js 0 -r
 
 ### Ejemplo 1: Prueba Pequeña (5 causas)
 ```bash
-node src/process-csv-causas.js 5
+node src/process-causas.js 5
 ```
 Ideal para probar que todo funciona correctamente antes de procesar grandes cantidades.
 
 ### Ejemplo 2: Lote Mediano (50 causas)
 ```bash
-node src/process-csv-causas.js 50
+node src/process-causas.js 50
 ```
 Procesa 50 causas con delays entre cada una para evitar bloqueos.
 
 ### Ejemplo 3: Lote Grande (200 causas)
 ```bash
-node src/process-csv-causas.js 200
+node src/process-causas.js 200
 ```
 Procesa hasta 200 causas. El script verificará bloqueos después de cada causa.
 
 ### Ejemplo 4: Todas las Causas
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 Procesa **todas** las causas válidas del CSV. ⚠️ Esto puede tardar horas o días.
 
@@ -120,7 +120,7 @@ Para evitar bloqueos, el script:
 
 Por defecto hay un límite de **150 causas por día** para evitar bloqueos. Puedes modificarlo en:
 - Archivo: `src/daily_count.json`
-- Variable: `DEFAULT_DAILY_LIMIT` en `src/process-csv-causas.js`
+- Variable: `DEFAULT_DAILY_LIMIT` en `src/process-causas.js`
 
 ---
 
@@ -180,7 +180,7 @@ Si el script detecta un bloqueo/CAPTCHA:
 **Para continuar después:**
 ```bash
 # Espera 30-60 minutos y luego:
-node src/process-csv-causas.js 0 --resume
+node src/process-causas.js 0 --resume
 ```
 
 ---
@@ -232,14 +232,14 @@ cat src/logs/causas_pendientes_*.json
 
 Si quieres procesar solo causas que tienen tribunal especificado (mayor tasa de éxito):
 
-Edita `src/process-csv-causas.js` línea ~149:
+Edita `src/process-causas.js` línea ~149:
 ```javascript
 const requireTribunal = true; // Cambiar a true
 ```
 
 ### Aumentar Delays
 
-Para reducir riesgo de bloqueo, aumenta los delays en `src/process-csv-causas.js`:
+Para reducir riesgo de bloqueo, aumenta los delays en `src/process-causas.js`:
 
 ```javascript
 // Línea ~398: Delay entre causas
@@ -258,13 +258,13 @@ Edita `src/browser.js` o pasa `headless: true` a `startBrowser()`.
 
 ```bash
 # 1. Primera ejecución: 50 causas
-node src/process-csv-causas.js 50
+node src/process-causas.js 50
 
 # 2. Si se bloquea, espera 30-60 minutos y reanuda:
-node src/process-csv-causas.js 0 --resume
+node src/process-causas.js 0 --resume
 
 # 3. Continuar con más causas:
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 
 # 4. Verificar resultados:
 ls -lh src/outputs/*.json | wc -l  # Contar causas procesadas
@@ -295,16 +295,16 @@ ls -lh src/outputs/*.json | wc -l  # Contar causas procesadas
 
 ```bash
 # Procesar 10 causas (prueba)
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 
 # Procesar 50 causas (lote mediano)
-node src/process-csv-causas.js 50
+node src/process-causas.js 50
 
 # Procesar todas las causas
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 
 # Reanudar desde checkpoint
-node src/process-csv-causas.js 0 --resume
+node src/process-causas.js 0 --resume
 
 # Usar script npm
 npm run scrape:batch 50

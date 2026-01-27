@@ -187,7 +187,7 @@ Este documento detalla el **costo real** de TODO lo desarrollado en este proyect
 **Archivos:**
 - `src/worker_cola_scraping.js`
 - `src/agregar_a_cola.js`
-- `src/process-csv-causas.js`
+- `src/process-causas.js`
 
 **Funcionalidades:**
 - ✅ Procesamiento continuo de cola

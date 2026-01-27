@@ -88,7 +88,7 @@ curl -I "http://localhost:8000/api/descargar_pdf.php?rit=C-16707-2019&folio=1&co
 
 1. **Ejecutar Scraping Real**: 
    ```bash
-   node src/process-csv-causas.js
+   node src/process-causas.js
    ```
    Esto poblará la BD con PDFs reales desde PJUD.
 

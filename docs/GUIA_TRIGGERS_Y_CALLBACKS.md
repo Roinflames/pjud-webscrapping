@@ -104,7 +104,7 @@ registrarCallback('onError', async (error, context) => {
 ```bash
 node src/index.js
 # o
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 ```
 
 ### Ejemplo Completo
@@ -130,7 +130,7 @@ registrarCallback('afterInsert', async (movimiento, connection) => {
 require('./mis_callbacks');
 ```
 
-Luego en `src/index.js` o `src/process-csv-causas.js`, agrega al inicio:
+Luego en `src/index.js` o `src/process-causas.js`, agrega al inicio:
 
 ```javascript
 // Cargar callbacks personalizados

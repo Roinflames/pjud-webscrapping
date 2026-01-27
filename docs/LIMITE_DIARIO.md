@@ -47,20 +47,20 @@ Se ha implementado un sistema de **límite diario** de causas procesadas para cu
 
 ### Comando básico:
 ```bash
-node src/process-csv-causas.js [limit] [resumeFromLast] [dailyLimit]
+node src/process-causas.js [limit] [resumeFromLast] [dailyLimit]
 ```
 
 ### Ejemplos:
 
 ```bash
 # Procesar 10 causas con límite diario por defecto (150)
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 
 # Procesar 50 causas, empezando desde el inicio, con límite diario de 200
-node src/process-csv-causas.js 50 false 200
+node src/process-causas.js 50 false 200
 
 # Procesar 20 causas, continuando desde el último, con límite diario de 100
-node src/process-csv-causas.js 20 true 100
+node src/process-causas.js 20 true 100
 ```
 
 ### Parámetros:
@@ -114,7 +114,7 @@ node src/process-csv-causas.js 20 true 100
 
 ### Cambiar el límite diario por defecto:
 
-Edita `src/process-csv-causas.js` y modifica:
+Edita `src/process-causas.js` y modifica:
 
 ```javascript
 const DEFAULT_DAILY_LIMIT = 150; // Cambiar a tu límite preferido

@@ -67,15 +67,15 @@ agenda.cuenta_id      ← cuenta_id (puede ser NULL)
 
 ## 🚀 Procesamiento Múltiple de Causas
 
-### Script creado: `src/process-csv-causas.js`
+### Script creado: `src/process-causas.js`
 
 **Uso:**
 ```bash
 # Procesar 5 causas (default)
-node src/process-csv-causas.js
+node src/process-causas.js
 
 # Procesar 10 causas
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 ```
 
 **Qué hace:**
@@ -101,7 +101,7 @@ node src/process-csv-causas.js 10
 
 ### Nuevos:
 - ✅ `src/read-csv.js` - Lee y analiza CSV
-- ✅ `src/process-csv-causas.js` - Procesa múltiples causas
+- ✅ `src/process-causas.js` - Procesa múltiples causas
 - ✅ `MAPEO_CSV_BD.md` - Documentación del mapeo
 - ✅ `RESUMEN_CAMBIOS.md` - Este archivo
 
@@ -122,7 +122,7 @@ node src/process-csv-causas.js 10
 
 2. **Procesar múltiples causas:**
    ```bash
-   node src/process-csv-causas.js 5
+   node src/process-causas.js 5
    ```
 
 3. **Analizar CSV:**

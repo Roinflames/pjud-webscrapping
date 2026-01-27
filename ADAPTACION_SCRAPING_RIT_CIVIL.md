@@ -9,7 +9,7 @@
 
 ## 📝 Cambios en el Código
 
-### 1. `src/process-csv-causas.js`
+### 1. `src/process-causas.js`
 
 #### Función `csvToScrapingConfig()`:
 - ✅ **Competencia SIEMPRE = '3'** (Civil)
@@ -61,7 +61,7 @@
 
 ```bash
 # Procesar causas del CSV
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 ```
 
 El scraping ahora:

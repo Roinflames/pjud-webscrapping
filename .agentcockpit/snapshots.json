@@ -1,0 +1,262 @@
+{
+  "snapshots": [
+    {
+      "version": 1,
+      "commitHash": "c836fc5f2341c4c6f3510b4afe3f54764e46d126",
+      "tag": "snapshot-v1",
+      "timestamp": 1769478755000,
+      "message": "Snapshot V1",
+      "filesChanged": [
+        "public/api/causa.php"
+      ]
+    },
+    {
+      "version": 2,
+      "commitHash": "4b50d9c09eae0a4bac74c45d070e2c14e0774552",
+      "tag": "snapshot-v2",
+      "timestamp": 1769478840000,
+      "message": "Snapshot V2",
+      "filesChanged": [
+        "public/api/causa.php"
+      ]
+    },
+    {
+      "version": 3,
+      "commitHash": "6b5b2efad5dc0eb8c19c4b223720af1f8f07061f",
+      "tag": "snapshot-v3",
+      "timestamp": 1769479785639,
+      "message": "Snapshot V3",
+      "filesChanged": [
+        "actualizar_datos_prueba_completo.sql",
+        "actualizar_schema_cuadernos.sql",
+        "public/api/causa.php",
+        "public/index.php"
+      ]
+    },
+    {
+      "version": 4,
+      "commitHash": "385241b98252cba43381acf5f9af12a84c9686df",
+      "tag": "snapshot-v4",
+      "timestamp": 1769480029697,
+      "message": "Snapshot V4",
+      "filesChanged": [
+        "IMPLEMENTACION_COMPLETA.md",
+        "RESUMEN_CUADERNOS_Y_PDFS.md",
+        "poblar_pdfs_prueba.sql",
+        "public/api/descargar_pdf.php",
+        "public/index.php"
+      ]
+    },
+    {
+      "version": 5,
+      "commitHash": "fbf62cc5742253db88b88cc5a59e2e7d40640b81",
+      "tag": "snapshot-v5",
+      "timestamp": 1769480357569,
+      "message": "Snapshot V5",
+      "filesChanged": [
+        "PROBLEMA_RESUELTO.md",
+        "poblar_todos_pdfs.sql"
+      ]
+    },
+    {
+      "version": 6,
+      "commitHash": "ef8fd7334a37b252054cd077b92c7634e9a665c0",
+      "tag": "snapshot-v6",
+      "timestamp": 1769480556375,
+      "message": "Snapshot V6",
+      "filesChanged": [
+        "PDFS_CORREGIDOS.md",
+        "actualizar_pdfs_visibles.sql",
+        "crear_pdf_visible.py"
+      ]
+    },
+    {
+      "version": 7,
+      "commitHash": "88e69ab78a5448b2622ece921332512470bb2ccf",
+      "tag": "snapshot-v7",
+      "timestamp": 1769480751372,
+      "message": "Snapshot V7",
+      "filesChanged": [
+        "generar_pdfs_realistas.py",
+        "pdfs_realistas.sql"
+      ]
+    },
+    {
+      "version": 8,
+      "commitHash": "20888123e21e4679ef6f7fadae2be19da849eeb8",
+      "tag": "snapshot-v8",
+      "timestamp": 1769481812000,
+      "message": "Snapshot V8",
+      "filesChanged": [
+        "RESUMEN_AUDITORIA_COMPLETA.md",
+        "public/api/causa.php",
+        "public/api/descargar_pdf.php",
+        "public/index.php",
+        "public/src/Config/Database.php",
+        "public/src/Controller/CausaController.php",
+        "public/src/Entity/Causa.php",
+        "public/src/Entity/Ebook.php",
+        "public/src/Entity/Movimiento.php",
+        "public/src/Entity/PDF.php",
+        "public/src/Form/CausaForm.php",
+        "public/src/README.md",
+        "public/src/Repository/CausaRepository.php",
+        "public/src/Repository/EbookRepository.php",
+        "public/src/Repository/MovimientoRepository.php",
+        "public/src/Repository/PDFRepository.php",
+        "public/src/autoload.php",
+        "src/api/db-service.js",
+        "src/database/db-mariadb.js",
+        "src/process-csv-causas.js"
+      ]
+    },
+    {
+      "version": 9,
+      "commitHash": "f25e51017a3a5a7e5c420a9f2b7b71f28215c1e6",
+      "tag": "snapshot-v9",
+      "timestamp": 1769512681989,
+      "message": "Snapshot V9",
+      "filesChanged": [
+        "src/config/pjud_config.json"
+      ]
+    },
+    {
+      "version": 10,
+      "commitHash": "0fd28afc0b908999ea892ba208b3ed625311bfdc",
+      "tag": "snapshot-v10",
+      "timestamp": 1769512849932,
+      "message": "Snapshot V10",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 11,
+      "commitHash": "6a29a4f26e69cc62b4d518ebf392790d5d32b3a2",
+      "tag": "snapshot-v11",
+      "timestamp": 1769513577046,
+      "message": "Snapshot V11",
+      "filesChanged": [
+        "src/config/pjud_config.json"
+      ]
+    },
+    {
+      "version": 12,
+      "commitHash": "95022910e9f60714f76c56f3d6f2e0788b980e08",
+      "tag": "snapshot-v12",
+      "timestamp": 1769513708154,
+      "message": "Snapshot V12",
+      "filesChanged": [
+        "causas_con_pdfs.csv"
+      ]
+    },
+    {
+      "version": 13,
+      "commitHash": "60672b0035466abe44cea2ff00da17bb654041e0",
+      "tag": "snapshot-v13",
+      "timestamp": 1769513814348,
+      "message": "Snapshot V13",
+      "filesChanged": [
+        "causas_con_pdfs.csv"
+      ]
+    },
+    {
+      "version": 14,
+      "commitHash": "131169bb188b5c7f55aaf0527c53ee7a3033c97c",
+      "tag": "snapshot-v14",
+      "timestamp": 1769514205627,
+      "message": "Snapshot V14",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 15,
+      "commitHash": "34dd3dc1a888f9339602cfd0e38000ec7ac8906c",
+      "tag": "snapshot-v15",
+      "timestamp": 1769514449965,
+      "message": "Snapshot V15",
+      "filesChanged": [
+        "src/table.js"
+      ]
+    },
+    {
+      "version": 16,
+      "commitHash": "f9fd6774a90c783c692c5f5f67af3d6e6009130d",
+      "tag": "snapshot-v16",
+      "timestamp": 1769514724637,
+      "message": "Snapshot V16",
+      "filesChanged": [
+        "src/form.js",
+        "src/process-csv-causas.js"
+      ]
+    },
+    {
+      "version": 17,
+      "commitHash": "077a49e4ec681087fac4fdc0a9b648461ac66b9d",
+      "tag": "snapshot-v17",
+      "timestamp": 1769514856767,
+      "message": "Snapshot V17",
+      "filesChanged": [
+        "error_detalle_especifico.png"
+      ]
+    },
+    {
+      "version": 18,
+      "commitHash": "d0f706ef857c2870bbf05e0c83a6a619d1b1ef59",
+      "tag": "snapshot-v18",
+      "timestamp": 1769514984012,
+      "message": "Snapshot V18",
+      "filesChanged": [
+        "src/form.js"
+      ]
+    },
+    {
+      "version": 19,
+      "commitHash": "9c266f0ca515a293db6508c2751a0e8c0d664ce8",
+      "tag": "snapshot-v19",
+      "timestamp": 1769515202730,
+      "message": "Snapshot V19",
+      "filesChanged": [
+        "src/form.js"
+      ]
+    },
+    {
+      "version": 20,
+      "commitHash": "5fd65f0dab832223009e96f3c15003c043c8cbf0",
+      "tag": "snapshot-v20",
+      "timestamp": 1769515562520,
+      "message": "Snapshot V20",
+      "filesChanged": [
+        "src/form.js"
+      ]
+    },
+    {
+      "version": 21,
+      "commitHash": "42091cf31a5bbd290789174c092967bb38ff4ec6",
+      "tag": "snapshot-v21",
+      "timestamp": 1769515914426,
+      "message": "Snapshot V21",
+      "filesChanged": [
+        "src/database/db-mariadb.js",
+        "src/pdfDownloader.js",
+        "src/process-csv-causas.js",
+        "src/table.js"
+      ]
+    },
+    {
+      "version": 22,
+      "commitHash": "3a9fe247a8151e7147c826a58264b514fe86479f",
+      "tag": "snapshot-v22",
+      "timestamp": 1769516051710,
+      "message": "Snapshot V22",
+      "filesChanged": [
+        "src/database/db-mariadb.js"
+      ]
+    }
+  ],
+  "nextVersion": 23,
+  "currentVersion": 22
+}

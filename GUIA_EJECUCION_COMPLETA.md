@@ -28,7 +28,7 @@ echo "OJV_URL=https://oficinajudicialvirtual.pjud.cl/home/index.php" > .env
 ### Opción 1: Procesar TODAS las causas (3,221 causas)
 
 ```bash
-node src/process-csv-causas.js 0
+node src/process-causas.js 0
 ```
 
 **Características:**
@@ -44,13 +44,13 @@ node src/process-csv-causas.js 0
 
 ```bash
 # Procesar 10 causas
-node src/process-csv-causas.js 10
+node src/process-causas.js 10
 
 # Procesar 100 causas
-node src/process-csv-causas.js 100
+node src/process-causas.js 100
 
 # Procesar 500 causas
-node src/process-csv-causas.js 500
+node src/process-causas.js 500
 ```
 
 ---
@@ -175,7 +175,7 @@ Si el proceso se detiene, puedes reanudarlo:
 2. **Los archivos JSON/CSV existentes se sobrescribirán**
 3. **Ejecuta nuevamente:**
    ```bash
-   node src/process-csv-causas.js 0
+   node src/process-causas.js 0
    ```
 
 El sistema procesará todas las causas, pero omitirá los PDFs que ya existen.
@@ -233,7 +233,7 @@ cat src/outputs/causas_fallidas.json | jq 'length'
 
 ```bash
 # Ejecutar en segundo plano (recomendado para procesos largos)
-nohup node src/process-csv-causas.js 0 > scraping.log 2>&1 &
+nohup node src/process-causas.js 0 > scraping.log 2>&1 &
 
 # Ver el progreso en tiempo real
 tail -f scraping.log
@@ -242,7 +242,7 @@ tail -f scraping.log
 ### Para detener el proceso:
 ```bash
 # Encontrar el proceso
-ps aux | grep "node src/process-csv-causas.js"
+ps aux | grep "node src/process-causas.js"
 
 # Detenerlo (reemplaza PID con el número del proceso)
 kill PID
@@ -265,7 +265,7 @@ kill PID
 
 ```bash
 # Todo en uno: verificar y ejecutar
-node --version && npm install && node src/process-csv-causas.js 0
+node --version && npm install && node src/process-causas.js 0
 ```
 
 ¡Listo para ejecutar! 🎉

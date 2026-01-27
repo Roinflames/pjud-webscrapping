@@ -1,0 +1,712 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Consulta Unificada de Causas - Poder Judicial{% endblock %}
+
+{% block stylesheets %}
+<style>
+    /* Estilo PJUD oficial replicado */
+    :root {
+        --pjud-blue: #003d7a;
+        --pjud-light-blue: #0066cc;
+        --pjud-gray: #f4f4f4;
+        --pjud-border: #dddddd;
+    }
+
+    body {
+        background-color: #ffffff;
+        font-family: 'Roboto', Arial, sans-serif;
+        font-size: 14px;
+    }
+
+    /* Header PJUD */
+    .pjud-header {
+        background-color: var(--pjud-blue);
+        color: white;
+        padding: 15px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .pjud-header .logo {
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+    }
+
+    .pjud-header .logo i {
+        font-size: 32px;
+        margin-right: 12px;
+    }
+
+    .pjud-header .subtitle {
+        font-size: 12px;
+        opacity: 0.9;
+        margin-top: 2px;
+    }
+
+    /* Breadcrumb PJUD */
+    .pjud-breadcrumb {
+        background-color: var(--pjud-gray);
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--pjud-border);
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .pjud-breadcrumb a {
+        color: var(--pjud-light-blue);
+        text-decoration: none;
+    }
+
+    .pjud-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    /* Panel de búsqueda (formulario PJUD) */
+    .search-panel {
+        background: white;
+        border: 1px solid var(--pjud-border);
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .search-panel h4 {
+        color: var(--pjud-blue);
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--pjud-light-blue);
+    }
+
+    .search-panel .form-label {
+        font-weight: 500;
+        font-size: 13px;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .search-panel .form-control {
+        font-size: 14px;
+        height: 38px;
+    }
+
+    .btn-pjud-search {
+        background-color: var(--pjud-light-blue);
+        color: white;
+        font-weight: 500;
+        padding: 10px 30px;
+        border: none;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn-pjud-search:hover {
+        background-color: var(--pjud-blue);
+        color: white;
+    }
+
+    /* Tabla de resultados (estilo PJUD) */
+    .results-panel {
+        background: white;
+        border: 1px solid var(--pjud-border);
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .results-panel-header {
+        background-color: var(--pjud-blue);
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .results-panel-header .badge {
+        background-color: rgba(255,255,255,0.2);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .table-pjud {
+        width: 100%;
+        margin-bottom: 0;
+        font-size: 13px;
+    }
+
+    .table-pjud thead {
+        background-color: #f8f9fa;
+    }
+
+    .table-pjud thead th {
+        padding: 12px 15px;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid var(--pjud-border);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.3px;
+    }
+
+    .table-pjud tbody td {
+        padding: 12px 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .table-pjud tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    /* Botón lupa PJUD (detalle) */
+    .btn-lupa {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        background-color: var(--pjud-light-blue);
+        color: white;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+    }
+
+    .btn-lupa:hover {
+        background-color: var(--pjud-blue);
+        transform: scale(1.05);
+    }
+
+    .btn-pdf {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        margin-left: 5px;
+    }
+
+    .btn-pdf:hover {
+        background-color: #c82333;
+    }
+
+    /* Modal PJUD (Vista detalle - Lupa) */
+    .modal-pjud .modal-header {
+        background-color: var(--pjud-blue);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-pjud .modal-title {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .modal-pjud .close {
+        color: white;
+        opacity: 0.8;
+    }
+
+    .modal-pjud .close:hover {
+        opacity: 1;
+    }
+
+    .detail-section {
+        padding: 20px;
+        border-bottom: 1px solid var(--pjud-border);
+    }
+
+    .detail-section:last-child {
+        border-bottom: none;
+    }
+
+    .detail-section h5 {
+        color: var(--pjud-blue);
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--pjud-light-blue);
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .detail-item label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #777;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        letter-spacing: 0.3px;
+    }
+
+    .detail-item .value {
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    /* Tabla de movimientos dentro del modal */
+    .movements-table {
+        width: 100%;
+        font-size: 12px;
+        border-collapse: collapse;
+    }
+
+    .movements-table thead {
+        background-color: #f8f9fa;
+    }
+
+    .movements-table thead th {
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #555;
+        border-bottom: 2px solid var(--pjud-border);
+        letter-spacing: 0.3px;
+    }
+
+    .movements-table tbody td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: top;
+    }
+
+    .movements-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .folio-badge {
+        background-color: var(--pjud-light-blue);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .etapa-tag {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-estado {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-en-tramite {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .badge-terminada {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .alert-info-pjud {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 12px 20px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 13px;
+    }
+
+    .alert-error-pjud {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 12px 20px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 13px;
+    }
+
+    .footer-pjud {
+        background-color: #333;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        margin-top: 40px;
+    }
+
+    .btn-pdf-mini {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+        border-radius: 3px;
+        padding: 0;
+        margin: 0 2px;
+    }
+
+    .btn-pdf-azul {
+        background-color: #0066cc;
+        color: white;
+        border: none;
+    }
+
+    .btn-pdf-azul:hover {
+        background-color: #003d7a;
+    }
+
+    .btn-pdf-rojo {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+    }
+
+    .btn-pdf-rojo:hover {
+        background-color: #c82333;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Header PJUD -->
+<header class="pjud-header">
+    <div class="container">
+        <div class="logo">
+            <i class="fas fa-balance-scale"></i>
+            <div>
+                <div>PODER JUDICIAL DE CHILE</div>
+                <div class="subtitle">Consulta Unificada de Causas</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Breadcrumb -->
+<div class="pjud-breadcrumb">
+    <div class="container">
+        <i class="fas fa-home"></i>
+        <a href="/">Inicio</a> / <span>Consulta de Causas</span>
+    </div>
+</div>
+
+<!-- Contenido Principal -->
+<main class="container my-4">
+    {% if error %}
+    <div class="alert-error-pjud">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% else %}
+    <div class="alert-info-pjud">
+        <i class="fas fa-info-circle"></i>
+        <strong>Sistema operativo:</strong> Symfony 5.0.11 + Doctrine ORM + MariaDB 5.5.68 |
+        Causas encontradas: <strong>{{ causas|length }}</strong>
+    </div>
+    {% endif %}
+
+    <!-- Panel de búsqueda (formulario PJUD) -->
+    <div class="search-panel">
+        <h4><i class="fas fa-search"></i> Búsqueda de Causas</h4>
+        <form id="searchForm" method="GET" action="{{ path('causa_buscar') }}">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">RIT/ROL</label>
+                        <input type="text" class="form-control" name="rit" placeholder="Ej: C-13786-2018">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Caratulado</label>
+                        <input type="text" class="form-control" name="caratulado" placeholder="Nombre de la causa">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Tribunal</label>
+                        <input type="text" class="form-control" name="tribunal" placeholder="Nombre del tribunal">
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <button type="submit" class="btn btn-pjud-search">
+                    <i class="fas fa-search"></i> Buscar Causas
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resultados -->
+    <div class="results-panel">
+        <div class="results-panel-header">
+            <span><i class="fas fa-list"></i> Resultados de Búsqueda</span>
+            <span class="badge">{{ causas|length }} registro(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-pjud">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Acciones</th>
+                        <th style="width: 130px;">RIT/ROL</th>
+                        <th>Caratulado</th>
+                        <th style="width: 220px;">Tribunal</th>
+                        <th style="width: 110px;">Fecha Ingreso</th>
+                        <th style="width: 100px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if causas is empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
+                            <p style="color: #999;">No se encontraron causas en la base de datos</p>
+                        </td>
+                    </tr>
+                    {% else %}
+                        {% for causa in causas %}
+                        <tr>
+                            <td>
+                                <button class="btn-lupa"
+                                        title="Ver detalle de movimientos"
+                                        onclick="verDetalle('{{ causa.rit }}')">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                {% if causa.totalPdfs > 0 %}
+                                <button class="btn-pdf" title="{{ causa.totalPdfs }} PDF(s)">
+                                    <i class="fas fa-file-pdf"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ causa.rit }}</strong></td>
+                            <td>{{ causa.caratulado|default('-') }}</td>
+                            <td>{{ causa.tribunalNombre|default('-') }}</td>
+                            <td>{{ causa.fechaIngreso|default('-') }}</td>
+                            <td>
+                                {% if causa.estado == 'EN_TRAMITE' %}
+                                    <span class="badge-estado badge-en-tramite">En Trámite</span>
+                                {% elseif causa.estado == 'TERMINADA' %}
+                                    <span class="badge-estado badge-terminada">Terminada</span>
+                                {% else %}
+                                    <span class="badge-estado" style="background:#e0e0e0;color:#666;">Sin Info</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Modal: Detalle de Causa (Vista Lupa PJUD) -->
+<div class="modal fade modal-pjud" id="modalDetalle" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-folder-open"></i>
+                    Detalle de Causa: <span id="modalRit"></span>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Información General -->
+                <div class="detail-section">
+                    <h5><i class="fas fa-info-circle"></i> Información General</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>RIT/ROL</label>
+                            <div class="value" id="detailRit">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Caratulado</label>
+                            <div class="value" id="detailCaratulado">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Tribunal</label>
+                            <div class="value" id="detailTribunal">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Fecha de Ingreso</label>
+                            <div class="value" id="detailFechaIngreso">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Estado</label>
+                            <div class="value" id="detailEstado">-</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Etapa</label>
+                            <div class="value" id="detailEtapa">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Movimientos (Tabla principal - Vista Lupa PJUD) -->
+                <div class="detail-section">
+                    <h5><i class="fas fa-list-ul"></i> Movimientos Procesales</h5>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table class="movements-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">Folio</th>
+                                    <th style="width: 90px;">Docs</th>
+                                    <th style="width: 95px;">Fecha</th>
+                                    <th style="width: 110px;">Etapa</th>
+                                    <th style="width: 140px;">Trámite</th>
+                                    <th>Descripción</th>
+                                    <th style="width: 60px;">Foja</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movimientosBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-spinner fa-spin"></i> Cargando movimientos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer-pjud">
+    <p>
+        <i class="fas fa-balance-scale"></i> <strong>Poder Judicial de Chile</strong> |
+        Sistema de Consulta Unificada de Causas |
+        Symfony 5.0.11 + Doctrine + Bootstrap 4.5.2
+    </p>
+</footer>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+/**
+ * Ver detalle de causa (modal PJUD - vista lupa)
+ */
+function verDetalle(rit) {
+    // Mostrar modal inmediatamente
+    $('#modalDetalle').modal('show');
+    document.getElementById('modalRit').textContent = rit;
+
+    // Limpiar datos previos
+    document.getElementById('movimientosBody').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-4">
+                <i class="fas fa-spinner fa-spin"></i> Cargando movimientos...
+            </td>
+        </tr>
+    `;
+
+    // Consultar detalle mediante AJAX
+    fetch('{{ path('causa_detalle', {rit: '__RIT__'}) }}'.replace('__RIT__', encodeURIComponent(rit)))
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            // Llenar información general
+            document.getElementById('detailRit').textContent = data.causa.rit;
+            document.getElementById('detailCaratulado').textContent = data.causa.caratulado || '-';
+            document.getElementById('detailTribunal').textContent = data.causa.tribunal || '-';
+            document.getElementById('detailFechaIngreso').textContent = data.causa.fecha_ingreso || '-';
+            document.getElementById('detailEstado').textContent = data.causa.estado || 'SIN_INFORMACION';
+            document.getElementById('detailEtapa').textContent = data.causa.etapa || '-';
+
+            // Renderizar tabla de movimientos (vista lupa PJUD)
+            const tbody = document.getElementById('movimientosBody');
+            if (data.movimientos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-inbox" style="font-size:32px;color:#ccc;"></i>
+                            <p style="color:#999;margin-top:10px;">No hay movimientos registrados</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.movimientos.map(mov => `
+                <tr>
+                    <td><span class="folio-badge">${mov.folio || '-'}</span></td>
+                    <td>
+                        ${mov.tiene_pdf_azul ? `
+                            <button class="btn btn-pdf-mini btn-pdf-azul"
+                                    title="PDF Principal">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        ` : ''}
+                        ${mov.tiene_pdf_rojo ? `
+                            <button class="btn btn-pdf-mini btn-pdf-rojo"
+                                    title="PDF Anexo">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        ` : ''}
+                        ${!mov.tiene_pdf_azul && !mov.tiene_pdf_rojo ? '<span style="color:#999;font-size:11px;">-</span>' : ''}
+                    </td>
+                    <td>${mov.fecha || '-'}</td>
+                    <td>${mov.etapa ? `<span class="etapa-tag">${mov.etapa}</span>` : '-'}</td>
+                    <td>${mov.tramite || '-'}</td>
+                    <td>${mov.descripcion || '-'}</td>
+                    <td style="text-align:center;">${mov.foja || '-'}</td>
+                </tr>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('movimientosBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error al cargar movimientos
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+// Búsqueda AJAX (opcional)
+document.getElementById('searchForm')?.addEventListener('submit', function(e) {
+    // Permitir submit normal del form (sin AJAX por ahora)
+});
+</script>
+{% endblock %}

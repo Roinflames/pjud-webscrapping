@@ -85,11 +85,25 @@ async function startBrowser(url, options = {}) {
         console.log('📸 Screenshot: debug_01_pagina_cargada.png');
       }
       
-      // Esperar optimizado (reducido en headless)
-      await page.waitForTimeout(headless ? 200 : 500 + Math.random() * 500); // Optimizado: reducido de 500ms a 200ms
+      // Esperar a que la página cargue completamente
+      await page.waitForTimeout(headless ? 1000 : 2000);
       
-      console.log('✅ Página cargada:', page.url());
-      console.log('📄 Título:', await page.title());
+      // Verificar que la página realmente cargó
+      const finalUrl = page.url();
+      const pageTitle = await page.title();
+      const bodyText = await page.evaluate(() => document.body ? document.body.innerText : '');
+      
+      console.log('✅ Página cargada:', finalUrl);
+      console.log('📄 Título:', pageTitle);
+      console.log('📄 Contenido (primeros 100 chars):', bodyText ? bodyText.substring(0, 100) : 'VACÍO');
+      
+      // Si la página está en blanco o redirigió a login, tomar screenshot
+      if (!bodyText || bodyText.trim().length < 10) {
+        const screenshotPath = `debug_pagina_blanca_${Date.now()}.png`;
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        console.warn('⚠️ La página parece estar vacía. Screenshot guardado en:', screenshotPath);
+        console.warn('   Esto puede indicar que se requiere autenticación o hay un problema de red.');
+      }
     } catch (error) {
       console.error('❌ Error al cargar la página:', error.message);
       await page.screenshot({ path: 'debug_error_carga.png', fullPage: true });

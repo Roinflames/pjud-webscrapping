@@ -57,12 +57,30 @@ try {
 
     // Si hay contenido en base64, servirlo
     if ($pdf['contenido_base64']) {
+        $pdfContent = base64_decode($pdf['contenido_base64'], true);
+        
+        // Verificar que la decodificación fue exitosa
+        if ($pdfContent === false) {
+            http_response_code(500);
+            die('Error decodificando PDF desde base64');
+        }
+        
+        // Verificar que es un PDF válido (debe empezar con %PDF)
+        if (substr($pdfContent, 0, 4) !== '%PDF') {
+            http_response_code(500);
+            die('El contenido no es un PDF válido. Puede ser un PDF de prueba. Ejecuta el scraper para descargar PDFs reales.');
+        }
+        
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="' . $pdf['nombre_archivo'] . '"');
         if ($pdf['tamano_bytes']) {
             header('Content-Length: ' . $pdf['tamano_bytes']);
         }
-        echo base64_decode($pdf['contenido_base64']);
+        // No cachear
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        
+        echo $pdfContent;
         exit;
     }
 

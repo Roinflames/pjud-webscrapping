@@ -18,7 +18,7 @@ const DB_CONFIG = {
   port: parseInt(process.env.DB_PORT || '3306'),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'pjud_scraping',
+  database: process.env.DB_NAME || 'codi_ejamtest',
   charset: 'utf8',
   connectTimeout: 10000,
   // Pool configuration
@@ -134,7 +134,7 @@ async function upsertCausa(causa) {
     causa.tribunal_nombre || null,
     causa.caratulado || null,
     causa.fecha_ingreso || null,
-    causa.estado || 'SIN_INFORMACION',
+    (causa.estado || 'SIN_INFORMACION').substring(0, 50), // Limitar a 50 caracteres
     causa.etapa || null,
     causa.estado_descripcion || null,
     causa.total_movimientos || 0,

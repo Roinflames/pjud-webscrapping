@@ -429,8 +429,41 @@ async function openDetalle(page) {
 
         if (modalState.exists && (modalState.display !== 'none' || modalState.hasShow)) {
           console.log("✅ Modal detectado (puede estar cargando contenido)");
-          // Esperar un poco más para que cargue
-          await page.waitForTimeout(3000);
+          // Esperar a que el contenido se cargue - intentar múltiples veces
+          let intentos = 0;
+          const maxIntentos = 10;
+          while (intentos < maxIntentos) {
+            await page.waitForTimeout(1000);
+            const tieneContenido = await page.evaluate(() => {
+              const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+              if (!modal) return false;
+              const tabla = modal.querySelector('table tbody tr');
+              return tabla !== null;
+            });
+            
+            if (tieneContenido) {
+              console.log(`✅ Contenido del modal cargado después de ${intentos + 1} intentos`);
+              break;
+            }
+            intentos++;
+          }
+          
+          if (intentos >= maxIntentos) {
+            // Verificar una última vez
+            const ultimaVerificacion = await page.evaluate(() => {
+              const modal = document.querySelector('#modalDetalleCivil, #modalDetalleLaboral, .modal.show');
+              if (!modal) return { tieneTabla: false };
+              return {
+                tieneTabla: !!modal.querySelector('table tbody tr'),
+                innerHTML: modal.innerHTML.substring(0, 1000)
+              };
+            });
+            
+            if (!ultimaVerificacion.tieneTabla) {
+              await page.screenshot({ path: 'debug_modal_vacio.png', fullPage: true });
+              throw new Error(`Modal abierto pero sin contenido después de ${maxIntentos} intentos. HTML: ${ultimaVerificacion.innerHTML.substring(0, 200)}`);
+            }
+          }
         } else {
           await page.screenshot({ path: 'debug_sin_modal.png', fullPage: true });
           throw new Error('Modal no se abrió correctamente');

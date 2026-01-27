@@ -42,6 +42,46 @@ async function extractTableAsArray(page) {
     { timeout: 15000 }
   );
 
+  // Agregar diagnóstico: verificar estructura de la tabla
+  const diagnosticInfo = await page.evaluate(() => {
+    const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
+    if (trs.length === 0) return { totalRows: 0, sampleRow: null };
+    
+    const firstRow = trs[0];
+    const tds = [...firstRow.querySelectorAll('td')];
+    const forms = [...firstRow.querySelectorAll('form')];
+    const links = [...firstRow.querySelectorAll('a')];
+    const icons = [...firstRow.querySelectorAll('i')];
+    
+    // Verificar segunda columna específicamente (donde suelen estar los PDFs)
+    const secondTd = tds[1];
+    const secondTdLinks = secondTd ? [...secondTd.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"]')] : [];
+    const secondTdIcons = secondTd ? [...secondTd.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf')] : [];
+    
+    return {
+      totalRows: trs.length,
+      sampleRow: {
+        tdsCount: tds.length,
+        formsCount: forms.length,
+        linksCount: links.length,
+        iconsCount: icons.length,
+        secondTdLinksCount: secondTdLinks.length,
+        secondTdIconsCount: secondTdIcons.length,
+        firstTdHTML: tds[0] ? tds[0].innerHTML.substring(0, 200) : null,
+        secondTdHTML: secondTd ? secondTd.innerHTML.substring(0, 300) : null,
+        hasForms: forms.length > 0,
+        formsHTML: forms.map(f => f.outerHTML.substring(0, 150)),
+        secondTdLinks: secondTdLinks.map(l => ({
+          tag: l.tagName,
+          onclick: l.getAttribute('onclick') ? l.getAttribute('onclick').substring(0, 100) : null,
+          href: l.getAttribute('href') || null
+        }))
+      }
+    };
+  });
+  
+  console.log(`🔍 Diagnóstico de tabla:`, JSON.stringify(diagnosticInfo, null, 2));
+
   return await page.$$eval(
     'table.table.table-bordered.table-striped.table-hover tbody tr',
     trs =>
@@ -49,6 +89,7 @@ async function extractTableAsArray(page) {
         const tds = [...tr.querySelectorAll('td')];
         if (tds.length < 2) return null;
 
+        // Buscar forms dentro de la fila (pueden estar en cualquier td)
         const forms = [...tr.querySelectorAll('form')].map((form, i) => ({
           index: i,
           action: form.getAttribute('action'),
@@ -59,6 +100,28 @@ async function extractTableAsArray(page) {
           })),
           selector: `table tbody tr:nth-child(${rowIndex + 1}) form:nth-of-type(${i + 1})`
         }));
+
+        // Si no hay forms, buscar enlaces e iconos con onclick (método alternativo)
+        let pdfLinks = [];
+        if (forms.length === 0) {
+          // Buscar en la segunda columna (td:nth-child(2)) que es donde suelen estar los PDFs
+          const secondTd = tds[1];
+          if (secondTd) {
+            // Buscar enlaces con onclick o iconos
+            const links = [...secondTd.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"]')];
+            const icons = [...secondTd.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf')];
+            
+            // Combinar enlaces e iconos
+            pdfLinks = [...links, ...icons].map((el, i) => ({
+              index: i,
+              tagName: el.tagName,
+              hasOnclick: !!el.getAttribute('onclick'),
+              onclick: el.getAttribute('onclick') || null,
+              href: el.getAttribute('href') || null,
+              className: el.className || null
+            }));
+          }
+        }
 
         const texto = tds.map(td => td.innerText.trim());
         const datos_limpios = {
@@ -73,17 +136,29 @@ async function extractTableAsArray(page) {
           georref: texto[8] || null
         };
 
-        const pdfs = forms.map((f, i) => ({
-          linkIndex: i,
-          tipo: i === 0 ? 'P' : 'R',
-          tipo_desc: i === 0 ? 'azul' : 'rojo'
-        }));
+        // Si hay forms, usarlos; si no, usar los enlaces encontrados
+        const pdfs = forms.length > 0 
+          ? forms.map((f, i) => ({
+              linkIndex: i,
+              tipo: i === 0 ? 'P' : 'R',
+              tipo_desc: i === 0 ? 'azul' : 'rojo',
+              source: 'form'
+            }))
+          : pdfLinks.map((link, i) => ({
+              linkIndex: i,
+              tipo: i === 0 ? 'P' : 'R',
+              tipo_desc: i === 0 ? 'azul' : 'rojo',
+              source: 'link',
+              tagName: link.tagName,
+              hasOnclick: link.hasOnclick
+            }));
 
         return {
           texto,
           datos_limpios,
           forms,
-          pdfs
+          pdfs,
+          pdfLinks: pdfLinks // Guardar también los enlaces encontrados
         };
       })
   ).then(r => r.filter(Boolean));

@@ -134,7 +134,8 @@ async function upsertCausa(causa) {
     causa.tribunal_nombre || null,
     causa.caratulado || null,
     causa.fecha_ingreso || null,
-    (causa.estado || 'SIN_INFORMACION').substring(0, 50), // Limitar a 50 caracteres
+    // Dejar que la BD use su valor por defecto / ENUM válido
+    causa.estado || null,
     causa.etapa || null,
     causa.estado_descripcion || null,
     causa.total_movimientos || 0,

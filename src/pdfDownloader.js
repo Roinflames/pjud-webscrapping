@@ -133,7 +133,7 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
             }
           }, { folioValue: String(folio), formIndex: pdfIndex });
         } else {
-          // Método 2: Usar enlaces de la segunda columna (td:nth-child(2) a)
+          // Método 2: Usar enlaces/íconos/imágenes de la segunda columna (td:nth-child(2))
           clickResult = await page.evaluate(({ folioValue, linkIndex }) => {
             const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
             const row = Array.from(trs).find(tr => {
@@ -145,22 +145,36 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
               return { success: false, error: 'Fila no encontrada' };
             }
             
-            // Buscar enlaces en la segunda columna (donde suelen estar los PDFs)
+            // Buscar en la segunda columna (donde suelen estar los PDFs en PJUD)
             const secondTd = row.querySelector('td:nth-child(2)');
             if (!secondTd) {
               return { success: false, error: 'Segunda columna no encontrada' };
             }
             
-            // Buscar todos los enlaces e iconos clickeables
-            const links = Array.from(secondTd.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"], i[onclick], i.fa-file-pdf-o, i.fa-file-pdf'));
+            // Buscar todos los elementos clickeables de PDF:
+            //  - enlaces con onclick o href que contenga "pdf"/"documento"
+            //  - iconos <i> relacionados con PDF
+            //  - imágenes <img> con onclick verDocumento(...) o src que parezca PDF
+            const links = Array.from(
+              secondTd.querySelectorAll(
+                'a[onclick], a[href*="pdf"], a[href*="documento"], ' +
+                'i[onclick], i.fa-file-pdf-o, i.fa-file-pdf, ' +
+                'img[onclick*="verDocumento"], img[onclick], img[src*="pdf"], img[src*="documento"]'
+              )
+            );
             
             if (!links[linkIndex]) {
-              return { success: false, error: `Enlace ${linkIndex} no encontrado (hay ${links.length} enlaces)` };
+              return { success: false, error: `Enlace ${linkIndex} no encontrado (hay ${links.length} elementos clickeables)` };
             }
             
-            const link = links[linkIndex];
-            link.click();
-            return { success: true, element: link.tagName, method: 'link-click', hasOnclick: !!link.getAttribute('onclick') };
+            const el = links[linkIndex];
+            el.click();
+            return { 
+              success: true, 
+              element: el.tagName, 
+              method: 'link-click', 
+              hasOnclick: !!el.getAttribute('onclick') 
+            };
           }, { folioValue: String(folio), linkIndex: pdfIndex });
         }
 

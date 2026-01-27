@@ -105,14 +105,22 @@ async function extractTableAsArray(page) {
         let pdfLinks = [];
         if (forms.length === 0) {
           // Buscar en TODA la fila (no solo segunda columna)
-          const links = [...tr.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"], a[onclick*="submit"]')];
-          const icons = [...tr.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf, i.fa-file')];
+          const links = [
+            ...tr.querySelectorAll('a[onclick], a[href*="pdf"], a[href*="documento"], a[onclick*="submit"]')
+          ];
+          const icons = [
+            ...tr.querySelectorAll('i[onclick], i.fa-file-pdf-o, i.fa-file-pdf, i.fa-file')
+          ];
+          const imgs = [
+            // Muy importante: PJUD usa <img onclick="verDocumento(...)">
+            ...tr.querySelectorAll('img[onclick*="verDocumento"], img[onclick], img[src*="pdf"], img[src*="documento"]')
+          ];
 
-          // Combinar enlaces e iconos (eliminar duplicados si un icono está dentro de un enlace)
-          const allElements = [...links, ...icons];
+          // Combinar enlaces, iconos e imágenes (eliminar duplicados si un icono/img está dentro de un enlace)
+          const allElements = [...links, ...icons, ...imgs];
           const uniqueElements = allElements.filter((el, idx) => {
-            // Si es un icono, verificar que no esté dentro de un enlace ya agregado
-            if (el.tagName === 'I') {
+            // Si es un icono o imagen, verificar que no esté dentro de un enlace ya agregado
+            if (el.tagName === 'I' || el.tagName === 'IMG') {
               const parentLink = el.closest('a');
               return !parentLink || !allElements.slice(0, idx).includes(parentLink);
             }

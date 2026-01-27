@@ -372,9 +372,10 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle usando openDetalleEspecifico con match de caratulado/tribunal
-    console.log(`   🔍 Abriendo detalle de la causa específica...`);
-    await openDetalleEspecifico(page, config.caratulado, config.tribunal_nombre);
+    // PASO 2: Abrir el detalle usando la función estándar openDetalle
+    // (ya se comprobó que abre correctamente el modal y la tabla de movimientos)
+    console.log(`   🔍 Abriendo detalle de la causa...`);
+    await openDetalle(page);
     console.log(`   ✅ Detalle abierto y verificado`);
     
     // PASO 4: Extraer tabla de movimientos (con forms para PDFs)
@@ -808,8 +809,12 @@ async function processMultipleCausas(limit = 10, requireTribunal = true, useData
   }
   
   console.log('🌐 URL configurada:', ojvUrl);
-  
-  const { browser, context, page } = await startBrowser(ojvUrl);
+ 
+  // Ejecutar navegador en modo NO headless para ver la interacción
+  const { browser, context, page } = await startBrowser(ojvUrl, {
+    headless: false,
+    slowMo: 250 // pequeño delay para poder observar los pasos
+  });
   
   try {
     // Esperar un poco más para que la página cargue completamente

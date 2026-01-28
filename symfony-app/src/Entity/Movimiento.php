@@ -365,4 +365,14 @@ class Movimiento
     {
         return $this->tienePdf && $this->pdfAnexo !== null;
     }
+
+    public function getPdfAzul(): ?string
+    {
+        return $this->pdfPrincipal;
+    }
+
+    public function getPdfRojo(): ?string
+    {
+        return $this->pdfAnexo;
+    }
 }

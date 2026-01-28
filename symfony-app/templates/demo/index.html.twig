@@ -665,19 +665,23 @@ function verDetalle(rit) {
                 return;
             }
 
-            tbody.innerHTML = data.movimientos.map(mov => `
+            tbody.innerHTML = data.movimientos.map(mov => {
+                // Debug: ver qué valores llegan
+                console.log('Movimiento:', mov.indice, 'tiene_pdf_azul:', mov.tiene_pdf_azul, 'tipo:', typeof mov.tiene_pdf_azul);
+
+                return `
                 <tr>
                     <td><span class="folio-badge">${mov.folio || '-'}</span></td>
                     <td>
                         ${mov.tiene_pdf_azul ? `
                             <button class="btn btn-pdf-mini btn-pdf-azul"
-                                    title="PDF Principal">
+                                    title="PDF Principal: ${mov.pdf_azul || ''}">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
                         ` : ''}
                         ${mov.tiene_pdf_rojo ? `
                             <button class="btn btn-pdf-mini btn-pdf-rojo"
-                                    title="PDF Anexo">
+                                    title="PDF Anexo: ${mov.pdf_rojo || ''}">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
                         ` : ''}
@@ -689,7 +693,8 @@ function verDetalle(rit) {
                     <td>${mov.descripcion || '-'}</td>
                     <td style="text-align:center;">${mov.foja || '-'}</td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         })
         .catch(error => {
             console.error('Error:', error);

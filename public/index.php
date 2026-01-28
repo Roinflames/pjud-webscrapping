@@ -235,30 +235,41 @@ async function buscarCausa(rit) {
             tbody.innerHTML = '';
             return;
         }
-        alert('Formato de datos inválido');
+        alert('Formato de datos inv\u00e1lido');
         return;
     }
 
-    /* CABECERA */
-    const cab = data[0];
+    /* CABECERA: data[0] = [], data[1] = [empty, RIT, fecha, caratulado, juzgado] */
+    const cab = data[1] || [];
 
-    document.getElementById('m_rol').textContent = cab[1];
-    document.getElementById('m_fing').textContent = cab[2];
-    document.getElementById('m_promotora').textContent = cab[3];
-    document.getElementById('m_tribunal').textContent = cab[4];
+    document.getElementById('m_rol').textContent = cab[1] || '-';
+    document.getElementById('m_fing').textContent = cab[2] || '-';
+    document.getElementById('m_promotora').textContent = cab[3] || '-';
+    document.getElementById('m_tribunal').textContent = cab[4] || '-';
 
-    document.getElementById('m_estadm').textContent = 'Archivada';
-    document.getElementById('m_proc').textContent = 'Ejecutivo Obligación de Dar';
-    document.getElementById('m_ubic').textContent = 'Archivada Digital';
-    document.getElementById('m_estproc').textContent = 'Concluido';
-    document.getElementById('m_etapa').textContent = 'Terminada';
+    /* MOVIMIENTOS: desde data[2] en adelante */
+    const movimientos = data.slice(2);
+
+    /* Derivar campos del primer movimiento (el mas reciente) */
+    const primero = movimientos[0] || [];
+    const etapaPrimero = primero[3] || '';
+    const descPrimero = primero[5] || '';
+
+    const esArchivada = descPrimero.toLowerCase().includes('archivo');
+    const esTerminada = etapaPrimero.toLowerCase().includes('terminada');
+
+    document.getElementById('m_estadm').textContent = esArchivada ? 'Archivada' : (esTerminada ? 'Terminada' : '-');
+    document.getElementById('m_proc').textContent = '-';
+    document.getElementById('m_ubic').textContent = esArchivada ? 'Archivada Digital' : '-';
+    document.getElementById('m_estproc').textContent = esTerminada ? 'Concluido' : (movimientos.length > 0 ? 'En Tr\u00e1mite' : '-');
+    document.getElementById('m_etapa').textContent = etapaPrimero || '-';
 
     /* HISTORIA */
     const ritParts = rit.split('-');
     const rolNum = ritParts[1];
     const anio = ritParts[2];
 
-    data.slice(2, 17).forEach(row => {
+    movimientos.forEach(row => {
         const folio = row[0];
         const tienePdf = row[1] === 'Descargar Documento';
         const etapa = row[3];

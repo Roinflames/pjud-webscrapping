@@ -28,7 +28,9 @@
     "services:restart": "bash scripts/control-servicios.sh restart",
     "services:status": "bash scripts/control-servicios.sh status",
     "services:enable": "bash scripts/control-servicios.sh enable",
-    "services:disable": "bash scripts/control-servicios.sh disable"
+    "services:disable": "bash scripts/control-servicios.sh disable",
+    "dev": "node start-server.js",
+    "dev:php": "php -S localhost:8081 -t public"
   },
   "keywords": [],
   "author": "",

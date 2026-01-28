@@ -106,3 +106,32 @@ CREATE TABLE `causas` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Causas judiciales extraídas por scraping';
+CREATE TABLE `ebooks` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED NOT NULL,
+  `rit` varchar(50) NOT NULL,
+  `nombre_archivo` varchar(255) NOT NULL,
+  `ruta_relativa` varchar(500) DEFAULT NULL,
+  `tamano_bytes` int(11) UNSIGNED DEFAULT NULL,
+  `base64_content` longtext DEFAULT NULL COMMENT 'Contenido del eBook en base64 (pdf_ebook)',
+  `tamano_base64_bytes` int(11) UNSIGNED DEFAULT NULL COMMENT 'Tamaño del string base64',
+  `descargado` tinyint(1) DEFAULT 0,
+  `fecha_descarga` datetime DEFAULT NULL,
+  `error_descarga` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='eBooks descargados del scraping';
+CREATE TABLE `errores_scraping` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED DEFAULT NULL,
+  `rit` varchar(50) NOT NULL,
+  `tipo_error` varchar(100) NOT NULL COMMENT 'Categoría del error',
+  `mensaje_error` text NOT NULL,
+  `stack_trace` longtext DEFAULT NULL,
+  `intentos` int(11) DEFAULT 1,
+  `ultimo_intento` datetime DEFAULT NULL,
+  `resuelto` tinyint(1) DEFAULT 0,
+  `fecha_resolucion` datetime DEFAULT NULL,
+  `notas_resolucion` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Errores de scraping para evitar reintentos infinitos';

@@ -13,7 +13,7 @@ const { downloadPDFsFromTable } = require('./pdfDownloader');
 const { downloadEbook } = require('./ebook');
 const { saveErrorEvidence } = require('./utils');
 const { saveCausaJSON, appendCausaNDJSON, upsertIndex } = require('./jsonStore');
-const { upsertCausa, upsertMovimiento, upsertPDF } = require('./database/db-mariadb');
+const { upsertCausa, upsertMovimiento, upsertPDF, query } = require('./database/db-mariadb');
 
 // Mapeo de tribunal_id a corte_id usando el scraping de tribunales
 let tribunalToCorteMap = null;

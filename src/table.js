@@ -86,8 +86,21 @@ async function extractTableAsArray(page) {
   console.log(`📊 Análisis de tablas del modal:`, JSON.stringify(tablasInfo.tables, null, 2));
   console.log(`✅ Tabla seleccionada: Tabla ${tablasInfo.selectedIndex} (${tablasInfo.tables[tablasInfo.selectedIndex]?.columns || '?'} columnas)`);
 
-  // Selector específico para la tabla de movimientos correcta
-  const TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, #modalDetalleLaboral table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, .modal-body table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr`;
+  // CORRECCIÓN: Usar índice directo en array de tablas (más confiable que nth-of-type)
+  // nth-of-type cuenta solo elementos <table>, pero puede haber anidamiento
+  // Mejor enfoque: identificar por número de columnas y primera celda numérica
+  const tableIdentifier = tablasInfo.tables[tablasInfo.selectedIndex];
+  let TABLE_SPECIFIC_SELECTOR;
+
+  if (tableIdentifier && tableIdentifier.columns >= 7 && tableIdentifier.isNumeric) {
+    // Buscar tabla con exactamente N columnas y primera celda numérica
+    TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table tbody tr:has(td:nth-child(${tableIdentifier.columns})), #modalDetalleLaboral table tbody tr:has(td:nth-child(${tableIdentifier.columns}))`;
+  } else {
+    // Fallback: usar nth-of-type (puede fallar si hay tablas anidadas)
+    TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, #modalDetalleLaboral table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr`;
+  }
+
+  console.log(`🔍 Selector calculado: ${TABLE_SPECIFIC_SELECTOR}`);
 
   // Agregar diagnóstico: verificar estructura de la tabla DEL MODAL
   const diagnosticInfo = await page.evaluate((selector) => {

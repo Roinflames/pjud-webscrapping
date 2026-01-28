@@ -17,7 +17,8 @@
       "Bash(php:*)",
       "Bash(cd:*)",
       "Bash(composer:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Read(//Users/diegomartinez/Desktop/pjud-webscrapping/**)"
     ],
     "deny": [],
     "ask": []

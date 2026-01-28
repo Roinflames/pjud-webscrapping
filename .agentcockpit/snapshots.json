@@ -1,419 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 21,
-      "commitHash": "42091cf31a5bbd290789174c092967bb38ff4ec6",
-      "tag": "snapshot-v21",
-      "timestamp": 1769515914426,
-      "message": "Snapshot V21",
-      "filesChanged": [
-        "src/database/db-mariadb.js",
-        "src/pdfDownloader.js",
-        "src/process-csv-causas.js",
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 22,
-      "commitHash": "3a9fe247a8151e7147c826a58264b514fe86479f",
-      "tag": "snapshot-v22",
-      "timestamp": 1769516051710,
-      "message": "Snapshot V22",
-      "filesChanged": [
-        "src/database/db-mariadb.js"
-      ]
-    },
-    {
-      "version": 23,
-      "commitHash": "c7a2155555deefc326455ce12b6b43208215b19a",
-      "tag": "snapshot-v23",
-      "timestamp": 1769535346729,
-      "message": "Snapshot V23",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json"
-      ]
-    },
-    {
-      "version": 24,
-      "commitHash": "b17818e6617b1c97d99db52824fbe140ef41593f",
-      "tag": "snapshot-v24",
-      "timestamp": 1769535635218,
-      "message": "Snapshot V24",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_23607_2015.json",
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 25,
-      "commitHash": "ba7a456e1f38c96848850d9acfcb2ca051116b39",
-      "tag": "snapshot-v25",
-      "timestamp": 1769536802694,
-      "message": "Snapshot V25",
-      "filesChanged": [
-        "REPORTE_FINAL_TEST.md"
-      ]
-    },
-    {
-      "version": 26,
-      "commitHash": "da289413e797ddb09cdcb822af7b6c087c37b0a6",
-      "tag": "snapshot-v26",
-      "timestamp": 1769537598923,
-      "message": "Snapshot V26",
-      "filesChanged": [
-        "src/process-causas.js",
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 27,
-      "commitHash": "6739a6574634bc87087abd32834b0021aa2ddcc7",
-      "tag": "snapshot-v27",
-      "timestamp": 1769537977580,
-      "message": "Snapshot V27",
-      "filesChanged": [
-        "src/process-causas.js"
-      ]
-    },
-    {
-      "version": 28,
-      "commitHash": "9090069c7a87306c49af8fa67df01b4cadb54e01",
-      "tag": "snapshot-v28",
-      "timestamp": 1769538049014,
-      "message": "Snapshot V28",
-      "filesChanged": [
-        ".agentcockpit/snapshots.json",
-        ".claude/settings.local.json",
-        "REPORTE_MEJORAS_27_ENERO.md"
-      ]
-    },
-    {
-      "version": 29,
-      "commitHash": "23b00da727251090a72696670878dc14d9af7765",
-      "tag": "snapshot-v29",
-      "timestamp": 1769538159911,
-      "message": "Snapshot V29",
-      "filesChanged": [
-        "src/process-causas.js"
-      ]
-    },
-    {
-      "version": 30,
-      "commitHash": "a348a889940da5716421bdf0e8c7931a4d6e6617",
-      "tag": "snapshot-v30",
-      "timestamp": 1769538453262,
-      "message": "Snapshot V30",
-      "filesChanged": [
-        "src/process-causas.js"
-      ]
-    },
-    {
-      "version": 31,
-      "commitHash": "08fc8f0dfb831b6c548608ae02e65b5c874d4a23",
-      "tag": "snapshot-v31",
-      "timestamp": 1769539087591,
-      "message": "Snapshot V31",
-      "filesChanged": [
-        ".agentcockpit/snapshots.json",
-        ".claude/settings.local.json",
-        "RESUMEN_FINAL_27_ENERO.md",
-        "agentcockpit-project.json"
-      ]
-    },
-    {
-      "version": 32,
-      "commitHash": "ecf135716a812fd1224ae517ca2a947f70ddaa18",
-      "tag": "snapshot-v32",
-      "timestamp": 1769539396273,
-      "message": "Snapshot V32",
-      "filesChanged": [
-        ".cursor-note",
-        "ANALISIS_CASOS_USO_SCRAPING.md",
-        "CASOS_USO_SCRAPING.md",
-        "COMO_EJECUTAR_PROCESS_CAUSAS.md",
-        "COMO_EJECUTAR_SCRAPING.md",
-        "INFORME_SCRAPING_STANDARD.md",
-        "REPORTE_ERRORES_SCRAPING.md",
-        "REPORTE_TEST_SCRAPING.md",
-        "SCRAPING_STANDARD_REFACTOR.md",
-        "SOLUCION_ERROR_PROCESS_CSV_CAUSAS.md",
-        "docs/scraping-standard.md",
-        "package.json",
-        "public/api/descargar_pdf.php",
-        "public/api/importar_ebooks.php",
-        "public/src/Config/Database.php",
-        "public/src/Repository/MovimientoRepository.php",
-        "scripts/INSTRUCCIONES_INSERTAR_CAUSA.md",
-        "scripts/INSTRUCCIONES_RAPIDAS_INSERTAR_CAUSA.md",
-        "scripts/README_INSERTAR_CAUSA_TEST.md",
-        "scripts/insertar_causa_C-213-2023.sql",
-        "scripts/insertar_causa_test.js",
-        "scripts/insertar_causa_test.sql",
-        "scripts/insertar_causas_test.js",
-        "src/api/mvp-api.js",
-        "src/api/scraper-service.js",
-        "src/form.js",
-        "src/process-causas.js",
-        "src/processRit.js",
-        "src/scraping_masivo.js",
-        "src/worker-eventos.js",
-        "src/worker-monitoreo-continuo.js",
-        "src/worker_cola_scraping.js"
-      ]
-    },
-    {
-      "version": 33,
-      "commitHash": "fb116ddf891ea35344184e4d6b1addee462bccba",
-      "tag": "snapshot-v33",
-      "timestamp": 1769539757088,
-      "message": "Snapshot V33",
-      "filesChanged": [
-        "src/browser.js",
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json",
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 34,
-      "commitHash": "b0430c70faec5ee00951b9e61df2b16375bada75",
-      "tag": "snapshot-v34",
-      "timestamp": 1769546081451,
-      "message": "Snapshot V34",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json",
-        "src/outputs/causas/C_18873_2020.json",
-        "src/outputs/causas/C_23607_2015.json"
-      ]
-    },
-    {
-      "version": 35,
-      "commitHash": "666d411f2491fc740bc2dedd35a182f5f2cfae53",
-      "tag": "snapshot-v35",
-      "timestamp": 1769547590421,
-      "message": "Snapshot V35",
-      "filesChanged": [
-        "src/database/db-mariadb.js"
-      ]
-    },
-    {
-      "version": 36,
-      "commitHash": "844892d19a22c8882e6506244123504769caf6ac",
-      "tag": "snapshot-v36",
-      "timestamp": 1769547931616,
-      "message": "Snapshot V36",
-      "filesChanged": [
-        "src/api/causas-api.js",
-        "src/api/server.js"
-      ]
-    },
-    {
-      "version": 37,
-      "commitHash": "1e113042d80a8beae6517d37c5229d12c9a4ea3e",
-      "tag": "snapshot-v37",
-      "timestamp": 1769551196328,
-      "message": "Snapshot V37",
-      "filesChanged": [
-        "public/api/demo.php",
-        "public/src/Repository/MovimientoRepository.php"
-      ]
-    },
-    {
-      "version": 38,
-      "commitHash": "c70ec0bebc6b6fcd090eb06777096a98142cd46e",
-      "tag": "snapshot-v38",
-      "timestamp": 1769551310287,
-      "message": "Snapshot V38",
-      "filesChanged": [
-        "public/api/demo.php"
-      ]
-    },
-    {
-      "version": 39,
-      "commitHash": "cc387d3876e3a2381cc912502c3edf3e3d2d2382",
-      "tag": "snapshot-v39",
-      "timestamp": 1769551347500,
-      "message": "Snapshot V39",
-      "filesChanged": [
-        "public/src/Config/Database.php"
-      ]
-    },
-    {
-      "version": 40,
-      "commitHash": "2b46ccf8e126f869f105c845fd1149f9307046a4",
-      "tag": "snapshot-v40",
-      "timestamp": 1769551417047,
-      "message": "Snapshot V40",
-      "filesChanged": [
-        "public/api/demo.php",
-        "public/src/Config/Database.php"
-      ]
-    },
-    {
-      "version": 41,
-      "commitHash": "33e084e61cd696cbd4e0d9a6f31d67b5e1bc4b85",
-      "tag": "snapshot-v41",
-      "timestamp": 1769551572740,
-      "message": "Snapshot V41",
-      "filesChanged": [
-        "public/src/Repository/MovimientoRepository.php"
-      ]
-    },
-    {
-      "version": 42,
-      "commitHash": "77900677c0db87898e5dac50d97e334530719a77",
-      "tag": "snapshot-v42",
-      "timestamp": 1769551973055,
-      "message": "Snapshot V42",
-      "filesChanged": [
-        "public/src/Repository/MovimientoRepository.php",
-        "public/src/Repository/PDFRepository.php"
-      ]
-    },
-    {
-      "version": 43,
-      "commitHash": "c990a25be2c7bfa9e7dc9717aec7f7ec8969e2b8",
-      "tag": "snapshot-v43",
-      "timestamp": 1769552236042,
-      "message": "Snapshot V43",
-      "filesChanged": [
-        "package.json"
-      ]
-    },
-    {
-      "version": 44,
-      "commitHash": "e683fe6629887c1a1d5807bc4c50f2abf387a746",
-      "tag": "snapshot-v44",
-      "timestamp": 1769552322475,
-      "message": "Snapshot V44",
-      "filesChanged": [
-        "setup-node16.sh"
-      ]
-    },
-    {
-      "version": 45,
-      "commitHash": "91e46c21614aad06f1679656599c1605c70f26bd",
-      "tag": "snapshot-v45",
-      "timestamp": 1769552393560,
-      "message": "Snapshot V45",
-      "filesChanged": [
-        "MIGRACION_NODE16.md"
-      ]
-    },
-    {
-      "version": 46,
-      "commitHash": "9c2694cc5ab67d8483bfc886f0935e19645a3287",
-      "tag": "snapshot-v46",
-      "timestamp": 1769552567206,
-      "message": "Snapshot V46",
-      "filesChanged": [
-        "package-lock.json"
-      ]
-    },
-    {
-      "version": 47,
-      "commitHash": "2835b1e4eefdb6f826531e7ebaac9c9b05410c09",
-      "tag": "snapshot-v47",
-      "timestamp": 1769552651522,
-      "message": "Snapshot V47",
-      "filesChanged": [
-        "package-lock.json"
-      ]
-    },
-    {
-      "version": 48,
-      "commitHash": "d03e35695cdbf00a0a9f6198d119392afae267bb",
-      "tag": "snapshot-v48",
-      "timestamp": 1769552797466,
-      "message": "Snapshot V48",
-      "filesChanged": [
-        "package-lock.json",
-        "package.json",
-        "test-node16.sh"
-      ]
-    },
-    {
-      "version": 49,
-      "commitHash": "a902c9e4612af442644179ae33fef513d0eba5e2",
-      "tag": "snapshot-v49",
-      "timestamp": 1769553339511,
-      "message": "Snapshot V49",
-      "filesChanged": [
-        "public/api/demo.php",
-        "public/demo.php"
-      ]
-    },
-    {
-      "version": 50,
-      "commitHash": "fedfda0949d68eb317bf32730844b84b7104acff",
-      "tag": "snapshot-v50",
-      "timestamp": 1769553924823,
-      "message": "Snapshot V50",
-      "filesChanged": [
-        "public/symfony.exe"
-      ]
-    },
-    {
-      "version": 51,
-      "commitHash": "1285b8c2f1a81fe273d33437decfe8c8b3b9fb88",
-      "tag": "snapshot-v51",
-      "timestamp": 1769554204441,
-      "message": "Snapshot V51",
-      "filesChanged": [
-        "public/composer.json"
-      ]
-    },
-    {
-      "version": 52,
-      "commitHash": "4022601dc61269490179e48e51438cebbcb36f24",
-      "tag": "snapshot-v52",
-      "timestamp": 1769554708706,
-      "message": "Snapshot V52",
-      "filesChanged": [
-        "symfony-app/bin/console",
-        "symfony-app/composer.json",
-        "symfony-app/config/bundles.php",
-        "symfony-app/config/packages/doctrine.yaml",
-        "symfony-app/config/packages/framework.yaml",
-        "symfony-app/config/packages/twig.yaml",
-        "symfony-app/config/routes.yaml",
-        "symfony-app/config/services.yaml",
-        "symfony-app/public/index.php",
-        "symfony-app/src/Controller/CausaController.php",
-        "symfony-app/src/Entity/Causa.php",
-        "symfony-app/src/Entity/Movimiento.php",
-        "symfony-app/src/Entity/PDF.php",
-        "symfony-app/src/Kernel.php",
-        "symfony-app/src/Repository/CausaRepository.php",
-        "symfony-app/src/Repository/MovimientoRepository.php",
-        "symfony-app/src/Repository/PDFRepository.php"
-      ]
-    },
-    {
-      "version": 53,
-      "commitHash": "b47d4225829ae26ca65c2fac31d89f3c81b9b03a",
-      "tag": "snapshot-v53",
-      "timestamp": 1769554830075,
-      "message": "Snapshot V53",
-      "filesChanged": [
-        "symfony-app/templates/base.html.twig",
-        "symfony-app/templates/demo/index.html.twig"
-      ]
-    },
-    {
-      "version": 54,
-      "commitHash": "5d09e88d25f0f93214cf6367fabf1013b199d0e4",
-      "tag": "snapshot-v54",
-      "timestamp": 1769554856240,
-      "message": "Snapshot V54",
-      "filesChanged": [
-        "symfony-app/composer.json"
-      ]
-    },
-    {
       "version": 55,
       "commitHash": "3a9083b7aaf9391e86fbdb61a1eeacd6e9e5028a",
       "tag": "snapshot-v55",
@@ -613,8 +200,351 @@
       "filesChanged": [
         "symfony-app/src/Entity/Movimiento.php"
       ]
+    },
+    {
+      "version": 71,
+      "commitHash": "2fe2dab4cea04ed2e54970b4adac19acf150f085",
+      "tag": "snapshot-v71",
+      "timestamp": 1769569511766,
+      "message": "Snapshot V71",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 72,
+      "commitHash": "7e0076c2b0799a2c3fa3ac856801811221db2f83",
+      "tag": "snapshot-v72",
+      "timestamp": 1769569683063,
+      "message": "Snapshot V72",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 73,
+      "commitHash": "3d6926eecd704e684889d5150ec6137b3b76f190",
+      "tag": "snapshot-v73",
+      "timestamp": 1769569696331,
+      "message": "Snapshot V73",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 74,
+      "commitHash": "4d6d36e46b0cf55cde48e908a6bb931b9bf638be",
+      "tag": "snapshot-v74",
+      "timestamp": 1769569704718,
+      "message": "Snapshot V74",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 75,
+      "commitHash": "65de08657ac99654de6b9abaf18556577b379590",
+      "tag": "snapshot-v75",
+      "timestamp": 1769569718645,
+      "message": "Snapshot V75",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 76,
+      "commitHash": "29b1a77fa6a35a662a1bb1fa3fd5b6557291cb96",
+      "tag": "snapshot-v76",
+      "timestamp": 1769569727990,
+      "message": "Snapshot V76",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 77,
+      "commitHash": "0cf030b0d45a4432723fa2deb660f0a360c1cb1a",
+      "tag": "snapshot-v77",
+      "timestamp": 1769569743453,
+      "message": "Snapshot V77",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 78,
+      "commitHash": "8a1a511b40b7de4544ae538e82761241313a3533",
+      "tag": "snapshot-v78",
+      "timestamp": 1769569866362,
+      "message": "Snapshot V78",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 79,
+      "commitHash": "971380c89292d15a7299ecb8b2278c8baeb1d982",
+      "tag": "snapshot-v79",
+      "timestamp": 1769569924842,
+      "message": "Snapshot V79",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 80,
+      "commitHash": "fcf7fa3ff82faf793757c6092166e906428d153a",
+      "tag": "snapshot-v80",
+      "timestamp": 1769570007785,
+      "message": "Snapshot V80",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 81,
+      "commitHash": "a52a28d8f0e69a08918401790f957d54c73142ac",
+      "tag": "snapshot-v81",
+      "timestamp": 1769570009420,
+      "message": "Snapshot V81",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 82,
+      "commitHash": "becf256be9b1e65d0132a54213fc41d4dcbd8b39",
+      "tag": "snapshot-v82",
+      "timestamp": 1769570010776,
+      "message": "Snapshot V82",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 83,
+      "commitHash": "feb3a39036bcf6b08ac6657732a15ed6b17b972e",
+      "tag": "snapshot-v83",
+      "timestamp": 1769570014551,
+      "message": "Snapshot V83",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 84,
+      "commitHash": "ece8d75cf377d956bc499c6b728738ba78865394",
+      "tag": "snapshot-v84",
+      "timestamp": 1769570019590,
+      "message": "Snapshot V84",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 85,
+      "commitHash": "25c2671a9d77e797317e55b12b5dcbaed36333e3",
+      "tag": "snapshot-v85",
+      "timestamp": 1769570030519,
+      "message": "Snapshot V85",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 86,
+      "commitHash": "6f85121cce8410538581e3466273ef80567a0bdd",
+      "tag": "snapshot-v86",
+      "timestamp": 1769570031577,
+      "message": "Snapshot V86",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 87,
+      "commitHash": "e9ad1d4d259aa3b7b92691e739e5d3a27543a628",
+      "tag": "snapshot-v87",
+      "timestamp": 1769570032773,
+      "message": "Snapshot V87",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 88,
+      "commitHash": "1e3ea9d4270cde43895b908b8852f0ecdb046f86",
+      "tag": "snapshot-v88",
+      "timestamp": 1769570036404,
+      "message": "Snapshot V88",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 89,
+      "commitHash": "53c00bc57f738fd172a9429071c8be046ffd8840",
+      "tag": "snapshot-v89",
+      "timestamp": 1769570058326,
+      "message": "Snapshot V89",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 90,
+      "commitHash": "0e96cf5df92361340f14fc1190c77944333d3d1b",
+      "tag": "snapshot-v90",
+      "timestamp": 1769570095891,
+      "message": "Snapshot V90",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 91,
+      "commitHash": "f2098e783914368353c623a561fe1d05ef6818d0",
+      "tag": "snapshot-v91",
+      "timestamp": 1769570097174,
+      "message": "Snapshot V91",
+      "filesChanged": [
+        "database/pjud_scraping_clean.sql"
+      ]
+    },
+    {
+      "version": 92,
+      "commitHash": "cf18dbb2c1a317d327ce7f7a81225a1bfaeb7fa1",
+      "tag": "snapshot-v92",
+      "timestamp": 1769570211286,
+      "message": "Snapshot V92",
+      "filesChanged": [
+        "src/config/pjud_config.json"
+      ]
+    },
+    {
+      "version": 93,
+      "commitHash": "8fb8ec4c927ce048a5f0bd6a50845ba04a03490f",
+      "tag": "snapshot-v93",
+      "timestamp": 1769571040417,
+      "message": "Snapshot V93",
+      "filesChanged": [
+        "symfony-app/src/Repository/MovimientoRepository.php"
+      ]
+    },
+    {
+      "version": 94,
+      "commitHash": "9a72ae920a1332f92733892481926aaa77bc0f2a",
+      "tag": "snapshot-v94",
+      "timestamp": 1769598692169,
+      "message": "Snapshot V94",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
+    },
+    {
+      "version": 95,
+      "commitHash": "bd168ac015ebac277f5463bf39d934f9eca2b692",
+      "tag": "snapshot-v95",
+      "timestamp": 1769598751078,
+      "message": "Snapshot V95",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
+    },
+    {
+      "version": 96,
+      "commitHash": "8db91931ac0fda17b6a1ce754632ca89b87b56a4",
+      "tag": "snapshot-v96",
+      "timestamp": 1769598813824,
+      "message": "Snapshot V96",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
+    },
+    {
+      "version": 97,
+      "commitHash": "fd4d47d0705b391c342db3db7ef29a505451f66d",
+      "tag": "snapshot-v97",
+      "timestamp": 1769599086062,
+      "message": "Snapshot V97",
+      "filesChanged": [
+        "symfony-app/templates/demo/index.html.twig"
+      ]
+    },
+    {
+      "version": 98,
+      "commitHash": "b434233ebe42fb8572c1ae422af597086b779bde",
+      "tag": "snapshot-v98",
+      "timestamp": 1769614515361,
+      "message": "Snapshot V98",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 99,
+      "commitHash": "b626c6850aa51c92d7f7a2b9206fb1cca9e98208",
+      "tag": "snapshot-v99",
+      "timestamp": 1769614599853,
+      "message": "Snapshot V99",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
+    },
+    {
+      "version": 100,
+      "commitHash": "d90032e41a66b9787c6b9241914e9779f31354ea",
+      "tag": "snapshot-v100",
+      "timestamp": 1769614632643,
+      "message": "Snapshot V100",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
+    },
+    {
+      "version": 101,
+      "commitHash": "db036ec06a3b929f132ad7a66b69ec2c8156d110",
+      "tag": "snapshot-v101",
+      "timestamp": 1769614645577,
+      "message": "Snapshot V101",
+      "filesChanged": [
+        "src/process-causas.js"
+      ]
+    },
+    {
+      "version": 102,
+      "commitHash": "e306147439c634b749611b4516b5c606514b5c7e",
+      "tag": "snapshot-v102",
+      "timestamp": 1769614768405,
+      "message": "Snapshot V102",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 103,
+      "commitHash": "fa140ec5942f8a275550e83b2f6a2a646937368a",
+      "tag": "snapshot-v103",
+      "timestamp": 1769614788200,
+      "message": "Snapshot V103",
+      "filesChanged": [
+        "src/database/db-mariadb.js"
+      ]
+    },
+    {
+      "version": 104,
+      "commitHash": "d84ac94f992e6af16b9177ccef105f963718e8fb",
+      "tag": "snapshot-v104",
+      "timestamp": 1769615055087,
+      "message": "Snapshot V104",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
     }
   ],
-  "nextVersion": 71,
-  "currentVersion": 70
+  "nextVersion": 105,
+  "currentVersion": 104
 }

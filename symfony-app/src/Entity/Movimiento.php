@@ -381,19 +381,4 @@ class Movimiento
     {
         return $this->cuadernoNombre;
     }
-
-    public function getEtapa(): ?string
-    {
-        return $this->etapa;
-    }
-
-    public function getTramite(): ?string
-    {
-        return $this->tramite;
-    }
-
-    public function getDescripcion(): ?string
-    {
-        return $this->descripcion;
-    }
 }

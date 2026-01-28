@@ -536,6 +536,99 @@ async function processCausa(page, context, config, outputDir) {
     exportToCSV(rows, outputDir, ritClean);
     console.log(`   ✅ Datos legacy exportados`);
 
+    // PASO 13: Guardar en MySQL
+    console.log(`   💾 Guardando en base de datos...`);
+    try {
+      // 1. Guardar/actualizar causa
+      const causaData = {
+        rit: config.rit,
+        tipo_causa: config.tipoCausa || 'C',
+        rol: config.rol,
+        anio: config.año,
+        competencia_id: config.competencia || '3',
+        competencia_nombre: 'Civil',
+        corte_id: config.corte || '90',
+        corte_nombre: null, // Se puede obtener del payload si está disponible
+        tribunal_id: config.tribunal,
+        tribunal_nombre: payload.cabecera?.juzgado || null,
+        caratulado: payload.cabecera?.caratulado || payload.datos_basicos?.caratulado,
+        fecha_ingreso: payload.cabecera?.fecha_ingreso || payload.datos_basicos?.fecha,
+        estado: payload.estado_actual?.estado || 'SIN_INFORMACION',
+        etapa: payload.estado_actual?.etapa || null,
+        estado_descripcion: payload.estado_actual?.descripcion || null,
+        total_movimientos: datosProcesados.movimientos.length,
+        total_pdfs: Object.keys(pdfMapping).filter(k => pdfMapping[k].azul_base64 || pdfMapping[k].rojo_base64).length,
+        fecha_ultimo_scraping: new Date(),
+        scraping_exitoso: 1,
+        error_scraping: null
+      };
+
+      const causaResult = await upsertCausa(causaData);
+      const causaId = causaResult.insertId || causaResult.affectedRows > 0 ?
+        (await query('SELECT id FROM causas WHERE rit = ?', [config.rit]))[0]?.id : null;
+
+      if (!causaId) {
+        throw new Error('No se pudo obtener el ID de la causa');
+      }
+
+      console.log(`   ✅ Causa guardada (ID: ${causaId})`);
+
+      // 2. Guardar movimientos
+      let movimientosGuardados = 0;
+      for (const mov of datosProcesados.movimientos) {
+        const movData = {
+          causa_id: causaId,
+          folio: mov.folio || mov.indice,
+          fecha: mov.fecha,
+          tramite: mov.tramite,
+          descripcion: mov.descripcion,
+          etapa: mov.etapa || null,
+          cuaderno: mov.cuaderno || null,
+          foja: mov.foja || null,
+          tiene_pdf: mov.pdf_azul || mov.pdf_rojo ? 1 : 0
+        };
+
+        const movResult = await upsertMovimiento(movData);
+        const movimientoId = movResult.insertId || movResult.affectedRows > 0 ?
+          (await query('SELECT id FROM movimientos WHERE causa_id = ? AND folio = ?', [causaId, movData.folio]))[0]?.id : null;
+
+        if (movimientoId && (mov.pdf_azul || mov.pdf_rojo)) {
+          // 3. Guardar PDFs
+          if (mov.pdf_azul) {
+            await upsertPDF({
+              movimiento_id: movimientoId,
+              tipo: 'azul',
+              nombre_archivo: mov.pdf_azul.nombre,
+              base64: mov.pdf_azul.base64,
+              tipo_mime: 'application/pdf',
+              tamanio: Math.round(mov.pdf_azul.base64.length * 0.75) // Aproximación del tamaño en bytes
+            });
+          }
+
+          if (mov.pdf_rojo) {
+            await upsertPDF({
+              movimiento_id: movimientoId,
+              tipo: 'rojo',
+              nombre_archivo: mov.pdf_rojo.nombre,
+              base64: mov.pdf_rojo.base64,
+              tipo_mime: 'application/pdf',
+              tamanio: Math.round(mov.pdf_rojo.base64.length * 0.75)
+            });
+          }
+        }
+
+        movimientosGuardados++;
+      }
+
+      console.log(`   ✅ ${movimientosGuardados} movimientos guardados`);
+      console.log(`   ✅ Datos guardados en MySQL`);
+
+    } catch (dbError) {
+      console.error(`   ⚠️ Error guardando en BD: ${dbError.message}`);
+      console.error(`   Stack: ${dbError.stack}`);
+      // No lanzamos el error para que el scraping no falle completamente
+    }
+
     // Cerrar modal/detalle y volver al formulario
     try {
       const closeButtons = [

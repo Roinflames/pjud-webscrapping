@@ -184,3 +184,13 @@ CREATE TABLE `pdfs` (
   `error_descarga` varchar(500) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='PDFs descargados del scraping';
+CREATE TABLE `scraping_log` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED DEFAULT NULL,
+  `rit` varchar(50) DEFAULT NULL,
+  `tipo` enum('INFO','WARNING','ERROR','SUCCESS') DEFAULT 'INFO',
+  `mensaje` text NOT NULL,
+  `detalle` longtext DEFAULT NULL COMMENT 'Detalles adicionales en JSON',
+  `duracion_ms` int(11) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Log de operaciones de scraping';

@@ -40,11 +40,11 @@ class MovimientoRepository extends ServiceEntityRepository
         $conn = $this->getEntityManager()->getConnection();
 
         $sql = '
-            SELECT DISTINCT cuaderno, cuaderno_id, COUNT(*) as total
+            SELECT DISTINCT cuaderno_nombre as cuaderno, id_cuaderno as cuaderno_id, COUNT(*) as total
             FROM movimientos
             WHERE rit = :rit
-            GROUP BY cuaderno, cuaderno_id
-            ORDER BY cuaderno_id
+            GROUP BY cuaderno_nombre, id_cuaderno
+            ORDER BY id_cuaderno
         ';
 
         $stmt = $conn->prepare($sql);

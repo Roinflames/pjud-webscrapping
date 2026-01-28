@@ -1,67 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 15,
-      "commitHash": "34dd3dc1a888f9339602cfd0e38000ec7ac8906c",
-      "tag": "snapshot-v15",
-      "timestamp": 1769514449965,
-      "message": "Snapshot V15",
-      "filesChanged": [
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 16,
-      "commitHash": "f9fd6774a90c783c692c5f5f67af3d6e6009130d",
-      "tag": "snapshot-v16",
-      "timestamp": 1769514724637,
-      "message": "Snapshot V16",
-      "filesChanged": [
-        "src/form.js",
-        "src/process-csv-causas.js"
-      ]
-    },
-    {
-      "version": 17,
-      "commitHash": "077a49e4ec681087fac4fdc0a9b648461ac66b9d",
-      "tag": "snapshot-v17",
-      "timestamp": 1769514856767,
-      "message": "Snapshot V17",
-      "filesChanged": [
-        "error_detalle_especifico.png"
-      ]
-    },
-    {
-      "version": 18,
-      "commitHash": "d0f706ef857c2870bbf05e0c83a6a619d1b1ef59",
-      "tag": "snapshot-v18",
-      "timestamp": 1769514984012,
-      "message": "Snapshot V18",
-      "filesChanged": [
-        "src/form.js"
-      ]
-    },
-    {
-      "version": 19,
-      "commitHash": "9c266f0ca515a293db6508c2751a0e8c0d664ce8",
-      "tag": "snapshot-v19",
-      "timestamp": 1769515202730,
-      "message": "Snapshot V19",
-      "filesChanged": [
-        "src/form.js"
-      ]
-    },
-    {
-      "version": 20,
-      "commitHash": "5fd65f0dab832223009e96f3c15003c043c8cbf0",
-      "tag": "snapshot-v20",
-      "timestamp": 1769515562520,
-      "message": "Snapshot V20",
-      "filesChanged": [
-        "src/form.js"
-      ]
-    },
-    {
       "version": 21,
       "commitHash": "42091cf31a5bbd290789174c092967bb38ff4ec6",
       "tag": "snapshot-v21",
@@ -612,8 +551,70 @@
       "filesChanged": [
         "src/table.js"
       ]
+    },
+    {
+      "version": 65,
+      "commitHash": "e63de944c28c25a359455ed11f1794e6f7848ae6",
+      "tag": "snapshot-v65",
+      "timestamp": 1769565175767,
+      "message": "Snapshot V65",
+      "filesChanged": [
+        "PARCHE_PHP8_SYMFONY5.md",
+        "symfony-app/config/packages/dev/web_profiler.yaml",
+        "symfony-app/config/packages/dev/web_profiler.yaml.disabled"
+      ]
+    },
+    {
+      "version": 66,
+      "commitHash": "67a404cf9fd0f60556ab8905783d8033b82f5d34",
+      "tag": "snapshot-v66",
+      "timestamp": 1769565439385,
+      "message": "Snapshot V66",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
+    },
+    {
+      "version": 67,
+      "commitHash": "95f086f12dc21ac4757587e8643ba85234ccaeef",
+      "tag": "snapshot-v67",
+      "timestamp": 1769565464979,
+      "message": "Snapshot V67",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
+    },
+    {
+      "version": 68,
+      "commitHash": "de36cee77b75afae26eafbeaaa3853fdebd54015",
+      "tag": "snapshot-v68",
+      "timestamp": 1769565611168,
+      "message": "Snapshot V68",
+      "filesChanged": [
+        "symfony-app/database_structure_only.sql"
+      ]
+    },
+    {
+      "version": 69,
+      "commitHash": "c89429bc780a4c2e6f7edf293a84a078227c3751",
+      "tag": "snapshot-v69",
+      "timestamp": 1769565656297,
+      "message": "Snapshot V69",
+      "filesChanged": [
+        "symfony-app/tables_only.sql"
+      ]
+    },
+    {
+      "version": 70,
+      "commitHash": "271e90fa8f3abee479377d962e7fa13564654a75",
+      "tag": "snapshot-v70",
+      "timestamp": 1769565869206,
+      "message": "Snapshot V70",
+      "filesChanged": [
+        "symfony-app/src/Entity/Movimiento.php"
+      ]
     }
   ],
-  "nextVersion": 65,
-  "currentVersion": 64
+  "nextVersion": 71,
+  "currentVersion": 70
 }

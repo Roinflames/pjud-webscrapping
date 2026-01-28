@@ -81,3 +81,28 @@ END$$
 DELIMITER ;
 
 -- --------------------------------------------------------
+CREATE TABLE `causas` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `rit` varchar(50) NOT NULL COMMENT 'RIT de la causa (ej: C-3030-2017)',
+  `tipo_causa` char(1) NOT NULL DEFAULT 'C' COMMENT 'Tipo: C=Civil, L=Laboral, R=Reforma',
+  `rol` varchar(20) NOT NULL COMMENT 'Número de rol (ej: 3030)',
+  `anio` smallint(4) UNSIGNED NOT NULL COMMENT 'Año de la causa',
+  `competencia_id` varchar(10) DEFAULT NULL,
+  `competencia_nombre` varchar(100) DEFAULT NULL,
+  `corte_id` varchar(10) DEFAULT NULL,
+  `corte_nombre` varchar(100) DEFAULT NULL,
+  `tribunal_id` varchar(10) DEFAULT NULL,
+  `tribunal_nombre` varchar(200) DEFAULT NULL,
+  `caratulado` varchar(500) DEFAULT NULL COMMENT 'Caratulado de la causa',
+  `fecha_ingreso` varchar(20) DEFAULT NULL COMMENT 'Fecha de ingreso al tribunal',
+  `estado` enum('EN_TRAMITE','TERMINADA','SUSPENDIDA','SIN_INFORMACION') DEFAULT 'SIN_INFORMACION',
+  `etapa` varchar(50) DEFAULT NULL COMMENT 'Etapa procesal actual',
+  `estado_descripcion` varchar(500) DEFAULT NULL,
+  `total_movimientos` int(11) DEFAULT 0,
+  `total_pdfs` int(11) DEFAULT 0,
+  `fecha_ultimo_scraping` datetime DEFAULT NULL,
+  `scraping_exitoso` tinyint(1) DEFAULT 0,
+  `error_scraping` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Causas judiciales extraídas por scraping';

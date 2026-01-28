@@ -13,7 +13,11 @@
       "Read(//Users/diegomartinez/Documents/carpeta sin título/a/src/**)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(php:*)",
+      "Bash(cd:*)",
+      "Bash(composer:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

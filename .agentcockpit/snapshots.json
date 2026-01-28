@@ -1,187 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 55,
-      "commitHash": "3a9083b7aaf9391e86fbdb61a1eeacd6e9e5028a",
-      "tag": "snapshot-v55",
-      "timestamp": 1769555038211,
-      "message": "Snapshot V55",
-      "filesChanged": [
-        "symfony-app/INSTALL_CENTOS.md",
-        "symfony-app/composer.json",
-        "symfony-app/install.sh",
-        "symfony-app/public/.htaccess"
-      ]
-    },
-    {
-      "version": 56,
-      "commitHash": "d485c92ce5c4cab7cbc7bd67dc797d54c6e672a0",
-      "tag": "snapshot-v56",
-      "timestamp": 1769555527919,
-      "message": "Snapshot V56",
-      "filesChanged": [
-        "symfony-app/.gitignore",
-        "symfony-app/bin/console",
-        "symfony-app/compose.override.yaml",
-        "symfony-app/compose.yaml",
-        "symfony-app/composer.json",
-        "symfony-app/composer.lock",
-        "symfony-app/config/bootstrap.php",
-        "symfony-app/config/packages/cache.yaml",
-        "symfony-app/config/packages/dev/debug.yaml",
-        "symfony-app/config/packages/dev/web_profiler.yaml",
-        "symfony-app/config/packages/doctrine_migrations.yaml",
-        "symfony-app/config/packages/prod/doctrine.yaml",
-        "symfony-app/config/packages/prod/routing.yaml",
-        "symfony-app/config/packages/routing.yaml",
-        "symfony-app/config/packages/sensio_framework_extra.yaml",
-        "symfony-app/config/packages/test/doctrine.yaml",
-        "symfony-app/config/packages/test/framework.yaml",
-        "symfony-app/config/packages/test/twig.yaml",
-        "symfony-app/config/packages/test/validator.yaml",
-        "symfony-app/config/packages/test/web_profiler.yaml",
-        "symfony-app/config/packages/validator.yaml",
-        "symfony-app/config/preload.php",
-        "symfony-app/config/routes/annotations.yaml",
-        "symfony-app/config/routes/dev/framework.yaml",
-        "symfony-app/config/routes/dev/web_profiler.yaml",
-        "symfony-app/migrations/.gitignore",
-        "symfony-app/public/index.php",
-        "symfony-app/src/Controller/.gitignore",
-        "symfony-app/src/Entity/.gitignore",
-        "symfony-app/src/Repository/.gitignore",
-        "symfony-app/symfony.lock"
-      ]
-    },
-    {
-      "version": 57,
-      "commitHash": "8f2285d88d02f3bd34e7980af26710eb8a6ce8ef",
-      "tag": "snapshot-v57",
-      "timestamp": 1769555570529,
-      "message": "Snapshot V57",
-      "filesChanged": [
-        "symfony-app/public/index.php",
-        "symfony-app/src/Kernel.php"
-      ]
-    },
-    {
-      "version": 58,
-      "commitHash": "d829d24c1eb5814e62aac6e194afe52b56879213",
-      "tag": "snapshot-v58",
-      "timestamp": 1769555836692,
-      "message": "Snapshot V58",
-      "filesChanged": [
-        "symfony-app/README_DESPLIEGUE.md",
-        "symfony-app/config/packages/framework.yaml",
-        "symfony-app/src/Kernel.php"
-      ]
-    },
-    {
-      "version": 59,
-      "commitHash": "12fd6d6080a14218997cf528a965a26e02a37ebe",
-      "tag": "snapshot-v59",
-      "timestamp": 1769555867846,
-      "message": "Snapshot V59",
-      "filesChanged": [
-        "symfony-app/public/index.php"
-      ]
-    },
-    {
-      "version": 60,
-      "commitHash": "355e2cf82be38fc6e3391fa2aab1c9d34daf398a",
-      "tag": "snapshot-v60",
-      "timestamp": 1769556235375,
-      "message": "Snapshot V60",
-      "filesChanged": [
-        "symfony-app/composer.json",
-        "symfony-app/composer.lock"
-      ]
-    },
-    {
-      "version": 61,
-      "commitHash": "b5ccf6a3f801b00df2bc72caec9f8dd75d4394ae",
-      "tag": "snapshot-v61",
-      "timestamp": 1769556308173,
-      "message": "Snapshot V61",
-      "filesChanged": [
-        "symfony-app/public/index.php"
-      ]
-    },
-    {
-      "version": 62,
-      "commitHash": "30b9d6a01655943ea945a37338ac45b94eeec0b0",
-      "tag": "snapshot-v62",
-      "timestamp": 1769563431221,
-      "message": "Snapshot V62",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json"
-      ]
-    },
-    {
-      "version": 63,
-      "commitHash": "5f589aa2fb4d03adc747435c5f869210fb8ee7ee",
-      "tag": "snapshot-v63",
-      "timestamp": 1769563576960,
-      "message": "Snapshot V63",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json"
-      ]
-    },
-    {
-      "version": 64,
-      "commitHash": "fa5bafa14ca7613d1f5d74bb53762d4f5354084b",
-      "tag": "snapshot-v64",
-      "timestamp": 1769563613125,
-      "message": "Snapshot V64",
-      "filesChanged": [
-        "src/table.js"
-      ]
-    },
-    {
-      "version": 65,
-      "commitHash": "e63de944c28c25a359455ed11f1794e6f7848ae6",
-      "tag": "snapshot-v65",
-      "timestamp": 1769565175767,
-      "message": "Snapshot V65",
-      "filesChanged": [
-        "PARCHE_PHP8_SYMFONY5.md",
-        "symfony-app/config/packages/dev/web_profiler.yaml",
-        "symfony-app/config/packages/dev/web_profiler.yaml.disabled"
-      ]
-    },
-    {
-      "version": 66,
-      "commitHash": "67a404cf9fd0f60556ab8905783d8033b82f5d34",
-      "tag": "snapshot-v66",
-      "timestamp": 1769565439385,
-      "message": "Snapshot V66",
-      "filesChanged": [
-        "symfony-app/src/Entity/Movimiento.php"
-      ]
-    },
-    {
-      "version": 67,
-      "commitHash": "95f086f12dc21ac4757587e8643ba85234ccaeef",
-      "tag": "snapshot-v67",
-      "timestamp": 1769565464979,
-      "message": "Snapshot V67",
-      "filesChanged": [
-        "symfony-app/src/Entity/Movimiento.php"
-      ]
-    },
-    {
-      "version": 68,
-      "commitHash": "de36cee77b75afae26eafbeaaa3853fdebd54015",
-      "tag": "snapshot-v68",
-      "timestamp": 1769565611168,
-      "message": "Snapshot V68",
-      "filesChanged": [
-        "symfony-app/database_structure_only.sql"
-      ]
-    },
-    {
       "version": 69,
       "commitHash": "c89429bc780a4c2e6f7edf293a84a078227c3751",
       "tag": "snapshot-v69",
@@ -543,8 +362,158 @@
         "src/outputs/causas.ndjson",
         "src/outputs/causas/C_13786_2018.json"
       ]
+    },
+    {
+      "version": 105,
+      "commitHash": "072bf85ef36700a6b492636f33f3d07704083c1e",
+      "tag": "snapshot-v105",
+      "timestamp": 1769615618989,
+      "message": "Snapshot V105",
+      "filesChanged": [
+        "scripts/verificar_estructura_db.js",
+        "scripts/verificar_motores_db.js"
+      ]
+    },
+    {
+      "version": 106,
+      "commitHash": "5e731237e13edb7a8572c81790bb33701e8a86af",
+      "tag": "snapshot-v106",
+      "timestamp": 1769615663560,
+      "message": "Snapshot V106",
+      "filesChanged": [
+        "scripts/recrear_tablas_corruptas.js"
+      ]
+    },
+    {
+      "version": 107,
+      "commitHash": "99db82ca554d1a67b20d3727110ed7ca906e4b60",
+      "tag": "snapshot-v107",
+      "timestamp": 1769615701101,
+      "message": "Snapshot V107",
+      "filesChanged": [
+        "scripts/forzar_limpieza_bd.js"
+      ]
+    },
+    {
+      "version": 108,
+      "commitHash": "05865134c1fd0d036b583d10faf68cc4d4d3f5bf",
+      "tag": "snapshot-v108",
+      "timestamp": 1769615749560,
+      "message": "Snapshot V108",
+      "filesChanged": [
+        "scripts/reparar_bd_manual.md"
+      ]
+    },
+    {
+      "version": 109,
+      "commitHash": "f03bd1571a7e7be95ba181df232c21eb431c662a",
+      "tag": "snapshot-v109",
+      "timestamp": 1769615898049,
+      "message": "Snapshot V109",
+      "filesChanged": [
+        "scripts/test_nueva_tabla.js"
+      ]
+    },
+    {
+      "version": 110,
+      "commitHash": "a983d6650155e77015c06ba56de67463146dec75",
+      "tag": "snapshot-v110",
+      "timestamp": 1769616078755,
+      "message": "Snapshot V110",
+      "filesChanged": [
+        "REPORTE_AUDITORIA_FINAL.md"
+      ]
+    },
+    {
+      "version": 111,
+      "commitHash": "fec01e78937445e86344c768000b9780d0e9578f",
+      "tag": "snapshot-v111",
+      "timestamp": 1769616192795,
+      "message": "Snapshot V111",
+      "filesChanged": [
+        "scripts/reparar_bd_completo.js"
+      ]
+    },
+    {
+      "version": 112,
+      "commitHash": "a4e635881fbad7b2933f814da810d231877ac042",
+      "tag": "snapshot-v112",
+      "timestamp": 1769616217061,
+      "message": "Snapshot V112",
+      "filesChanged": [
+        "scripts/verificar_permisos_mysql.js"
+      ]
+    },
+    {
+      "version": 113,
+      "commitHash": "63d479b34b3f320aa064f18a4b6878bab95b0f7e",
+      "tag": "snapshot-v113",
+      "timestamp": 1769616737786,
+      "message": "Snapshot V113",
+      "filesChanged": [
+        "scripts/crear_tablas_schema_only.js"
+      ]
+    },
+    {
+      "version": 114,
+      "commitHash": "2d01ac0aee4ca02559e05f63357ed0422dce4afd",
+      "tag": "snapshot-v114",
+      "timestamp": 1769622865378,
+      "message": "Snapshot V114",
+      "filesChanged": [
+        "src.zip"
+      ]
+    },
+    {
+      "version": 115,
+      "commitHash": "2108f121f21a8d85412e828d2c7e828934953eb8",
+      "tag": "snapshot-v115",
+      "timestamp": 1769622873801,
+      "message": "Snapshot V115",
+      "filesChanged": [
+        "SOLUCION_ERRNO_30.md"
+      ]
+    },
+    {
+      "version": 116,
+      "commitHash": "b13acb902e0162bbc3625c429a1566c0b67a5fe1",
+      "tag": "snapshot-v116",
+      "timestamp": 1769622921219,
+      "message": "Snapshot V116",
+      "filesChanged": [
+        "INSTRUCCIONES_USUARIO.md"
+      ]
+    },
+    {
+      "version": 117,
+      "commitHash": "9d43eadb0dcc4d8bbf9fe10f7324d25736af1e9b",
+      "tag": "snapshot-v117",
+      "timestamp": 1769623345934,
+      "message": "Snapshot V117",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/test-modal-simple.js"
+      ]
+    },
+    {
+      "version": 118,
+      "commitHash": "4df4150284a14f021e1b7514ca45643deab11f82",
+      "tag": "snapshot-v118",
+      "timestamp": 1769623930042,
+      "message": "Snapshot V118",
+      "filesChanged": [
+        "diagnose_error.png",
+        "src/diagnose-modal-ajax.js",
+        "src/openModalHelper.js",
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/process-causas.js",
+        "src/table.js",
+        "src/test-modal-simple.js"
+      ]
     }
   ],
-  "nextVersion": 105,
-  "currentVersion": 104
+  "nextVersion": 119,
+  "currentVersion": 118
 }

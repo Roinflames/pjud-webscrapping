@@ -34,16 +34,6 @@ class Movimiento
     private $indice;
 
     /**
-     * @ORM\Column(type="string", length=50, nullable=true)
-     */
-    private $cuaderno = 'Principal';
-
-    /**
-     * @ORM\Column(type="string", length=10, nullable=true, name="cuaderno_id")
-     */
-    private $cuadernoId = '1';
-
-    /**
      * @ORM\Column(type="string", length=100, nullable=true)
      */
     private $etapa;
@@ -171,28 +161,6 @@ class Movimiento
     public function setIndice(int $indice): self
     {
         $this->indice = $indice;
-        return $this;
-    }
-
-    public function getCuaderno(): ?string
-    {
-        return $this->cuaderno;
-    }
-
-    public function setCuaderno(?string $cuaderno): self
-    {
-        $this->cuaderno = $cuaderno;
-        return $this;
-    }
-
-    public function getCuadernoId(): ?string
-    {
-        return $this->cuadernoId;
-    }
-
-    public function setCuadernoId(?string $cuadernoId): self
-    {
-        $this->cuadernoId = $cuadernoId;
         return $this;
     }
 

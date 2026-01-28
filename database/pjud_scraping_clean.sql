@@ -143,3 +143,27 @@ CREATE TABLE `etapas_juicio` (
   `orden` int(11) DEFAULT 0 COMMENT 'Orden en el flujo procesal',
   `es_terminal` tinyint(1) DEFAULT 0 COMMENT 'Si es etapa final'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Catálogo de etapas procesales';
+CREATE TABLE `movimientos` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED NOT NULL COMMENT 'FK a causas.id',
+  `rit` varchar(50) NOT NULL COMMENT 'RIT de la causa (desnormalizado para queries)',
+  `indice` int(11) NOT NULL COMMENT 'Número de índice del movimiento',
+  `etapa` varchar(100) DEFAULT NULL COMMENT 'Etapa del juicio',
+  `etapa_codigo` varchar(50) DEFAULT NULL COMMENT 'Código de etapa normalizado',
+  `tramite` varchar(200) DEFAULT NULL COMMENT 'Tipo de trámite',
+  `descripcion` text DEFAULT NULL COMMENT 'Descripción del movimiento',
+  `fecha` varchar(20) DEFAULT NULL COMMENT 'Fecha del movimiento',
+  `fecha_parsed` date DEFAULT NULL COMMENT 'Fecha parseada para ordenamiento',
+  `foja` varchar(50) DEFAULT NULL COMMENT 'Número de foja',
+  `folio` varchar(50) DEFAULT NULL COMMENT 'Número de folio',
+  `tiene_pdf` tinyint(1) DEFAULT 0,
+  `pdf_principal` varchar(255) DEFAULT NULL COMMENT 'Nombre archivo PDF principal (azul)',
+  `pdf_anexo` varchar(255) DEFAULT NULL COMMENT 'Nombre archivo PDF anexo (rojo)',
+  `pdf_descargado` tinyint(1) DEFAULT 0,
+  `raw_data` longtext DEFAULT NULL COMMENT 'Datos crudos en formato JSON',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `id_cuaderno` varchar(50) DEFAULT '1',
+  `cuaderno_nombre` varchar(255) DEFAULT 'Principal',
+  `id_pagina` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Movimientos de las causas judiciales';

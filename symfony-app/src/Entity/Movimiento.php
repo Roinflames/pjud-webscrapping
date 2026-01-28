@@ -79,29 +79,9 @@ class Movimiento
     private $tienePdf = false;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_principal")
+     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_path")
      */
-    private $pdfPrincipal;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_azul")
-     */
-    private $pdfAzul;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_anexo")
-     */
-    private $pdfAnexo;
-
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_rojo")
-     */
-    private $pdfRojo;
-
-    /**
-     * @ORM\Column(type="boolean", name="pdf_descargado")
-     */
-    private $pdfDescargado = false;
+    private $pdfPath;
 
     /**
      * @ORM\Column(type="text", nullable=true, name="raw_data")
@@ -263,59 +243,26 @@ class Movimiento
         return $this;
     }
 
-    public function getPdfPrincipal(): ?string
+    public function getPdfPath(): ?string
     {
-        return $this->pdfPrincipal;
+        return $this->pdfPath;
     }
 
-    public function setPdfPrincipal(?string $pdfPrincipal): self
+    public function setPdfPath(?string $pdfPath): self
     {
-        $this->pdfPrincipal = $pdfPrincipal;
+        $this->pdfPath = $pdfPath;
         return $this;
     }
 
-    public function getPdfAzul(): ?string
+    // Métodos compatibles con frontend
+    public function getTienePdfAzul(): bool
     {
-        return $this->pdfAzul;
+        return $this->tienePdf && $this->pdfPath !== null;
     }
 
-    public function setPdfAzul(?string $pdfAzul): self
+    public function getTienePdfRojo(): bool
     {
-        $this->pdfAzul = $pdfAzul;
-        return $this;
-    }
-
-    public function getPdfAnexo(): ?string
-    {
-        return $this->pdfAnexo;
-    }
-
-    public function setPdfAnexo(?string $pdfAnexo): self
-    {
-        $this->pdfAnexo = $pdfAnexo;
-        return $this;
-    }
-
-    public function getPdfRojo(): ?string
-    {
-        return $this->pdfRojo;
-    }
-
-    public function setPdfRojo(?string $pdfRojo): self
-    {
-        $this->pdfRojo = $pdfRojo;
-        return $this;
-    }
-
-    public function getPdfDescargado(): ?bool
-    {
-        return $this->pdfDescargado;
-    }
-
-    public function setPdfDescargado(bool $pdfDescargado): self
-    {
-        $this->pdfDescargado = $pdfDescargado;
-        return $this;
+        return false; // No hay PDFs rojos en la estructura actual
     }
 
     public function getRawData(): ?string

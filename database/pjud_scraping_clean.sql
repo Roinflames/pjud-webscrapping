@@ -473,3 +473,22 @@ ALTER TABLE `pdfs`
   ADD CONSTRAINT `fk_pdfs_causa` FOREIGN KEY (`causa_id`) REFERENCES `causas` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pdfs_movimiento` FOREIGN KEY (`movimiento_id`) REFERENCES `movimientos` (`id`) ON DELETE SET NULL;
 COMMIT;
+-- Estructura de tabla para la tabla `scraping_log`
+--
+
+CREATE TABLE `scraping_log` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED DEFAULT NULL,
+  `rit` varchar(50) DEFAULT NULL,
+  `tipo` enum('INFO','WARNING','ERROR','SUCCESS') DEFAULT 'INFO',
+  `mensaje` text NOT NULL,
+  `detalle` longtext DEFAULT NULL COMMENT 'Detalles adicionales en JSON',
+  `duracion_ms` int(11) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Log de operaciones de scraping';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura Stand-in para la vista `v_causas_resumen`
+-- (Véase abajo para la vista actual)

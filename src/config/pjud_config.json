@@ -1,10 +1,10 @@
 {
-  "rit": "C-123-2020",
+  "rit": "C-213-2023",
   "competencia": "3",
-  "corte": "90",
-  "tribunal": "7",
+  "corte": "50",
+  "tribunal": "500",
   "tipoCausa": "C",
-  "caratulado": "HDI SEGUROS S.A./CEPEDA",
-  "tribunal_nombre": "7º Juzgado Civil de Santiago",
-  "corte_nombre": "C.A. de Santiago"
+  "caratulado": "COMPAÑÍA MINERA DOÑA INÉS DE COLLAHUASI SCM/FISCO DE CHILE (CDE)",
+  "tribunal_nombre": "1º Juzgado de Letras de Iquique",
+  "corte_nombre": "C.A. de Iquique"
 }

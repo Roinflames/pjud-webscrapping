@@ -197,3 +197,14 @@ CREATE TABLE `scraping_log` (
 
 
 SET FOREIGN_KEY_CHECKS = 1;
+--
+-- Volcado de datos para la tabla `etapas_juicio`
+--
+
+INSERT INTO `etapas_juicio` (`id`, `codigo`, `nombre`, `descripcion`, `orden`, `es_terminal`) VALUES
+(1, 'INGRESO', 'Ingreso', 'Ingreso de la demanda al tribunal', 1, 0),
+(2, 'INICIO_TRAMITACION', 'Inicio de Tramitación', 'Inicio formal del proceso', 2, 0),
+(3, 'NOTIFICACION', 'Notificación', 'Notificación de demanda y proveído', 3, 0),
+(4, 'EXCEPCIONES', 'Excepciones', 'Presentación de excepciones', 4, 0),
+(5, 'CONTESTACION_EXCEPCIONES', 'Contestación Excepciones', 'Contestación a las excepciones', 5, 0),
+(6, 'CONTESTACION', 'Contestación', 'Contestación de la demanda', 6, 0),

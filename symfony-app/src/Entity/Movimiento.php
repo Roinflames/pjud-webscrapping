@@ -79,9 +79,19 @@ class Movimiento
     private $tienePdf = false;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_path")
+     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_principal")
      */
-    private $pdfPath;
+    private $pdfPrincipal;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true, name="pdf_anexo")
+     */
+    private $pdfAnexo;
+
+    /**
+     * @ORM\Column(type="boolean", name="pdf_descargado")
+     */
+    private $pdfDescargado = false;
 
     /**
      * @ORM\Column(type="text", nullable=true, name="raw_data")
@@ -97,6 +107,21 @@ class Movimiento
      * @ORM\Column(type="datetime", name="updated_at")
      */
     private $updatedAt;
+
+    /**
+     * @ORM\Column(type="string", length=50, nullable=true, name="id_cuaderno")
+     */
+    private $idCuaderno = '1';
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true, name="cuaderno_nombre")
+     */
+    private $cuadernoNombre = 'Principal';
+
+    /**
+     * @ORM\Column(type="string", length=50, nullable=true, name="id_pagina")
+     */
+    private $idPagina;
 
     public function __construct()
     {
@@ -243,26 +268,37 @@ class Movimiento
         return $this;
     }
 
-    public function getPdfPath(): ?string
+    public function getPdfPrincipal(): ?string
     {
-        return $this->pdfPath;
+        return $this->pdfPrincipal;
     }
 
-    public function setPdfPath(?string $pdfPath): self
+    public function setPdfPrincipal(?string $pdfPrincipal): self
     {
-        $this->pdfPath = $pdfPath;
+        $this->pdfPrincipal = $pdfPrincipal;
         return $this;
     }
 
-    // Métodos compatibles con frontend
-    public function getTienePdfAzul(): bool
+    public function getPdfAnexo(): ?string
     {
-        return $this->tienePdf && $this->pdfPath !== null;
+        return $this->pdfAnexo;
     }
 
-    public function getTienePdfRojo(): bool
+    public function setPdfAnexo(?string $pdfAnexo): self
     {
-        return false; // No hay PDFs rojos en la estructura actual
+        $this->pdfAnexo = $pdfAnexo;
+        return $this;
+    }
+
+    public function getPdfDescargado(): ?bool
+    {
+        return $this->pdfDescargado;
+    }
+
+    public function setPdfDescargado(bool $pdfDescargado): self
+    {
+        $this->pdfDescargado = $pdfDescargado;
+        return $this;
     }
 
     public function getRawData(): ?string
@@ -284,5 +320,49 @@ class Movimiento
     public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
+    }
+
+    public function getIdCuaderno(): ?string
+    {
+        return $this->idCuaderno;
+    }
+
+    public function setIdCuaderno(?string $idCuaderno): self
+    {
+        $this->idCuaderno = $idCuaderno;
+        return $this;
+    }
+
+    public function getCuadernoNombre(): ?string
+    {
+        return $this->cuadernoNombre;
+    }
+
+    public function setCuadernoNombre(?string $cuadernoNombre): self
+    {
+        $this->cuadernoNombre = $cuadernoNombre;
+        return $this;
+    }
+
+    public function getIdPagina(): ?string
+    {
+        return $this->idPagina;
+    }
+
+    public function setIdPagina(?string $idPagina): self
+    {
+        $this->idPagina = $idPagina;
+        return $this;
+    }
+
+    // Métodos compatibles con frontend
+    public function getTienePdfAzul(): bool
+    {
+        return $this->tienePdf && $this->pdfPrincipal !== null;
+    }
+
+    public function getTienePdfRojo(): bool
+    {
+        return $this->tienePdf && $this->pdfAnexo !== null;
     }
 }

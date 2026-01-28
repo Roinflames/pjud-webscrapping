@@ -167,3 +167,20 @@ CREATE TABLE `movimientos` (
   `cuaderno_nombre` varchar(255) DEFAULT 'Principal',
   `id_pagina` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Movimientos de las causas judiciales';
+CREATE TABLE `pdfs` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `causa_id` int(11) UNSIGNED NOT NULL,
+  `movimiento_id` int(11) UNSIGNED DEFAULT NULL,
+  `rit` varchar(50) NOT NULL,
+  `tipo` enum('PRINCIPAL','ANEXO','EBOOK') NOT NULL DEFAULT 'PRINCIPAL',
+  `nombre_archivo` varchar(255) NOT NULL,
+  `ruta_relativa` varchar(500) DEFAULT NULL,
+  `tamano_bytes` int(11) UNSIGNED DEFAULT NULL,
+  `hash_md5` varchar(32) DEFAULT NULL,
+  `base64_content` longtext DEFAULT NULL COMMENT 'Contenido del PDF en base64',
+  `tamano_base64_bytes` int(11) UNSIGNED DEFAULT NULL COMMENT 'Tamaño del string base64',
+  `descargado` tinyint(1) DEFAULT 0,
+  `fecha_descarga` datetime DEFAULT NULL,
+  `error_descarga` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='PDFs descargados del scraping';

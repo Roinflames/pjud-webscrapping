@@ -194,3 +194,6 @@ CREATE TABLE `scraping_log` (
   `duracion_ms` int(11) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Log de operaciones de scraping';
+
+
+SET FOREIGN_KEY_CHECKS = 1;

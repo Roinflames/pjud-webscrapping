@@ -3,14 +3,18 @@
 // Extraer movimientos del PJUD + forms de PDFs
 // ==========================================
 
+/**
+ * extractTable - Función legacy que extrae del MODAL (CORREGIDO)
+ * IMPORTANTE: Busca solo dentro del modal, no en la tabla de resultados
+ */
 async function extractTable(page) {
-  await page.waitForSelector(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
-    { timeout: 15000 }
-  ).catch(() => {});
+  // SELECTOR CORREGIDO: Solo buscar dentro del modal de detalle
+  const MODAL_TABLE_SELECTOR = '#modalDetalleCivil table tbody tr, #modalDetalleLaboral table tbody tr, .modal-body table tbody tr';
+
+  await page.waitForSelector(MODAL_TABLE_SELECTOR, { timeout: 15000 });
 
   return await page.$$eval(
-    'table.table.table-bordered.table-striped.table-hover tbody tr',
+    MODAL_TABLE_SELECTOR,
     trs => trs.map((tr, index) => {
       const cells = [...tr.querySelectorAll('td')].map(td => td.innerText.trim());
 
@@ -21,10 +25,14 @@ async function extractTable(page) {
       return {
         indice: index + 1,
         folio: cells[0] || null,
-        rit: cells[1] || null,
-        fecha: cells[2] || null,
-        caratulado: cells[3] || null,
-        juzgado: cells[4] || null,
+        doc: cells[1] || null,
+        anexo: cells[2] || null,
+        etapa: cells[3] || null,
+        tramite: cells[4] || null,
+        desc_tramite: cells[5] || null,
+        fecha: cells[6] || null,
+        foja: cells[7] || null,
+        georref: cells[8] || null,
         tiene_pdf: tienePDF,
         raw: cells
       };

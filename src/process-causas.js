@@ -14,6 +14,7 @@ const { downloadEbook } = require('./ebook');
 const { saveErrorEvidence } = require('./utils');
 const { saveCausaJSON, appendCausaNDJSON, upsertIndex } = require('./jsonStore');
 const { upsertCausa, upsertMovimiento, upsertPDF, query } = require('./database/db-mariadb');
+const { openModalDetalle } = require('./openModalHelper');
 
 // Mapeo de tribunal_id a corte_id usando el scraping de tribunales
 let tribunalToCorteMap = null;
@@ -322,98 +323,15 @@ async function processCausa(page, context, config, outputDir) {
     fs.appendFileSync(csvPath, csvLine, 'utf8');
     console.log(`   💾 Datos básicos guardados en CSV`);
     
-    // PASO 2: Abrir el detalle usando el mismo flujo que el sitio (detalleCausaCivil(token))
-    console.log(`   🔍 Buscando icono de lupa para entrar al detalle...`);
-    try {
-      // 1) Buscar el token del onclick "detalleCausaCivil('TOKEN')" en la fila del RIT
-      const onclickToken = await page.evaluate((ritBuscado) => {
-        const tables = document.querySelectorAll('table, #tablaConsultas');
-        
-        for (const table of tables) {
-          const rows = Array.from(table.querySelectorAll('tbody tr, tr'));
-          
-          for (const row of rows) {
-            const rowText = row.innerText || '';
-            if (!rowText) continue;
+    // PASO 2 & 3: Abrir modal y esperar contenido (usando helper mejorado)
+    console.log(`   🔍 Abriendo modal de detalle...`);
+    const modalAbierto = await openModalDetalle(page, config.rit, { maxRetries: 2 });
 
-            // Emparejar por RIT completo o por la parte numérica del RIT (rol)
-            const partes = ritBuscado.split('-');
-            const rolRit = partes.length >= 2 ? partes[1] : null;
-            const coincideRit = rowText.includes(ritBuscado);
-            const coincideRol = rolRit && rowText.includes(rolRit);
-
-            if (coincideRit || coincideRol) {
-              // Buscar enlace con onclick detalleCausaCivil('TOKEN')
-              const link = row.querySelector('a[onclick*="detalleCausaCivil"]') 
-                        || row.querySelector('a.toggle-modal[title*="Detalle"]') 
-                        || row.querySelector('a[href="#modalDetalleCivil"]');
-
-              if (link) {
-                const onclickAttr = link.getAttribute('onclick') || '';
-                const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
-                if (match && match[1]) {
-                  return match[1]; // TOKEN JWT que usa el sitio
-                }
-              }
-
-              // Fallback: buscar el icono y su padre <a> con onclick
-              const icon = row.querySelector('i.fa-search.fa-lg, i.fa-search');
-              if (icon) {
-                const parentLink = icon.closest('a');
-                if (parentLink) {
-                  const onclickAttr = parentLink.getAttribute('onclick') || '';
-                  const match = onclickAttr.match(/detalleCausaCivil\('([^']+)'/);
-                  if (match && match[1]) {
-                    return match[1];
-                  }
-                }
-              }
-            }
-          }
-        }
-        return null;
-      }, config.rit);
-
-      if (!onclickToken) {
-        console.log('   ⚠️ No se encontró token de detalleCausaCivil en la tabla, intentando click simple en la lupa...');
-        // Último recurso: clickear el primer enlace de detalle (puede abrir modal vacío)
-        await page.click('a[onclick*="detalleCausaCivil"], a[href="#modalDetalleCivil"], i.fa-search').catch(() => {
-          throw new Error('No se pudo encontrar el icono/enlace de detalle');
-        });
-      } else {
-        // 2) Ejecutar detalleCausaCivil(token) dentro del contexto de la página
-        console.log('   ✅ Token de detalleCausaCivil encontrado, ejecutando función en el navegador...');
-        await page.evaluate((token) => {
-          // La función puede estar en window o en el scope global
-          if (typeof window.detalleCausaCivil === 'function') {
-            window.detalleCausaCivil(token);
-          } else if (typeof detalleCausaCivil === 'function') {
-            detalleCausaCivil(token);
-          } else {
-            // Fallback: buscar cualquier función global que contenga 'detalleCausaCivil'
-            for (const key of Object.keys(window)) {
-              if (key.toLowerCase().includes('detallecausacivil') && typeof window[key] === 'function') {
-                window[key](token);
-                break;
-              }
-            }
-          }
-        }, onclickToken);
-      }
-
-      console.log(`   ✅ Detalle solicitado vía detalleCausaCivil`);
-    } catch (error) {
-      console.error(`   ❌ Error abriendo detalle de la causa: ${error.message}`);
-      throw error;
+    if (!modalAbierto) {
+      throw new Error('No se pudo abrir el modal de detalle después de múltiples intentos');
     }
-    
-    // PASO 3: Esperar a que se abra el modal de detalle
-    console.log(`   ⏳ Esperando que se abra el detalle...`);
-    await page.waitForSelector('#modalDetalleCivil table, #modalDetalleLaboral table, .modal-body table', { 
-      timeout: 20000 
-    });
-    await page.waitForTimeout(1500); // Dar tiempo a que cargue completamente
-    console.log(`   ✅ Detalle abierto`);
+
+    console.log(`   ✅ Modal abierto con contenido`);
     
     // PASO 4: Extraer tabla de movimientos
     console.log(`   📊 Extrayendo tabla de movimientos...`);

@@ -2,12 +2,12 @@
  * Test simple para diagnosticar por qué el modal no carga
  */
 
-const { chromium } = require('playwright');
+const { firefox } = require('playwright');
 
 async function testModal() {
   console.log('🚀 Iniciando test de modal...\n');
 
-  const browser = await chromium.launch({ headless: false, slowMo: 1000 });
+  const browser = await firefox.launch({ headless: false, slowMo: 1000 });
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
   });

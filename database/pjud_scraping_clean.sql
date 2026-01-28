@@ -135,3 +135,11 @@ CREATE TABLE `errores_scraping` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Errores de scraping para evitar reintentos infinitos';
+CREATE TABLE `etapas_juicio` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `codigo` varchar(50) NOT NULL COMMENT 'Código único de etapa',
+  `nombre` varchar(100) NOT NULL COMMENT 'Nombre de la etapa',
+  `descripcion` varchar(500) DEFAULT NULL,
+  `orden` int(11) DEFAULT 0 COMMENT 'Orden en el flujo procesal',
+  `es_terminal` tinyint(1) DEFAULT 0 COMMENT 'Si es etapa final'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Catálogo de etapas procesales';

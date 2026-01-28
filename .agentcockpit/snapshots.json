@@ -1,58 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 10,
-      "commitHash": "0fd28afc0b908999ea892ba208b3ed625311bfdc",
-      "tag": "snapshot-v10",
-      "timestamp": 1769512849932,
-      "message": "Snapshot V10",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json"
-      ]
-    },
-    {
-      "version": 11,
-      "commitHash": "6a29a4f26e69cc62b4d518ebf392790d5d32b3a2",
-      "tag": "snapshot-v11",
-      "timestamp": 1769513577046,
-      "message": "Snapshot V11",
-      "filesChanged": [
-        "src/config/pjud_config.json"
-      ]
-    },
-    {
-      "version": 12,
-      "commitHash": "95022910e9f60714f76c56f3d6f2e0788b980e08",
-      "tag": "snapshot-v12",
-      "timestamp": 1769513708154,
-      "message": "Snapshot V12",
-      "filesChanged": [
-        "causas_con_pdfs.csv"
-      ]
-    },
-    {
-      "version": 13,
-      "commitHash": "60672b0035466abe44cea2ff00da17bb654041e0",
-      "tag": "snapshot-v13",
-      "timestamp": 1769513814348,
-      "message": "Snapshot V13",
-      "filesChanged": [
-        "causas_con_pdfs.csv"
-      ]
-    },
-    {
-      "version": 14,
-      "commitHash": "131169bb188b5c7f55aaf0527c53ee7a3033c97c",
-      "tag": "snapshot-v14",
-      "timestamp": 1769514205627,
-      "message": "Snapshot V14",
-      "filesChanged": [
-        "src/outputs/causas.ndjson",
-        "src/outputs/causas/C_13786_2018.json"
-      ]
-    },
-    {
       "version": 15,
       "commitHash": "34dd3dc1a888f9339602cfd0e38000ec7ac8906c",
       "tag": "snapshot-v15",
@@ -611,8 +559,61 @@
       "filesChanged": [
         "symfony-app/public/index.php"
       ]
+    },
+    {
+      "version": 60,
+      "commitHash": "355e2cf82be38fc6e3391fa2aab1c9d34daf398a",
+      "tag": "snapshot-v60",
+      "timestamp": 1769556235375,
+      "message": "Snapshot V60",
+      "filesChanged": [
+        "symfony-app/composer.json",
+        "symfony-app/composer.lock"
+      ]
+    },
+    {
+      "version": 61,
+      "commitHash": "b5ccf6a3f801b00df2bc72caec9f8dd75d4394ae",
+      "tag": "snapshot-v61",
+      "timestamp": 1769556308173,
+      "message": "Snapshot V61",
+      "filesChanged": [
+        "symfony-app/public/index.php"
+      ]
+    },
+    {
+      "version": 62,
+      "commitHash": "30b9d6a01655943ea945a37338ac45b94eeec0b0",
+      "tag": "snapshot-v62",
+      "timestamp": 1769563431221,
+      "message": "Snapshot V62",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 63,
+      "commitHash": "5f589aa2fb4d03adc747435c5f869210fb8ee7ee",
+      "tag": "snapshot-v63",
+      "timestamp": 1769563576960,
+      "message": "Snapshot V63",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 64,
+      "commitHash": "fa5bafa14ca7613d1f5d74bb53762d4f5354084b",
+      "tag": "snapshot-v64",
+      "timestamp": 1769563613125,
+      "message": "Snapshot V64",
+      "filesChanged": [
+        "src/table.js"
+      ]
     }
   ],
-  "nextVersion": 60,
-  "currentVersion": 59
+  "nextVersion": 65,
+  "currentVersion": 64
 }

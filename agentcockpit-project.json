@@ -4,10 +4,10 @@
       "id": "5213bfea-a5ff-477b-81f1-ec2769f45048",
       "name": "Session 1",
       "createdAt": 1769534740476,
-      "lastUsed": 1769539745335,
+      "lastUsed": 1769556307519,
       "model": "sonnet",
       "wasPreExisting": false,
-      "terminalId": "2c434369-9647-4f51-860f-05769de72778"
+      "terminalId": "5784edf2-926f-4d0f-8e98-3b1d91340a4d"
     }
   ],
   "defaultModel": "sonnet",

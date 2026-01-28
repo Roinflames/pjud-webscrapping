@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(awk '{print $2}')",
-      "Bash(git add symfony-app/)"
+      "Bash(git add symfony-app/)",
+      "Bash(git commit -m \"feat: Agregar aplicación Symfony 5.0.11 con Doctrine ORM y réplica vista PJUD\n\n- Symfony 5.0.11 compatible con PHP 7.4.33 (CentOS 7.9)\n- Doctrine ORM para MariaDB 5.5.68 (NO SQL directo)\n- Entities: Causa, Movimiento, PDF\n- Repositories con métodos ORM (findByRit, findAll)\n- Controller con inyección de dependencias\n- Vista Twig réplica PJUD (Bootstrap 4.5.2)\n- Documentación completa de despliegue CentOS\n- Script de instalación automatizada\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(php bin/console cache:clear --no-warmup)",
+      "Bash(php bin/console debug:router)",
+      "Bash(composer require annotations --ignore-platform-reqs --no-interaction)",
+      "Bash(php -v)",
+      "Bash(node:*)",
+      "Bash(timeout:*)",
+      "Read(//Users/diegomartinez/Documents/carpeta sin título/a/src/**)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

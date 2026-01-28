@@ -86,19 +86,33 @@ async function extractTableAsArray(page) {
   console.log(`📊 Análisis de tablas del modal:`, JSON.stringify(tablasInfo.tables, null, 2));
   console.log(`✅ Tabla seleccionada: Tabla ${tablasInfo.selectedIndex} (${tablasInfo.tables[tablasInfo.selectedIndex]?.columns || '?'} columnas)`);
 
-  // CORRECCIÓN: Usar índice directo en array de tablas (más confiable que nth-of-type)
-  // nth-of-type cuenta solo elementos <table>, pero puede haber anidamiento
-  // Mejor enfoque: identificar por número de columnas y primera celda numérica
-  const tableIdentifier = tablasInfo.tables[tablasInfo.selectedIndex];
-  let TABLE_SPECIFIC_SELECTOR;
+  // CORRECCIÓN: Marcar la tabla correcta con un atributo temporal para seleccionarla fácilmente
+  const tableMarked = await page.evaluate((selectedIndex) => {
+    const modals = [
+      document.querySelector('#modalDetalleCivil'),
+      document.querySelector('#modalDetalleLaboral'),
+      document.querySelector('.modal-body')
+    ].filter(Boolean);
 
-  if (tableIdentifier && tableIdentifier.columns >= 7 && tableIdentifier.isNumeric) {
-    // Buscar tabla con exactamente N columnas y primera celda numérica
-    TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table tbody tr:has(td:nth-child(${tableIdentifier.columns})), #modalDetalleLaboral table tbody tr:has(td:nth-child(${tableIdentifier.columns}))`;
-  } else {
-    // Fallback: usar nth-of-type (puede fallar si hay tablas anidadas)
-    TABLE_SPECIFIC_SELECTOR = `#modalDetalleCivil table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr, #modalDetalleLaboral table:nth-of-type(${tablasInfo.selectedIndex + 1}) tbody tr`;
+    if (modals.length === 0) return false;
+
+    const modal = modals[0];
+    const tables = Array.from(modal.querySelectorAll('table'));
+
+    if (selectedIndex >= 0 && selectedIndex < tables.length) {
+      tables[selectedIndex].setAttribute('data-scraper-movimientos', 'true');
+      return true;
+    }
+
+    return false;
+  }, tablasInfo.selectedIndex);
+
+  if (!tableMarked) {
+    console.warn(`⚠️ No se pudo marcar la tabla de movimientos`);
   }
+
+  // Selector usando el atributo temporal
+  const TABLE_SPECIFIC_SELECTOR = 'table[data-scraper-movimientos="true"] tbody tr';
 
   console.log(`🔍 Selector calculado: ${TABLE_SPECIFIC_SELECTOR}`);
 

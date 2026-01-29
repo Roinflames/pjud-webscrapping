@@ -85,8 +85,16 @@ async function runScheduler() {
 
     console.log(`📋 Se van a re-scrapear ${causas.length} causas`);
 
-    // Procesar todas las causas
-    await processMultipleCausas(causas);
+    // Procesar todas las causas (sin notificación, la enviamos manualmente con más detalles)
+    const resultados = await processMultipleCausas(causas, true, false);
+
+    const finEjecucion = new Date();
+    const duracionMs = finEjecucion - inicioEjecucion;
+    const duracionMinutos = duracionMs / (1000 * 60);
+
+    // Calcular estadísticas
+    const exitosas = resultados.filter(r => r.success).length;
+    const fallidas = resultados.filter(r => !r.success).length;
 
     console.log(`✅ Scheduler completado exitosamente`);
     console.log(`⏰ Próxima ejecución en 10 minutos: ${nextRun}`);
@@ -95,7 +103,20 @@ async function runScheduler() {
       status: 'idle',
       message: `Última ejecución exitosa: ${causas.length} causas`,
       causasProcessed: causas.length,
+      exitosas: exitosas,
+      fallidas: fallidas,
       error: null
+    });
+
+    // Enviar notificación por email
+    await sendCompletionEmail({
+      totalProcesadas: resultados.length,
+      exitosas: exitosas,
+      fallidas: fallidas,
+      iteracion: currentIteration,
+      inicioEjecucion: inicioEjecucion.toISOString(),
+      finEjecucion: finEjecucion.toISOString(),
+      duracionMinutos: duracionMinutos
     });
 
   } catch (error) {

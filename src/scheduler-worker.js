@@ -55,7 +55,8 @@ async function runScheduler() {
 
   isRunning = true;
   currentIteration++;
-  lastRun = new Date().toISOString();
+  const inicioEjecucion = new Date();
+  lastRun = inicioEjecucion.toISOString();
   nextRun = new Date(Date.now() + INTERVAL_MS).toISOString();
 
   console.log(`\n🔄 ========== SCHEDULER ITERACIÓN ${currentIteration} ==========`);

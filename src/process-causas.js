@@ -742,10 +742,13 @@ function isValidForScraping(csvCausa) {
 }
 
 // Procesar múltiples causas
-async function processMultipleCausas(limitOrCausas = 10, requireTribunal = true) {
+async function processMultipleCausas(limitOrCausas = 10, requireTribunal = true, notifyOnComplete = false) {
   // Si es un array, usar las causas provistas; si es número, leer del CSV
   let causas;
   let limit;
+
+  // Marcar tiempo de inicio
+  const inicioEjecucion = new Date();
 
   if (Array.isArray(limitOrCausas)) {
     causas = limitOrCausas;

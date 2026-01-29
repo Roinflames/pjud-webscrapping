@@ -1,6 +1,6 @@
 {
     "name": "pjud/demo-app",
-    "description": "Sistema Demo PJUD - Symfony 5.0.11 + Bootstrap 4.5",
+    "description": "Sistema Demo PJUD - Symfony 5.0.11 + Bootstrap 4.5 (última versión 5.0.x estable)",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",

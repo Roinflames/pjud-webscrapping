@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { query } = require('./database/db-mariadb');
 const { processMultipleCausas } = require('./process-causas');
+const { sendCompletionEmail, checkEmailConfig } = require('./notifications/email-notifier');
 
 const INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
 const STATUS_FILE = require('os').tmpdir() + '/pjud_scheduler_status.json';

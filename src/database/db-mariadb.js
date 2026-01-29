@@ -508,27 +508,30 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
  * Inserta o actualiza un PDF con estructura simplificada
  */
 async function upsertPDF(datos) {
-  // Obtener causa_id y rit desde movimiento_id
+  // Obtener causa_id, rit e indice desde movimiento_id
   let causaId = null;
   let rit = null;
+  let indice = null;
 
   if (datos.movimiento_id) {
     const rows = await query(
-      'SELECT causa_id, rit FROM movimientos WHERE id = ?',
+      'SELECT causa_id, rit, indice FROM movimientos WHERE id = ?',
       [datos.movimiento_id]
     );
     if (rows.length > 0) {
       causaId = rows[0].causa_id;
       rit = rows[0].rit;
+      indice = rows[0].indice;
     }
   }
 
   const sql = `
     INSERT INTO pdfs (
-      causa_id, movimiento_id, rit, folio, tipo_pdf,
+      causa_id, movimiento_id, rit, folio, indice, tipo_pdf,
       nombre_archivo, contenido_base64, tamano_bytes, fecha_descarga
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ON DUPLICATE KEY UPDATE
+      indice = VALUES(indice),
       contenido_base64 = VALUES(contenido_base64),
       tamano_bytes = VALUES(tamano_bytes),
       fecha_descarga = NOW()
@@ -539,6 +542,7 @@ async function upsertPDF(datos) {
     datos.movimiento_id || null,
     rit,
     datos.folio || null,
+    indice,
     datos.tipo || 'PRINCIPAL',
     datos.nombre_archivo,
     datos.base64 || datos.contenido_base64 || null,

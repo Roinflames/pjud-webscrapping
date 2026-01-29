@@ -44,6 +44,27 @@
         margin-top: 2px;
     }
 
+    /* Scheduler Badge */
+    .scheduler-badge {
+        position: fixed;
+        top: 15px;
+        right: 20px;
+        z-index: 9999;
+        font-size: 12px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+
+    .scheduler-badge .badge {
+        padding: 8px 12px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
     /* Breadcrumb PJUD */
     .pjud-breadcrumb {
         background-color: var(--pjud-gray);
@@ -204,6 +225,36 @@
 
     .btn-pdf:hover {
         background-color: #c82333;
+    }
+
+    .btn-actualizar {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        background-color: #17a2b8;
+        color: white;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        margin-left: 5px;
+    }
+
+    .btn-actualizar:hover {
+        background-color: #138496;
+        transform: rotate(180deg);
+    }
+
+    .btn-actualizar:active {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 
     /* Modal PJUD (Vista detalle - Lupa) */
@@ -398,6 +449,13 @@
 {% endblock %}
 
 {% block body %}
+<!-- Scheduler Status Badge -->
+<div id="schedulerStatus" class="scheduler-badge">
+    <div class="badge badge-secondary">
+        <i class="fas fa-sync-alt fa-spin"></i> <span id="schedulerStatusText">Verificando...</span>
+    </div>
+</div>
+
 <!-- Header PJUD -->
 <header class="pjud-header">
     <div class="container">
@@ -506,6 +564,11 @@
                                     <i class="fas fa-file-pdf"></i>
                                 </button>
                                 {% endif %}
+                                <button class="btn-actualizar"
+                                        title="Actualizar datos (scraping)"
+                                        onclick="actualizarCausa('{{ causa.rit }}')">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
                             </td>
                             <td><strong>{{ causa.rit }}</strong></td>
                             <td>{{ causa.caratulado|default('-') }}</td>
@@ -528,6 +591,55 @@
         </div>
     </div>
 </main>
+
+<!-- Modal: Progreso de Scraping -->
+<div class="modal fade" id="modalProgreso" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    Actualizando Causa: <span id="progressRit"></span>
+                </h5>
+            </div>
+            <div class="modal-body">
+                <!-- Barra de progreso -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Progreso</span>
+                        <span class="font-weight-bold"><span id="progressPercent">0</span>%</span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado actual -->
+                <div class="alert alert-info mb-3" id="progressStatus">
+                    <i class="fas fa-info-circle"></i> Iniciando scraping...
+                </div>
+
+                <!-- Log de terminal -->
+                <div class="card">
+                    <div class="card-header bg-dark text-white py-2">
+                        <small><i class="fas fa-terminal"></i> Terminal Output</small>
+                    </div>
+                    <div class="card-body p-2 bg-dark text-light" id="terminalLog"
+                         style="height: 250px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCerrarProgreso" disabled>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal: Detalle de Causa (Vista Lupa PJUD) -->
 <div class="modal fade modal-pjud" id="modalDetalle" tabindex="-1" role="dialog">
@@ -715,5 +827,159 @@ function verDetalle(rit) {
 document.getElementById('searchForm')?.addEventListener('submit', function(e) {
     // Permitir submit normal del form (sin AJAX por ahora)
 });
+
+// ============================================
+// FUNCIONES DE SCRAPING EN TIEMPO REAL
+// ============================================
+
+/**
+ * Actualizar causa con scraping en tiempo real
+ */
+function actualizarCausa(rit) {
+    // Resetear modal
+    document.getElementById('progressRit').textContent = rit;
+    document.getElementById('progressPercent').textContent = '0';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressBar').textContent = '0%';
+    document.getElementById('progressBar').setAttribute('aria-valuenow', '0');
+    document.getElementById('progressStatus').innerHTML = '<i class="fas fa-info-circle"></i> Iniciando scraping...';
+    document.getElementById('terminalLog').innerHTML = '';
+    document.getElementById('btnCerrarProgreso').disabled = true;
+
+    // Abrir modal
+    $('#modalProgreso').modal('show');
+
+    // Establecer conexión SSE
+    const eventSource = new EventSource('/scraper/stream/' + encodeURIComponent(rit));
+    let logLines = [];
+
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+
+        // Actualizar progreso
+        if (data.progress !== undefined) {
+            const progress = Math.min(100, Math.max(0, data.progress));
+            document.getElementById('progressPercent').textContent = progress;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressBar').textContent = progress + '%';
+            document.getElementById('progressBar').setAttribute('aria-valuenow', progress);
+        }
+
+        // Actualizar estado
+        if (data.message) {
+            const statusDiv = document.getElementById('progressStatus');
+            let icon = 'info-circle';
+            let alertClass = 'alert-info';
+
+            if (data.type === 'success') {
+                icon = 'check-circle';
+                alertClass = 'alert-success';
+            } else if (data.type === 'error' || data.type === 'warning') {
+                icon = 'exclamation-triangle';
+                alertClass = 'alert-warning';
+            }
+
+            statusDiv.className = 'alert mb-3 ' + alertClass;
+            statusDiv.innerHTML = `<i class="fas fa-${icon}"></i> ${data.message}`;
+
+            // Agregar a log
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = `[${timestamp}] ${data.message}`;
+            logLines.push(logLine);
+
+            const terminalLog = document.getElementById('terminalLog');
+            terminalLog.innerHTML = logLines.map(line => {
+                let color = '#00ff00'; // verde por defecto
+                if (line.includes('Error') || line.includes('❌')) color = '#ff4444';
+                else if (line.includes('⚠️')) color = '#ffaa00';
+                else if (line.includes('✅')) color = '#00ff00';
+                else if (line.includes('🔍') || line.includes('🌐')) color = '#00aaff';
+                return `<div style="color:${color};margin-bottom:3px;">${line}</div>`;
+            }).join('');
+
+            // Auto-scroll al final
+            terminalLog.scrollTop = terminalLog.scrollHeight;
+        }
+
+        // Completado
+        if (data.type === 'complete') {
+            eventSource.close();
+            document.getElementById('btnCerrarProgreso').disabled = false;
+
+            // Recargar página después de 2 segundos
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }
+    };
+
+    eventSource.onerror = function(error) {
+        console.error('SSE Error:', error);
+        eventSource.close();
+
+        document.getElementById('progressStatus').className = 'alert mb-3 alert-danger';
+        document.getElementById('progressStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error de conexión con el servidor';
+        document.getElementById('btnCerrarProgreso').disabled = false;
+    };
+
+    // Cerrar modal
+    document.getElementById('btnCerrarProgreso').addEventListener('click', function() {
+        eventSource.close();
+        $('#modalProgreso').modal('hide');
+    });
+}
+
+// ============================================
+// SCHEDULER STATUS CHECKER
+// ============================================
+
+/**
+ * Verificar estado del scheduler cada 5 segundos
+ */
+function checkSchedulerStatus() {
+    fetch('/scraper/status')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('#schedulerStatus .badge');
+            const statusText = document.getElementById('schedulerStatusText');
+
+            if (!badge || !statusText) return;
+
+            if (data.running) {
+                badge.className = 'badge badge-success';
+                statusText.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> Scraping (${data.iteration || 0})`;
+            } else if (data.status === 'idle') {
+                badge.className = 'badge badge-primary';
+                const nextRun = data.nextRun ? new Date(data.nextRun) : null;
+                if (nextRun) {
+                    const mins = Math.max(0, Math.round((nextRun - new Date()) / 60000));
+                    statusText.innerHTML = `<i class="fas fa-clock"></i> Próximo: ${mins}m`;
+                } else {
+                    statusText.textContent = data.message || 'Esperando...';
+                }
+            } else if (data.status === 'error') {
+                badge.className = 'badge badge-danger';
+                statusText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error`;
+            } else {
+                badge.className = 'badge badge-secondary';
+                statusText.textContent = data.message || 'No iniciado';
+            }
+        })
+        .catch(error => {
+            console.error('Error obteniendo estado del scheduler:', error);
+            const badge = document.querySelector('#schedulerStatus .badge');
+            const statusText = document.getElementById('schedulerStatusText');
+            if (badge && statusText) {
+                badge.className = 'badge badge-secondary';
+                statusText.innerHTML = '<i class="fas fa-times"></i> Desconectado';
+            }
+        });
+}
+
+// Iniciar polling del scheduler al cargar la página
+if (document.getElementById('schedulerStatus')) {
+    checkSchedulerStatus();
+    setInterval(checkSchedulerStatus, 5000); // Cada 5 segundos
+}
 </script>
 {% endblock %}

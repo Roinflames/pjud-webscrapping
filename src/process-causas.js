@@ -115,6 +115,82 @@ function extractRolAnio(rit) {
   return { rol: null, año: null };
 }
 
+/**
+ * Parsear las primeras 3 filas de cabecera para extraer metadatos de la causa
+ * @param {Array} rows - Array de filas scrapeadas
+ * @returns {Object} - { caratulado, tribunal_nombre, fecha_ingreso, estado, etapa }
+ */
+function parseCabecera(rows) {
+  const resultado = {
+    caratulado: null,
+    tribunal_nombre: null,
+    fecha_ingreso: null,
+    estado: null,
+    etapa: null
+  };
+
+  if (!rows || rows.length < 3) {
+    return resultado;
+  }
+
+  // Fila 1: ROL, Fecha Ingreso, Caratulado
+  // folio: "ROL: C-13786-2018"
+  // doc: "F. Ing.: 09/05/2018"
+  // anexo: "ITAU CORPBANCA/HERNÁNDEZ"
+  const fila1 = rows[0];
+  if (fila1) {
+    // Extraer fecha de ingreso del campo "doc"
+    if (fila1.doc) {
+      const matchFecha = fila1.doc.match(/F\.\s*Ing\.:\s*(.+)/i);
+      if (matchFecha) {
+        resultado.fecha_ingreso = matchFecha[1].trim();
+      }
+    }
+    // Extraer caratulado del campo "anexo"
+    if (fila1.anexo) {
+      resultado.caratulado = fila1.anexo.trim();
+    }
+  }
+
+  // Fila 2: Estado Administrativo, Procedimiento
+  // folio: "Est. Adm.: Archivada"
+  // doc: "Proc.: Ejecutivo Obligación de Dar"
+  const fila2 = rows[1];
+  if (fila2) {
+    // Extraer estado del campo "folio"
+    if (fila2.folio) {
+      const matchEstado = fila2.folio.match(/Est\.\s*Adm\.:\s*(.+)/i);
+      if (matchEstado) {
+        resultado.estado = matchEstado[1].trim();
+      }
+    }
+  }
+
+  // Fila 3: Estado Procesal, Etapa, Tribunal
+  // folio: "Estado Proc.: Tramitación"
+  // doc: "Etapa: 1 Notificación demanda y su proveído"
+  // anexo: "Tribunal: 4º Juzgado Civil de Santiago"
+  const fila3 = rows[2];
+  if (fila3) {
+    // Extraer etapa del campo "doc"
+    if (fila3.doc) {
+      const matchEtapa = fila3.doc.match(/Etapa:\s*(.+)/i);
+      if (matchEtapa) {
+        resultado.etapa = matchEtapa[1].trim();
+      }
+    }
+    // Extraer tribunal del campo "anexo"
+    if (fila3.anexo) {
+      const matchTribunal = fila3.anexo.match(/Tribunal:\s*(.+)/i);
+      if (matchTribunal) {
+        resultado.tribunal_nombre = matchTribunal[1].trim();
+      }
+    }
+  }
+
+  return resultado;
+}
+
 // Mapear datos del CSV a formato para scraping
 // IMPORTANTE: Todas las causas con RIT son civiles (competencia = 3)
 function csvToScrapingConfig(csvCausa) {
@@ -457,6 +533,10 @@ async function processCausa(page, context, config, outputDir) {
     // PASO 13: Guardar en MySQL
     console.log(`   💾 Guardando en base de datos...`);
     try {
+      // Parsear cabecera de las primeras 3 filas
+      const datosExtraidos = parseCabecera(rows);
+      console.log(`   📋 Datos extraídos de cabecera:`, datosExtraidos);
+
       // 1. Guardar/actualizar causa
       const causaData = {
         rit: config.rit,
@@ -468,11 +548,11 @@ async function processCausa(page, context, config, outputDir) {
         corte_id: config.corte || '90',
         corte_nombre: null, // Se puede obtener del payload si está disponible
         tribunal_id: config.tribunal,
-        tribunal_nombre: payload.cabecera?.juzgado || null,
-        caratulado: payload.cabecera?.caratulado || payload.datos_basicos?.caratulado,
-        fecha_ingreso: payload.cabecera?.fecha_ingreso || payload.datos_basicos?.fecha,
-        estado: payload.estado_actual?.estado || 'SIN_INFORMACION',
-        etapa: payload.estado_actual?.etapa || null,
+        tribunal_nombre: datosExtraidos.tribunal_nombre || payload.cabecera?.juzgado || null,
+        caratulado: datosExtraidos.caratulado || payload.cabecera?.caratulado || payload.datos_basicos?.caratulado,
+        fecha_ingreso: datosExtraidos.fecha_ingreso || payload.cabecera?.fecha_ingreso || payload.datos_basicos?.fecha,
+        estado: datosExtraidos.estado || payload.estado_actual?.estado || 'SIN_INFORMACION',
+        etapa: datosExtraidos.etapa || payload.estado_actual?.etapa || null,
         estado_descripcion: payload.estado_actual?.descripcion || null,
         total_movimientos: datosProcesados.movimientos.length,
         total_pdfs: Object.keys(pdfMapping).filter(k => pdfMapping[k].azul_base64 || pdfMapping[k].rojo_base64).length,
@@ -492,18 +572,32 @@ async function processCausa(page, context, config, outputDir) {
       // 2. Guardar movimientos (usamos rows directamente, filtrando filas de cabecera)
       let movimientosGuardados = 0;
       for (const mov of rows) {
-        // Filtrar filas de cabecera y partes que no son movimientos
+        // Filtrar filas que NO son movimientos:
+        // - Cabecera (filas 1-3): "ROL:", "Est. Adm:", "Estado Proc:"
+        // - Partes del juicio: "DTE.", "AB.DTE", "DDO."
+        // - Basura: "Texto Demanda", "Ebook:", "Historia Causa"
+        const folio = String(mov.folio || '').trim();
+
+        // Detectar filas de cabecera
+        const esCabecera = /^(ROL:|Est\.\s*Adm\.|Estado\s*Proc\.)/.test(folio);
+
+        // Detectar partes del juicio
+        const esParteDelJuicio = /^(DTE\.|AB\.DTE|DDO\.|RECURRENTE|RECURRIDO|DEMANDANTE|DEMANDADO)$/i.test(folio);
+
+        // Detectar basura (texto demanda, ebook, historia causa)
+        const esBasura = /^(Texto|Ebook:|Historia\s*Causa|Anexos\s*de\s*la\s*causa)/i.test(folio);
+
         // Un movimiento válido debe tener folio numérico O (tramite Y desc_tramite)
-        const folioEsNumerico = /^\d+$/.test(String(mov.folio));
+        const folioEsNumerico = /^\d+$/.test(folio);
         const tieneTramitoYDesc = mov.tramite && mov.desc_tramite;
         const esMovimiento = folioEsNumerico || tieneTramitoYDesc;
 
-        if (!esMovimiento) {
-          continue; // Saltar filas de cabecera y partes
+        // Saltar si NO es movimiento O si es cabecera/parte/basura
+        if (!esMovimiento || esCabecera || esParteDelJuicio || esBasura) {
+          continue;
         }
 
-        // Obtener PDFs del mapping por folio
-        const folio = mov.folio || mov.indice;
+        // Obtener PDFs del mapping por folio (ya tenemos folio definido arriba)
         const pdfsDeEstaFila = pdfMapping[folio] || {};
 
         const movData = {
@@ -553,6 +647,13 @@ async function processCausa(page, context, config, outputDir) {
       }
 
       console.log(`   ✅ ${movimientosGuardados} movimientos guardados`);
+
+      // Actualizar total_movimientos en la causa con el valor real
+      await query(
+        'UPDATE causas SET total_movimientos = ? WHERE id = ?',
+        [movimientosGuardados, causaId]
+      );
+
       console.log(`   ✅ Datos guardados en MySQL`);
 
     } catch (dbError) {

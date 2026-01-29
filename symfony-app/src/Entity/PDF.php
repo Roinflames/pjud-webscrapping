@@ -34,7 +34,7 @@ class PDF
     private $rit;
 
     /**
-     * @ORM\Column(type="string", length=20)
+     * @ORM\Column(type="string", length=20, name="tipo_pdf")
      */
     private $tipo = 'PRINCIPAL';
 
@@ -49,34 +49,14 @@ class PDF
     private $contenidoBase64;
 
     /**
-     * @ORM\Column(type="string", length=500, nullable=true, name="ruta_relativa")
-     */
-    private $rutaRelativa;
-
-    /**
      * @ORM\Column(type="integer", nullable=true, name="tamano_bytes", options={"unsigned"=true})
      */
     private $tamanoBytes;
 
     /**
-     * @ORM\Column(type="string", length=32, nullable=true, name="hash_md5")
-     */
-    private $hashMd5;
-
-    /**
-     * @ORM\Column(type="boolean")
-     */
-    private $descargado = false;
-
-    /**
      * @ORM\Column(type="datetime", nullable=true, name="fecha_descarga")
      */
     private $fechaDescarga;
-
-    /**
-     * @ORM\Column(type="string", length=500, nullable=true, name="error_descarga")
-     */
-    private $errorDescarga;
 
     /**
      * @ORM\Column(type="datetime", name="created_at")
@@ -161,17 +141,6 @@ class PDF
         return $this;
     }
 
-    public function getRutaRelativa(): ?string
-    {
-        return $this->rutaRelativa;
-    }
-
-    public function setRutaRelativa(?string $rutaRelativa): self
-    {
-        $this->rutaRelativa = $rutaRelativa;
-        return $this;
-    }
-
     public function getTamanoBytes(): ?int
     {
         return $this->tamanoBytes;
@@ -183,28 +152,6 @@ class PDF
         return $this;
     }
 
-    public function getHashMd5(): ?string
-    {
-        return $this->hashMd5;
-    }
-
-    public function setHashMd5(?string $hashMd5): self
-    {
-        $this->hashMd5 = $hashMd5;
-        return $this;
-    }
-
-    public function getDescargado(): ?bool
-    {
-        return $this->descargado;
-    }
-
-    public function setDescargado(bool $descargado): self
-    {
-        $this->descargado = $descargado;
-        return $this;
-    }
-
     public function getFechaDescarga(): ?\DateTimeInterface
     {
         return $this->fechaDescarga;
@@ -213,17 +160,6 @@ class PDF
     public function setFechaDescarga(?\DateTimeInterface $fechaDescarga): self
     {
         $this->fechaDescarga = $fechaDescarga;
-        return $this;
-    }
-
-    public function getErrorDescarga(): ?string
-    {
-        return $this->errorDescarga;
-    }
-
-    public function setErrorDescarga(?string $errorDescarga): self
-    {
-        $this->errorDescarga = $errorDescarga;
         return $this;
     }
 

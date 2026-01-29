@@ -909,11 +909,30 @@ async function processMultipleCausas(limitOrCausas = 10, requireTribunal = true,
     const fallidas = resultados.filter(r => !r.success).length;
     console.log(`   ✅ Exitosas: ${exitosas}`);
     console.log(`   ❌ Fallidas: ${fallidas}`);
-    
+
     // Guardar log de resultados
     const logPath = path.join(logDir, `procesamiento_${Date.now()}.json`);
     fs.writeFileSync(logPath, JSON.stringify(resultados, null, 2));
     console.log(`\n📝 Log guardado en: ${logPath}`);
+
+    // Enviar notificación por email si está habilitado
+    if (notifyOnComplete) {
+      const finEjecucion = new Date();
+      const duracionMs = finEjecucion - inicioEjecucion;
+      const duracionMinutos = duracionMs / (1000 * 60);
+
+      const { sendCompletionEmail } = require('./notifications/email-notifier');
+      await sendCompletionEmail({
+        totalProcesadas: resultados.length,
+        exitosas: exitosas,
+        fallidas: fallidas,
+        inicioEjecucion: inicioEjecucion.toISOString(),
+        finEjecucion: finEjecucion.toISOString(),
+        duracionMinutos: duracionMinutos
+      });
+    }
+
+    return resultados;
     
   } catch (error) {
     console.error('💥 Error general:', error);

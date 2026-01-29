@@ -124,11 +124,20 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
           }
 
           clickResult = await page.evaluate(({ rowIndex, formIndex: idx }) => {
-            const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
+            // Buscar SOLO en el modal de detalle (no en la tabla de resultados)
+            const modal = document.querySelector('#modalDetalleCivil') ||
+                         document.querySelector('#modalDetalleLaboral') ||
+                         document.querySelector('.modal-body');
+
+            if (!modal) {
+              return { success: false, error: 'Modal no encontrado' };
+            }
+
+            const trs = modal.querySelectorAll('table tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based
-            
+
             if (!row) {
-              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas)` };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en modal)` };
             }
             
             const forms = Array.from(row.querySelectorAll('form'));
@@ -165,11 +174,20 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
           }
 
           clickResult = await page.evaluate(({ rowIndex, linkIndex }) => {
-            const trs = document.querySelectorAll('table.table.table-bordered.table-striped.table-hover tbody tr');
+            // Buscar SOLO en el modal de detalle (no en la tabla de resultados)
+            const modal = document.querySelector('#modalDetalleCivil') ||
+                         document.querySelector('#modalDetalleLaboral') ||
+                         document.querySelector('.modal-body');
+
+            if (!modal) {
+              return { success: false, error: 'Modal no encontrado' };
+            }
+
+            const trs = modal.querySelectorAll('table tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based
-            
+
             if (!row) {
-              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas)` };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en modal)` };
             }
             
             // Buscar en la segunda columna (donde suelen estar los PDFs en PJUD)

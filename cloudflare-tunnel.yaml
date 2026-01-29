@@ -1,0 +1,37 @@
+# Cloudflare Tunnel Configuration for PJUD Scraper API
+# Este archivo configura el túnel para exponer el servidor API de forma segura
+
+tunnel: pjud-scraper-api
+credentials-file: /Users/diegomartinez/.cloudflared/credentials.json
+
+ingress:
+  # API Principal - Puerto 3000
+  - hostname: pjud-api.yourdomain.com  # Cambiar por tu dominio real
+    service: http://localhost:3000
+    originRequest:
+      noTLSVerify: false
+      connectTimeout: 30s
+
+  # Symfony App (si se necesita) - Puerto 8000
+  - hostname: pjud-app.yourdomain.com  # Opcional: para Symfony
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: false
+
+  # MySQL (solo para debugging remoto - NO RECOMENDADO EN PRODUCCIÓN)
+  # - hostname: pjud-db.yourdomain.com
+  #   service: tcp://localhost:3306
+  #   originRequest:
+  #     noTLSVerify: false
+
+  # Catch-all: redirigir todo lo demás a la API
+  - service: http_status:404
+
+# Opciones de logging
+loglevel: info
+
+# Opciones de transporte
+transport-loglevel: warn
+
+# Métricas (opcional - para monitoreo)
+metrics: localhost:2000

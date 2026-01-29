@@ -1,16 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 89,
-      "commitHash": "53c00bc57f738fd172a9429071c8be046ffd8840",
-      "tag": "snapshot-v89",
-      "timestamp": 1769570058326,
-      "message": "Snapshot V89",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
       "version": 90,
       "commitHash": "0e96cf5df92361340f14fc1190c77944333d3d1b",
       "tag": "snapshot-v90",
@@ -551,8 +541,21 @@
       "filesChanged": [
         "src/pdfDownloader.js"
       ]
+    },
+    {
+      "version": 139,
+      "commitHash": "9743f9028b04841cec28b8f1c8d84405fe0cfe86",
+      "tag": "snapshot-v139",
+      "timestamp": 1769695513474,
+      "message": "Snapshot V139",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/outputs/causas/C_1731_2017.json",
+        "src/outputs/causas/C_23607_2015.json"
+      ]
     }
   ],
-  "nextVersion": 139,
-  "currentVersion": 138
+  "nextVersion": 140,
+  "currentVersion": 139
 }

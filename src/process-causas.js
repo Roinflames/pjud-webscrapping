@@ -481,9 +481,7 @@ async function processCausa(page, context, config, outputDir) {
         error_scraping: null
       };
 
-      const causaResult = await upsertCausa(causaData);
-      const causaId = causaResult.insertId || causaResult.affectedRows > 0 ?
-        (await query('SELECT id FROM causas WHERE rit = ?', [config.rit]))[0]?.id : null;
+      const causaId = await upsertCausa(causaData);
 
       if (!causaId) {
         throw new Error('No se pudo obtener el ID de la causa');
@@ -491,46 +489,58 @@ async function processCausa(page, context, config, outputDir) {
 
       console.log(`   ✅ Causa guardada (ID: ${causaId})`);
 
-      // 2. Guardar movimientos
+      // 2. Guardar movimientos (usamos rows directamente, filtrando filas de cabecera)
       let movimientosGuardados = 0;
-      for (const mov of datosProcesados.movimientos) {
+      for (const mov of rows) {
+        // Filtrar filas de cabecera que no son movimientos
+        const esMovimiento = mov.tramite || mov.etapa || mov.desc_tramite;
+        if (!esMovimiento) {
+          continue; // Saltar filas de cabecera
+        }
+
+        // Obtener PDFs del mapping por folio
+        const folio = mov.folio || mov.indice;
+        const pdfsDeEstaFila = pdfMapping[folio] || {};
+
         const movData = {
-          causa_id: causaId,
-          folio: mov.folio || mov.indice,
+          rit: config.rit,
+          indice: mov.indice || mov.folio,
+          folio: folio,
           fecha: mov.fecha,
           tramite: mov.tramite,
-          descripcion: mov.descripcion,
+          descripcion: mov.desc_tramite || mov.descripcion,
           etapa: mov.etapa || null,
           cuaderno: mov.cuaderno || null,
           foja: mov.foja || null,
-          tiene_pdf: mov.pdf_azul || mov.pdf_rojo ? 1 : 0
+          tiene_pdf: pdfsDeEstaFila.azul_base64 || pdfsDeEstaFila.rojo_base64 ? 1 : 0,
+          raw_data: mov
         };
 
-        const movResult = await upsertMovimiento(movData);
+        const movResult = await upsertMovimiento(movData, causaId);
         const movimientoId = movResult.insertId || movResult.affectedRows > 0 ?
           (await query('SELECT id FROM movimientos WHERE causa_id = ? AND folio = ?', [causaId, movData.folio]))[0]?.id : null;
 
-        if (movimientoId && (mov.pdf_azul || mov.pdf_rojo)) {
+        if (movimientoId && movData.tiene_pdf) {
           // 3. Guardar PDFs
-          if (mov.pdf_azul) {
+          if (pdfsDeEstaFila.azul_base64) {
             await upsertPDF({
               movimiento_id: movimientoId,
+              folio: folio,
               tipo: 'azul',
-              nombre_archivo: mov.pdf_azul.nombre,
-              base64: mov.pdf_azul.base64,
-              tipo_mime: 'application/pdf',
-              tamanio: Math.round(mov.pdf_azul.base64.length * 0.75) // Aproximación del tamaño en bytes
+              nombre_archivo: pdfsDeEstaFila.azul_nombre || `${config.rit}_mov_${folio}_azul.pdf`,
+              base64: pdfsDeEstaFila.azul_base64,
+              tamanio: Math.round(pdfsDeEstaFila.azul_base64.length * 0.75)
             });
           }
 
-          if (mov.pdf_rojo) {
+          if (pdfsDeEstaFila.rojo_base64) {
             await upsertPDF({
               movimiento_id: movimientoId,
+              folio: folio,
               tipo: 'rojo',
-              nombre_archivo: mov.pdf_rojo.nombre,
-              base64: mov.pdf_rojo.base64,
-              tipo_mime: 'application/pdf',
-              tamanio: Math.round(mov.pdf_rojo.base64.length * 0.75)
+              nombre_archivo: pdfsDeEstaFila.rojo_nombre || `${config.rit}_mov_${folio}_rojo.pdf`,
+              base64: pdfsDeEstaFila.rojo_base64,
+              tamanio: Math.round(pdfsDeEstaFila.rojo_base64.length * 0.75)
             });
           }
         }

@@ -146,14 +146,14 @@ async function upsertCausa(causa) {
   ];
 
   const result = await query(sql, params);
-  
+
   // Obtener el ID (insertId o buscar por RIT)
   if (result.insertId) {
     return result.insertId;
   }
-  
-  const [rows] = await query('SELECT id FROM causas WHERE rit = ?', [causa.rit]);
-  return rows?.id || null;
+
+  const rows = await query('SELECT id FROM causas WHERE rit = ?', [causa.rit]);
+  return rows[0]?.id || null;
 }
 
 /**
@@ -506,6 +506,48 @@ async function registrarPdf(causaId, movimientoId, rit, datos) {
 }
 
 /**
+ * Inserta o actualiza un PDF con estructura simplificada
+ */
+async function upsertPDF(datos) {
+  // Obtener causa_id y rit desde movimiento_id
+  let causaId = null;
+  let rit = null;
+
+  if (datos.movimiento_id) {
+    const rows = await query(
+      'SELECT causa_id, rit FROM movimientos WHERE id = ?',
+      [datos.movimiento_id]
+    );
+    if (rows.length > 0) {
+      causaId = rows[0].causa_id;
+      rit = rows[0].rit;
+    }
+  }
+
+  const sql = `
+    INSERT INTO pdfs (
+      causa_id, movimiento_id, rit, folio, tipo_pdf,
+      nombre_archivo, contenido_base64, tamano_bytes, fecha_descarga
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    ON DUPLICATE KEY UPDATE
+      contenido_base64 = VALUES(contenido_base64),
+      tamano_bytes = VALUES(tamano_bytes),
+      fecha_descarga = NOW()
+  `;
+
+  return await query(sql, [
+    causaId,
+    datos.movimiento_id || null,
+    rit,
+    datos.folio || null,
+    datos.tipo || 'PRINCIPAL',
+    datos.nombre_archivo,
+    datos.base64 || datos.contenido_base64 || null,
+    datos.tamanio || datos.tamano_bytes || null
+  ]);
+}
+
+/**
  * Registra un eBook descargado
  */
 async function registrarEbook(causaId, rit, datos) {
@@ -583,32 +625,33 @@ module.exports = {
   transaction,
   closePool,
   testConnection,
-  
+
   // Causas
   upsertCausa,
   getCausaByRit,
   getAllCausas,
-  
+
   // Movimientos
   upsertMovimiento,
   insertMovimientosBatch,
   getMovimientosByCausa,
   getMovimientosPorEtapa,
-  
+
   // Errores
   registrarError,
   debeReintentar,
   marcarErroresResueltos,
   getErroresPendientes,
-  
+
   // Logs
   log,
   marcarExito,
-  
+
   // PDFs
+  upsertPDF,
   registrarPdf,
   registrarEbook,
-  
+
   // Utilidades
   getEstadisticas
 };

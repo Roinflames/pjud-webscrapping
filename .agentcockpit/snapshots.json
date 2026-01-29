@@ -1,36 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 85,
-      "commitHash": "25c2671a9d77e797317e55b12b5dcbaed36333e3",
-      "tag": "snapshot-v85",
-      "timestamp": 1769570030519,
-      "message": "Snapshot V85",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
-      "version": 86,
-      "commitHash": "6f85121cce8410538581e3466273ef80567a0bdd",
-      "tag": "snapshot-v86",
-      "timestamp": 1769570031577,
-      "message": "Snapshot V86",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
-      "version": 87,
-      "commitHash": "e9ad1d4d259aa3b7b92691e739e5d3a27543a628",
-      "tag": "snapshot-v87",
-      "timestamp": 1769570032773,
-      "message": "Snapshot V87",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
       "version": 88,
       "commitHash": "1e3ea9d4270cde43895b908b8852f0ecdb046f86",
       "tag": "snapshot-v88",
@@ -547,8 +517,42 @@
       "filesChanged": [
         "check-pdfs.js"
       ]
+    },
+    {
+      "version": 135,
+      "commitHash": "e5379c511ed046adcb589c1ed05e709fef5e128f",
+      "tag": "snapshot-v135",
+      "timestamp": 1769687552607,
+      "message": "Snapshot V135",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_23607_2015.json"
+      ]
+    },
+    {
+      "version": 136,
+      "commitHash": "42312b43c1034de17563775593071fa438fc196e",
+      "tag": "snapshot-v136",
+      "timestamp": 1769687772833,
+      "message": "Snapshot V136",
+      "filesChanged": [
+        "src/navigation.js"
+      ]
+    },
+    {
+      "version": 137,
+      "commitHash": "d2947c0cf7be6a455cdf5d150ecb89b2cad88485",
+      "tag": "snapshot-v137",
+      "timestamp": 1769687947993,
+      "message": "Snapshot V137",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/outputs/causas/C_1731_2017.json",
+        "src/pdfDownloader.js"
+      ]
     }
   ],
-  "nextVersion": 135,
-  "currentVersion": 134
+  "nextVersion": 138,
+  "currentVersion": 137
 }

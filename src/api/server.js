@@ -47,6 +47,7 @@ const scrapingRouter = require('./scraping-api');
 const mvpRouter = require('./mvp-api');
 const erpRouter = require('./erp-api');
 const causasRouter = require('./causas-api');
+const movimientosRouter = require('./movimientos-api');
 
 // Cargar datos de tribunales
 const TRIBUNALES_FILE = path.resolve(__dirname, '../outputs/tribunales_pjud_ids.json');
@@ -88,6 +89,7 @@ app.use('/api/scraping', scrapingRouter);
 app.use('/api/mvp', mvpRouter);
 app.use('/api/erp', erpRouter);
 app.use('/api/causas', causasRouter);
+app.use('/api/movimientos', movimientosRouter);
 
 /**
  * Health check

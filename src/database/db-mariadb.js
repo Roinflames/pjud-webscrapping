@@ -156,6 +156,14 @@ async function upsertCausa(causa) {
 }
 
 /**
+ * Obtiene una causa por ID
+ */
+async function getCausaById(id) {
+  const rows = await query('SELECT * FROM causas WHERE id = ?', [id]);
+  return rows[0] || null;
+}
+
+/**
  * Obtiene una causa por RIT
  */
 async function getCausaByRit(rit) {
@@ -181,9 +189,20 @@ async function getAllCausas(options = {}) {
 
   sql += ' ORDER BY created_at DESC';
 
+  // MariaDB 5.5.68 no soporta parámetros preparados en LIMIT
+  // Usar interpolación directa (seguro porque limit es parseInt)
   if (options.limit) {
-    sql += ' LIMIT ?';
-    params.push(options.limit);
+    const limit = parseInt(options.limit);
+    if (!isNaN(limit) && limit > 0) {
+      sql += ` LIMIT ${limit}`;
+    }
+  }
+
+  if (options.offset) {
+    const offset = parseInt(options.offset);
+    if (!isNaN(offset) && offset >= 0) {
+      sql += ` OFFSET ${offset}`;
+    }
   }
 
   return await query(sql, params);
@@ -192,6 +211,33 @@ async function getAllCausas(options = {}) {
 // ============================================
 // GESTIÓN DE MOVIMIENTOS
 // ============================================
+
+/**
+ * Obtiene todos los movimientos con paginación
+ */
+async function getAllMovimientos(options = {}) {
+  let sql = 'SELECT * FROM movimientos WHERE 1=1';
+  const params = [];
+
+  sql += ' ORDER BY fecha DESC, id DESC';
+
+  // MariaDB 5.5.68 no soporta parámetros preparados en LIMIT
+  if (options.limit) {
+    const limit = parseInt(options.limit);
+    if (!isNaN(limit) && limit > 0) {
+      sql += ` LIMIT ${limit}`;
+    }
+  }
+
+  if (options.offset) {
+    const offset = parseInt(options.offset);
+    if (!isNaN(offset) && offset >= 0) {
+      sql += ` OFFSET ${offset}`;
+    }
+  }
+
+  return await query(sql, params);
+}
 
 /**
  * Parsea una fecha en formato DD/MM/YYYY a Date
@@ -631,10 +677,12 @@ module.exports = {
 
   // Causas
   upsertCausa,
+  getCausaById,
   getCausaByRit,
   getAllCausas,
 
   // Movimientos
+  getAllMovimientos,
   upsertMovimiento,
   insertMovimientosBatch,
   getMovimientosByCausa,

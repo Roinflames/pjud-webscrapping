@@ -674,16 +674,18 @@ function verDetalle(rit) {
                     <td><span class="folio-badge">${mov.folio || '-'}</span></td>
                     <td>
                         ${mov.tiene_pdf_azul ? `
-                            <button class="btn btn-pdf-mini btn-pdf-azul"
-                                    title="PDF Principal: ${mov.pdf_azul || ''}">
+                            <a href="/pdf/${causaData.rit}/${mov.id}/azul" target="_blank"
+                               class="btn btn-pdf-mini btn-pdf-azul"
+                               title="PDF Principal: ${mov.pdf_azul || ''}">
                                 <i class="fas fa-file-pdf"></i>
-                            </button>
+                            </a>
                         ` : ''}
                         ${mov.tiene_pdf_rojo ? `
-                            <button class="btn btn-pdf-mini btn-pdf-rojo"
-                                    title="PDF Anexo: ${mov.pdf_rojo || ''}">
+                            <a href="/pdf/${causaData.rit}/${mov.id}/rojo" target="_blank"
+                               class="btn btn-pdf-mini btn-pdf-rojo"
+                               title="PDF Anexo: ${mov.pdf_rojo || ''}">
                                 <i class="fas fa-file-pdf"></i>
-                            </button>
+                            </a>
                         ` : ''}
                         ${!mov.tiene_pdf_azul && !mov.tiene_pdf_rojo ? '<span style="color:#999;font-size:11px;">-</span>' : ''}
                     </td>

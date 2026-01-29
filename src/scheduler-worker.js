@@ -137,6 +137,10 @@ async function runScheduler() {
 console.log('🚀 Iniciando Scheduler Worker - Re-scraping cada 10 minutos');
 console.log(`📁 Status file: ${STATUS_FILE}`);
 
+// Verificar configuración de email
+console.log('\n📧 Verificando configuración de notificaciones...');
+checkEmailConfig();
+
 // Ejecutar inmediatamente la primera vez
 updateStatus({
   status: 'starting',

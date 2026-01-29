@@ -155,6 +155,30 @@ class ScraperController extends AbstractController
         return $this->json($status);
     }
 
+    /**
+     * @Route("/scraper/logs", name="scraper_logs", methods={"GET"})
+     */
+    public function getSchedulerLogs(): JsonResponse
+    {
+        $logFile = '/tmp/scheduler.log';
+
+        if (!file_exists($logFile)) {
+            return $this->json([
+                'logs' => [],
+                'message' => 'No hay logs disponibles'
+            ]);
+        }
+
+        // Leer últimas 200 líneas
+        $output = [];
+        exec("tail -200 " . escapeshellarg($logFile), $output);
+
+        return $this->json([
+            'logs' => $output,
+            'timestamp' => time()
+        ]);
+    }
+
     private function parseProgressLine(string $line, int $currentProgress): array
     {
         $line = trim($line);

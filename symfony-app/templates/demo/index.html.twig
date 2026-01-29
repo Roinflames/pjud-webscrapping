@@ -52,6 +52,7 @@
         z-index: 9999;
         font-size: 12px;
         animation: pulse 2s infinite;
+        cursor: pointer;
     }
 
     @keyframes pulse {
@@ -63,6 +64,12 @@
         padding: 8px 12px;
         font-weight: 500;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+
+    .scheduler-badge .badge:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
 
     /* Breadcrumb PJUD */
@@ -450,7 +457,7 @@
 
 {% block body %}
 <!-- Scheduler Status Badge -->
-<div id="schedulerStatus" class="scheduler-badge">
+<div id="schedulerStatus" class="scheduler-badge" onclick="mostrarLogsScheduler()" title="Click para ver logs del scheduler">
     <div class="badge badge-secondary">
         <i class="fas fa-sync-alt fa-spin"></i> <span id="schedulerStatusText">Verificando...</span>
     </div>
@@ -634,6 +641,67 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnCerrarProgreso" disabled>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Logs del Scheduler -->
+<div class="modal fade" id="modalSchedulerLogs" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-clock"></i>
+                    Logs del Scheduler Worker
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Estado del scheduler -->
+                <div class="alert alert-info mb-3" id="schedulerLogsStatus">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Estado:</strong> <span id="schedulerLogsState">-</span>
+                        </div>
+                        <div>
+                            <strong>Iteración:</strong> <span id="schedulerLogsIteration">-</span>
+                        </div>
+                        <div>
+                            <strong>Última ejecución:</strong> <span id="schedulerLogsLastRun">-</span>
+                        </div>
+                        <div>
+                            <strong>Próxima ejecución:</strong> <span id="schedulerLogsNextRun">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal de logs -->
+                <div class="card">
+                    <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+                        <small><i class="fas fa-terminal"></i> Últimas 200 líneas</small>
+                        <button class="btn btn-sm btn-outline-light" onclick="refrescarLogsScheduler()">
+                            <i class="fas fa-sync-alt"></i> Refrescar
+                        </button>
+                    </div>
+                    <div class="card-body p-2 bg-dark text-light" id="schedulerLogsTerminal"
+                         style="height: 450px; overflow-y: auto; font-family: monospace; font-size: 11px; line-height: 1.4;">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">Cargando logs...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <label class="mb-0 mr-3">
+                    <input type="checkbox" id="autoRefreshLogs" checked> Auto-refrescar (cada 3s)
+                </label>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     Cerrar
                 </button>
             </div>
@@ -981,5 +1049,133 @@ if (document.getElementById('schedulerStatus')) {
     checkSchedulerStatus();
     setInterval(checkSchedulerStatus, 5000); // Cada 5 segundos
 }
+
+// ============================================
+// SCHEDULER LOGS MODAL
+// ============================================
+
+let schedulerLogsInterval = null;
+
+/**
+ * Mostrar modal de logs del scheduler
+ */
+function mostrarLogsScheduler() {
+    $('#modalSchedulerLogs').modal('show');
+    refrescarLogsScheduler();
+
+    // Iniciar auto-refresh si está activado
+    const autoRefresh = document.getElementById('autoRefreshLogs');
+    if (autoRefresh && autoRefresh.checked) {
+        iniciarAutoRefreshLogs();
+    }
+}
+
+/**
+ * Refrescar logs del scheduler
+ */
+function refrescarLogsScheduler() {
+    Promise.all([
+        fetch('/scraper/status').then(r => r.json()),
+        fetch('/scraper/logs').then(r => r.json())
+    ])
+    .then(([statusData, logsData]) => {
+        // Actualizar estado
+        document.getElementById('schedulerLogsState').textContent =
+            statusData.running ? 'Scraping activo' : (statusData.status || 'Idle');
+        document.getElementById('schedulerLogsIteration').textContent =
+            statusData.iteration || '-';
+
+        const lastRun = statusData.lastRun ? new Date(statusData.lastRun).toLocaleString('es-CL') : '-';
+        const nextRun = statusData.nextRun ? new Date(statusData.nextRun).toLocaleString('es-CL') : '-';
+
+        document.getElementById('schedulerLogsLastRun').textContent = lastRun;
+        document.getElementById('schedulerLogsNextRun').textContent = nextRun;
+
+        // Actualizar logs
+        const terminal = document.getElementById('schedulerLogsTerminal');
+        if (logsData.logs && logsData.logs.length > 0) {
+            terminal.innerHTML = logsData.logs.map(line => {
+                let color = '#00ff00'; // verde por defecto
+
+                // Colorear según contenido
+                if (line.includes('❌') || line.includes('Error')) color = '#ff4444';
+                else if (line.includes('⚠️')) color = '#ffaa00';
+                else if (line.includes('✅')) color = '#00ff00';
+                else if (line.includes('🔍') || line.includes('🌐')) color = '#00aaff';
+                else if (line.includes('📊') || line.includes('📋')) color = '#00ffff';
+                else if (line.includes('🔄')) color = '#ffff00';
+                else if (line.includes('💾')) color = '#ff00ff';
+
+                return `<div style="color:${color};margin-bottom:2px;">${escapeHtml(line)}</div>`;
+            }).join('');
+
+            // Auto-scroll al final
+            terminal.scrollTop = terminal.scrollHeight;
+        } else {
+            terminal.innerHTML = '<div class="text-center text-muted py-5">No hay logs disponibles</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error cargando logs:', error);
+        document.getElementById('schedulerLogsTerminal').innerHTML =
+            '<div class="text-center text-danger py-5"><i class="fas fa-exclamation-triangle"></i> Error cargando logs</div>';
+    });
+}
+
+/**
+ * Iniciar auto-refresh de logs
+ */
+function iniciarAutoRefreshLogs() {
+    detenerAutoRefreshLogs();
+    schedulerLogsInterval = setInterval(() => {
+        const modal = $('#modalSchedulerLogs');
+        const autoRefresh = document.getElementById('autoRefreshLogs');
+
+        if (modal.hasClass('show') && autoRefresh && autoRefresh.checked) {
+            refrescarLogsScheduler();
+        } else {
+            detenerAutoRefreshLogs();
+        }
+    }, 3000); // Cada 3 segundos
+}
+
+/**
+ * Detener auto-refresh de logs
+ */
+function detenerAutoRefreshLogs() {
+    if (schedulerLogsInterval) {
+        clearInterval(schedulerLogsInterval);
+        schedulerLogsInterval = null;
+    }
+}
+
+/**
+ * Escapar HTML para prevenir XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Event listeners para el modal de logs
+$('#modalSchedulerLogs').on('shown.bs.modal', function() {
+    const autoRefresh = document.getElementById('autoRefreshLogs');
+    if (autoRefresh && autoRefresh.checked) {
+        iniciarAutoRefreshLogs();
+    }
+});
+
+$('#modalSchedulerLogs').on('hidden.bs.modal', function() {
+    detenerAutoRefreshLogs();
+});
+
+document.getElementById('autoRefreshLogs')?.addEventListener('change', function() {
+    if (this.checked) {
+        iniciarAutoRefreshLogs();
+    } else {
+        detenerAutoRefreshLogs();
+    }
+});
 </script>
 {% endblock %}

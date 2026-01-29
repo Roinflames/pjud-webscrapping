@@ -1,31 +1,25 @@
 {
   "rit": "C-1731-2017",
   "metadata": {
-    "processed_at": "2026-01-29T10:50:52.796Z",
+    "processed_at": "2026-01-29T11:18:22.029Z",
     "total_movimientos": 0,
     "tiene_documentos_pdf": true,
     "tiene_demanda": false,
     "tiene_ebook": false
   },
   "config_entrada": {
-    "causa_id": "22",
-    "agenda_id": "79819",
     "competencia": "3",
     "corte": "90",
-    "tribunal": "109",
+    "tribunal": "276",
     "tipoCausa": "C",
     "rol": "1731",
     "año": "2017",
-    "caratulado": "PROMOTORA CMR FALABELLA/ROMERO",
-    "cliente": null,
-    "rut": null,
-    "abogado_id": null,
-    "cuenta_id": null
+    "caratulado": "/VÁSQUEZ"
   },
   "datos_basicos": {
     "rol": "1731",
     "fecha": "",
-    "caratulado": "PROMOTORA CMR FALABELLA/ROMERO"
+    "caratulado": "/VÁSQUEZ"
   },
   "demanda": null,
   "ebook": null,

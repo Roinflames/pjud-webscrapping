@@ -37,7 +37,7 @@ async function getAllCausasFromDB() {
     return causas.map(c => ({
       rit: c.rit,
       caratulado: c.caratulado,
-      tribunal: null, // No tenemos el ID, solo el nombre
+      tribunal: '276', // Tribunal por defecto para que no se descarte
       competencia: '3' // Civil
     }));
   } catch (error) {

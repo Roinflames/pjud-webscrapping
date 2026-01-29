@@ -51,6 +51,10 @@ class ScraperController extends AbstractController
      */
     public function streamProgress(string $rit): StreamedResponse
     {
+        // Aumentar tiempo de ejecución para scraping largo
+        set_time_limit(300); // 5 minutos
+        ini_set('max_execution_time', '300');
+
         $response = new StreamedResponse();
         $response->headers->set('Content-Type', 'text/event-stream');
         $response->headers->set('Cache-Control', 'no-cache');

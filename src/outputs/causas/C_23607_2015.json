@@ -1,31 +1,25 @@
 {
   "rit": "C-23607-2015",
   "metadata": {
-    "processed_at": "2026-01-29T10:49:56.938Z",
+    "processed_at": "2026-01-29T11:19:17.114Z",
     "total_movimientos": 0,
     "tiene_documentos_pdf": true,
     "tiene_demanda": false,
     "tiene_ebook": false
   },
   "config_entrada": {
-    "causa_id": "17",
-    "agenda_id": "79008",
     "competencia": "3",
     "corte": "90",
-    "tribunal": "29",
+    "tribunal": "276",
     "tipoCausa": "C",
     "rol": "23607",
     "año": "2015",
-    "caratulado": "BANCO DEL ESTADO/ZUÑIGA",
-    "cliente": null,
-    "rut": null,
-    "abogado_id": null,
-    "cuenta_id": null
+    "caratulado": "BANCO DE CREDITO E INVERSI"
   },
   "datos_basicos": {
     "rol": "23607",
     "fecha": "",
-    "caratulado": "BANCO DEL ESTADO/ZUÑIGA"
+    "caratulado": "BANCO DE CREDITO E INVERSI"
   },
   "demanda": null,
   "ebook": null,

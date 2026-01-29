@@ -165,18 +165,116 @@ class ScraperController extends AbstractController
         if (!file_exists($logFile)) {
             return $this->json([
                 'logs' => [],
+                'stats' => null,
                 'message' => 'No hay logs disponibles'
             ]);
         }
 
-        // Leer últimas 200 líneas
+        // Leer últimas 500 líneas para análisis
         $output = [];
-        exec("tail -200 " . escapeshellarg($logFile), $output);
+        exec("tail -500 " . escapeshellarg($logFile), $output);
+
+        // Parsear estadísticas del último scraping
+        $stats = $this->parseScrapingStats($output);
 
         return $this->json([
-            'logs' => $output,
+            'logs' => array_slice($output, -200), // Solo últimas 200 para display
+            'stats' => $stats,
             'timestamp' => time()
         ]);
+    }
+
+    private function parseScrapingStats(array $logLines): array
+    {
+        $stats = [
+            'total_causas' => 0,
+            'exitosas' => 0,
+            'fallidas' => 0,
+            'causas_procesadas' => [],
+            'causas_fallidas' => [],
+            'ultima_iteracion' => null,
+            'duracion_estimada' => null
+        ];
+
+        $currentCausa = null;
+        $procesandoCausa = false;
+
+        foreach ($logLines as $line) {
+            // Detectar inicio de iteración
+            if (preg_match('/SCHEDULER ITERACIÓN (\d+)/', $line, $matches)) {
+                $stats['ultima_iteracion'] = (int)$matches[1];
+            }
+
+            // Detectar total de causas a procesar
+            if (preg_match('/Se van a re-scrapear (\d+) causas/', $line, $matches)) {
+                $stats['total_causas'] = (int)$matches[1];
+            }
+
+            // También detectar del resumen final si no se detectó antes
+            if ($stats['total_causas'] === 0 && preg_match('/✅ Exitosas: (\d+)/', $line, $matches)) {
+                $exitosas = (int)$matches[1];
+                if ($exitosas > 0) {
+                    $stats['total_causas'] = $exitosas + $stats['fallidas'];
+                }
+            }
+
+            // Detectar causa siendo procesada (nuevo formato con emoji)
+            if (preg_match('/📝 Procesando causa (\d+)\/(\d+): (C-\d+-\d+)/', $line, $matches)) {
+                $currentCausa = [
+                    'rit' => $matches[3],
+                    'orden' => (int)$matches[1],
+                    'total' => (int)$matches[2],
+                    'estado' => 'procesando'
+                ];
+                $procesandoCausa = true;
+            }
+
+            // Detectar formato alternativo: Procesando causa: C-XXXXX-XXXX
+            if (preg_match('/📋 Procesando causa: (C-\d+-\d+)/', $line, $matches)) {
+                // Inferir orden del contador
+                $orden = count($stats['causas_procesadas']) + count($stats['causas_fallidas']) + 1;
+                $currentCausa = [
+                    'rit' => $matches[1],
+                    'orden' => $orden,
+                    'total' => $stats['total_causas'],
+                    'estado' => 'procesando'
+                ];
+                $procesandoCausa = true;
+            }
+
+            // Detectar éxito
+            if ($procesandoCausa && strpos($line, '✅ Datos guardados en MySQL') !== false) {
+                if ($currentCausa) {
+                    $currentCausa['estado'] = 'exitosa';
+                    $stats['causas_procesadas'][] = $currentCausa;
+                    $stats['exitosas']++;
+                    $procesandoCausa = false;
+                    $currentCausa = null;
+                }
+            }
+
+            // Detectar fallo
+            if ($procesandoCausa && (strpos($line, '❌ Error') !== false || strpos($line, 'Error procesando') !== false)) {
+                if ($currentCausa) {
+                    $currentCausa['estado'] = 'fallida';
+                    $currentCausa['error'] = $line;
+                    $stats['causas_fallidas'][] = $currentCausa;
+                    $stats['fallidas']++;
+                    $procesandoCausa = false;
+                    $currentCausa = null;
+                }
+            }
+
+            // Detectar resumen final
+            if (preg_match('/✅ Exitosas: (\d+)/', $line, $matches)) {
+                $stats['exitosas'] = (int)$matches[1];
+            }
+            if (preg_match('/❌ Fallidas: (\d+)/', $line, $matches)) {
+                $stats['fallidas'] = (int)$matches[1];
+            }
+        }
+
+        return $stats;
     }
 
     private function parseProgressLine(string $line, int $currentProgress): array

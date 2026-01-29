@@ -823,8 +823,8 @@ async function processMultipleCausas(limitOrCausas = 10, requireTribunal = true)
     for (let i = 0; i < causasAProcesar.length; i++) {
       const csvCausa = causasAProcesar[i];
       const config = csvToScrapingConfig(csvCausa);
-      
-      console.log(`\n[${i + 1}/${causasAProcesar.length}] Procesando causa ID: ${csvCausa.causa_id}`);
+
+      console.log(`\n📝 Procesando causa ${i + 1}/${causasAProcesar.length}: ${config.rit}`);
       
       // Validar que tenga tribunal antes de procesar (corte puede ser default)
       if (!config.tribunal || config.tribunal === 'NULL' || String(config.tribunal).trim() === '') {

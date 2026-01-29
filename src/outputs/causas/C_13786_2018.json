@@ -1,31 +1,25 @@
 {
   "rit": "C-13786-2018",
   "metadata": {
-    "processed_at": "2026-01-29T11:19:01.868Z",
+    "processed_at": "2026-01-29T11:27:28.347Z",
     "total_movimientos": 0,
     "tiene_documentos_pdf": true,
     "tiene_demanda": false,
     "tiene_ebook": false
   },
   "config_entrada": {
-    "causa_id": "11",
-    "agenda_id": "75152",
     "competencia": "3",
     "corte": "90",
-    "tribunal": "8",
+    "tribunal": "276",
     "tipoCausa": "C",
     "rol": "13786",
     "año": "2018",
-    "caratulado": "PROMOTORA CMR FALABELLA S.A/YÁ",
-    "cliente": null,
-    "rut": null,
-    "abogado_id": null,
-    "cuenta_id": null
+    "caratulado": "ITAU CORPBANCA/HERNÁNDEZ"
   },
   "datos_basicos": {
     "rol": "13786",
     "fecha": "",
-    "caratulado": "PROMOTORA CMR FALABELLA S.A/YÁ"
+    "caratulado": "ITAU CORPBANCA/HERNÁNDEZ"
   },
   "demanda": null,
   "ebook": null,

@@ -742,15 +742,25 @@ function isValidForScraping(csvCausa) {
 }
 
 // Procesar múltiples causas
-async function processMultipleCausas(limit = 10, requireTribunal = true) {
-  console.log('📂 Leyendo CSV de causas...');
-  
+async function processMultipleCausas(limitOrCausas = 10, requireTribunal = true) {
+  // Si es un array, usar las causas provistas; si es número, leer del CSV
+  let causas;
+  let limit;
+
+  if (Array.isArray(limitOrCausas)) {
+    causas = limitOrCausas;
+    limit = causas.length;
+    console.log(`📂 Procesando ${causas.length} causas provistas...`);
+  } else {
+    limit = limitOrCausas;
+    console.log('📂 Leyendo CSV de causas...');
+    causas = readCausaCSV();
+  }
+
   // Cargar mapeo de tribunales a cortes al inicio
   console.log('🔍 Cargando mapeo de tribunales a cortes...');
   loadTribunalToCorteMap();
-  
-  const causas = readCausaCSV();
-  
+
   // Filtrar solo las válidas para scraping
   let causasValidas = causas.filter(c => isValidForScraping(c));
   

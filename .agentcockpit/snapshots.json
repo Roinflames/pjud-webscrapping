@@ -1,46 +1,6 @@
 {
   "snapshots": [
     {
-      "version": 90,
-      "commitHash": "0e96cf5df92361340f14fc1190c77944333d3d1b",
-      "tag": "snapshot-v90",
-      "timestamp": 1769570095891,
-      "message": "Snapshot V90",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
-      "version": 91,
-      "commitHash": "f2098e783914368353c623a561fe1d05ef6818d0",
-      "tag": "snapshot-v91",
-      "timestamp": 1769570097174,
-      "message": "Snapshot V91",
-      "filesChanged": [
-        "database/pjud_scraping_clean.sql"
-      ]
-    },
-    {
-      "version": 92,
-      "commitHash": "cf18dbb2c1a317d327ce7f7a81225a1bfaeb7fa1",
-      "tag": "snapshot-v92",
-      "timestamp": 1769570211286,
-      "message": "Snapshot V92",
-      "filesChanged": [
-        "src/config/pjud_config.json"
-      ]
-    },
-    {
-      "version": 93,
-      "commitHash": "8fb8ec4c927ce048a5f0bd6a50845ba04a03490f",
-      "tag": "snapshot-v93",
-      "timestamp": 1769571040417,
-      "message": "Snapshot V93",
-      "filesChanged": [
-        "symfony-app/src/Repository/MovimientoRepository.php"
-      ]
-    },
-    {
       "version": 94,
       "commitHash": "9a72ae920a1332f92733892481926aaa77bc0f2a",
       "tag": "snapshot-v94",
@@ -554,8 +514,64 @@
         "src/outputs/causas/C_1731_2017.json",
         "src/outputs/causas/C_23607_2015.json"
       ]
+    },
+    {
+      "version": 140,
+      "commitHash": "c5f6a236cc3eda0c3215019fc058a5754f276088",
+      "tag": "snapshot-v140",
+      "timestamp": 1769696365207,
+      "message": "Snapshot V140",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_1731_2017.json",
+        "src/outputs/causas/C_23607_2015.json"
+      ]
+    },
+    {
+      "version": 141,
+      "commitHash": "7b8cefb3dda4b6dd6aee95bb7051a3a9cff6f742",
+      "tag": "snapshot-v141",
+      "timestamp": 1769696891094,
+      "message": "Snapshot V141",
+      "filesChanged": [
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json"
+      ]
+    },
+    {
+      "version": 142,
+      "commitHash": "99908663b74d8e6a7bc17d7afd79969f39723ebf",
+      "tag": "snapshot-v142",
+      "timestamp": 1769697393207,
+      "message": "Snapshot V142",
+      "filesChanged": [
+        "REPORTE_AUDITORIA_API.md",
+        "src/api/causas-api.js",
+        "src/api/movimientos-api.js",
+        "src/api/server.js",
+        "src/database/db-mariadb.js",
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/outputs/causas/C_1731_2017.json",
+        "src/outputs/causas/C_23607_2015.json"
+      ]
+    },
+    {
+      "version": 143,
+      "commitHash": "c9abd23e6327969ca20552a020d63694ea55173e",
+      "tag": "snapshot-v143",
+      "timestamp": 1769697679292,
+      "message": "Snapshot V143",
+      "filesChanged": [
+        "REPORTE_AUDITORIA_API.md",
+        "RESUMEN_AUDITORIA.txt",
+        "src/outputs/causas.ndjson",
+        "src/outputs/causas/C_13786_2018.json",
+        "src/outputs/causas/C_1731_2017.json",
+        "src/outputs/causas/C_23607_2015.json"
+      ]
     }
   ],
-  "nextVersion": 140,
-  "currentVersion": 139
+  "nextVersion": 144,
+  "currentVersion": 143
 }

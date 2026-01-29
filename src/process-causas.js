@@ -492,10 +492,14 @@ async function processCausa(page, context, config, outputDir) {
       // 2. Guardar movimientos (usamos rows directamente, filtrando filas de cabecera)
       let movimientosGuardados = 0;
       for (const mov of rows) {
-        // Filtrar filas de cabecera que no son movimientos
-        const esMovimiento = mov.tramite || mov.etapa || mov.desc_tramite;
+        // Filtrar filas de cabecera y partes que no son movimientos
+        // Un movimiento válido debe tener folio numérico O (tramite Y desc_tramite)
+        const folioEsNumerico = /^\d+$/.test(String(mov.folio));
+        const tieneTramitoYDesc = mov.tramite && mov.desc_tramite;
+        const esMovimiento = folioEsNumerico || tieneTramitoYDesc;
+
         if (!esMovimiento) {
-          continue; // Saltar filas de cabecera
+          continue; // Saltar filas de cabecera y partes
         }
 
         // Obtener PDFs del mapping por folio

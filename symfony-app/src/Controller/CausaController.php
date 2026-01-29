@@ -58,10 +58,25 @@ class CausaController extends AbstractController
             $cuadernos = $movimientoRepository->getCuadernosByRit($rit);
             $etapas = $movimientoRepository->getEtapasByRit($rit);
 
-            // Formatear movimientos con información de PDFs
+            // Formatear movimientos con información de PDFs desde tabla pdfs
             $movimientosData = array_map(function($mov) use ($pdfRepository) {
-                $tienePdfAzul = !empty($mov->getPdfAzul()) || !empty($mov->getPdfPrincipal());
-                $tienePdfRojo = !empty($mov->getPdfRojo()) || !empty($mov->getPdfAnexo());
+                // Consultar PDFs desde tabla pdfs por movimiento_id
+                $pdfs = $pdfRepository->findBy(['movimientoId' => $mov->getId()]);
+
+                $pdfAzul = null;
+                $pdfRojo = null;
+
+                foreach ($pdfs as $pdf) {
+                    $tipo = strtolower($pdf->getTipo() ?? '');
+                    if ($tipo === 'azul' || $tipo === 'principal') {
+                        $pdfAzul = $pdf->getNombreArchivo();
+                    } elseif ($tipo === 'rojo' || $tipo === 'anexo') {
+                        $pdfRojo = $pdf->getNombreArchivo();
+                    }
+                }
+
+                $tienePdfAzul = !empty($pdfAzul);
+                $tienePdfRojo = !empty($pdfRojo);
 
                 return [
                     'id' => $mov->getId(),
@@ -75,8 +90,8 @@ class CausaController extends AbstractController
                     'folio' => $mov->getFolio(),
                     'tiene_pdf_azul' => $tienePdfAzul,
                     'tiene_pdf_rojo' => $tienePdfRojo,
-                    'pdf_azul' => $mov->getPdfAzul(),
-                    'pdf_rojo' => $mov->getPdfRojo(),
+                    'pdf_azul' => $pdfAzul,
+                    'pdf_rojo' => $pdfRojo,
                 ];
             }, $movimientos);
 

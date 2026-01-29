@@ -39,16 +39,16 @@ async function ensureGuestSession(page) {
 
 async function closeModalIfExists(page) {
   try {
-    console.log('🔍 Buscando modal para cerrar...');
+    console.log('🔍 Buscando modal de alerta/bienvenida del sitio...');
     await page.waitForSelector('#close-modal', { timeout: 3000 });
     await page.click('#close-modal');
-    console.log('✅ Modal cerrado');
+    console.log('✅ Modal de alerta cerrado (normal - popup informativo del sitio)');
     await page.waitForTimeout(300);
     // Screenshot deshabilitado en modo headless
     // await page.screenshot({ path: 'debug_02_modal_cerrado.png', fullPage: false });
     // console.log('📸 Screenshot: debug_02_modal_cerrado.png');
   } catch (_) {
-    console.log('ℹ️ No se encontró modal para cerrar');
+    console.log('ℹ️ No se encontró modal de alerta (normal - no siempre aparece)');
     // Screenshot deshabilitado en modo headless
     // await page.screenshot({ path: 'debug_02_sin_modal.png', fullPage: false });
   }

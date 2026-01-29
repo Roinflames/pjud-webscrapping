@@ -124,25 +124,35 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
           }
 
           clickResult = await page.evaluate(({ rowIndex, formIndex: idx }) => {
-            // Buscar SOLO en el modal de detalle (no en la tabla de resultados)
-            const modal = document.querySelector('#modalDetalleCivil') ||
-                         document.querySelector('#modalDetalleLaboral') ||
-                         document.querySelector('.modal-body');
+            // Buscar la tabla marcada específicamente (la de movimientos)
+            let table = document.querySelector('table[data-scraper-movimientos="true"]');
 
-            if (!modal) {
-              return { success: false, error: 'Modal no encontrado' };
+            // Fallback: buscar en el modal
+            if (!table) {
+              const modal = document.querySelector('#modalDetalleCivil') ||
+                           document.querySelector('#modalDetalleLaboral') ||
+                           document.querySelector('.modal-body');
+              if (!modal) {
+                return { success: false, error: 'Modal no encontrado' };
+              }
+              const tables = modal.querySelectorAll('table');
+              table = tables[0]; // Usar primera tabla como fallback
             }
 
-            const trs = modal.querySelectorAll('table tbody tr');
+            if (!table) {
+              return { success: false, error: 'Tabla no encontrada en modal' };
+            }
+
+            const trs = table.querySelectorAll('tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based
 
             if (!row) {
-              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en modal)` };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en tabla marcada)` };
             }
-            
+
             const forms = Array.from(row.querySelectorAll('form'));
             if (!forms[idx]) {
-              return { success: false, error: `Form ${idx} no encontrado (hay ${forms.length} forms)` };
+              return { success: false, error: `Form ${idx} no encontrado (hay ${forms.length} forms en fila)` };
             }
             
             const form = forms[idx];
@@ -174,20 +184,30 @@ async function extractPDFUrlsFromTable(page, context, outputDir, rit, rows = nul
           }
 
           clickResult = await page.evaluate(({ rowIndex, linkIndex }) => {
-            // Buscar SOLO en el modal de detalle (no en la tabla de resultados)
-            const modal = document.querySelector('#modalDetalleCivil') ||
-                         document.querySelector('#modalDetalleLaboral') ||
-                         document.querySelector('.modal-body');
+            // Buscar la tabla marcada específicamente (la de movimientos)
+            let table = document.querySelector('table[data-scraper-movimientos="true"]');
 
-            if (!modal) {
-              return { success: false, error: 'Modal no encontrado' };
+            // Fallback: buscar en el modal
+            if (!table) {
+              const modal = document.querySelector('#modalDetalleCivil') ||
+                           document.querySelector('#modalDetalleLaboral') ||
+                           document.querySelector('.modal-body');
+              if (!modal) {
+                return { success: false, error: 'Modal no encontrado' };
+              }
+              const tables = modal.querySelectorAll('table');
+              table = tables[0]; // Usar primera tabla como fallback
             }
 
-            const trs = modal.querySelectorAll('table tbody tr');
+            if (!table) {
+              return { success: false, error: 'Tabla no encontrada en modal' };
+            }
+
+            const trs = table.querySelectorAll('tbody tr');
             const row = trs[rowIndex - 1]; // -1 porque array es 0-based
 
             if (!row) {
-              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en modal)` };
+              return { success: false, error: `Fila ${rowIndex} no encontrada (hay ${trs.length} filas en tabla marcada)` };
             }
             
             // Buscar en la segunda columna (donde suelen estar los PDFs en PJUD)
